@@ -25,6 +25,18 @@
             <artifactId>commons-beanutils</artifactId>
             <version>1.9.3</version>
         </dependency>
+        <!-- Application HTTP client -->
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-client</artifactId>
+            <version>9.4.7.v20170914</version>
+        </dependency>
+        <!-- Used for parsing random JSON -->
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20180130</version>
+        </dependency>
         <!-- Application logging interface -->
         <dependency>
             <groupId>org.slf4j</groupId>
