@@ -1,5 +1,7 @@
-.idea
-*.iml
+# IDE stuff
+/.idea
+/*.iml
+/target
 
 # Application config file
 /metaslurper.conf
