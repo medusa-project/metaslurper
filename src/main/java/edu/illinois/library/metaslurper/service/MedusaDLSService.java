@@ -44,10 +44,12 @@ final class MedusaDLSService implements SourceService {
 
     @Override
     public void close() {
-        try {
-            client.stop();
-        } catch (Exception e) {
-            LOGGER.error("close(): " + e.getMessage());
+        if (client != null) {
+            try {
+                client.stop();
+            } catch (Exception e) {
+                LOGGER.error("close(): " + e.getMessage());
+            }
         }
     }
 
@@ -59,6 +61,7 @@ final class MedusaDLSService implements SourceService {
     private HttpClient getClient() {
         if (client == null) {
             client = new HttpClient(new SslContextFactory());
+            client.setFollowRedirects(true);
             try {
                 client.start();
             } catch (Exception e) {
@@ -70,20 +73,20 @@ final class MedusaDLSService implements SourceService {
 
     private int getBatchSize() {
         Configuration config = ConfigurationFactory.getConfiguration();
-        return config.getInt("service.medusa_dls.batch_size",
+        return config.getInt("service.source.medusa_dls.batch_size",
                 DEFAULT_BATCH_SIZE);
     }
 
     private String getEndpointURI() {
         Configuration config = ConfigurationFactory.getConfiguration();
-        String endpoint = config.getString("service.medusa_dls.endpoint");
+        String endpoint = config.getString("service.source.medusa_dls.endpoint");
         return (endpoint.endsWith("/")) ?
                 endpoint + "items" : endpoint + "/items";
     }
 
     private int getThrottleMsec() {
         Configuration config = ConfigurationFactory.getConfiguration();
-        return config.getInt("service.medusa_dls.throttle_msec",
+        return config.getInt("service.source.medusa_dls.throttle_msec",
                 DEFAULT_THROTTLE_MSEC);
     }
 
@@ -126,7 +129,8 @@ final class MedusaDLSService implements SourceService {
      */
     private void fetchNumItems() {
         try {
-            ContentResponse response = getClient().newRequest(getEndpointURI())
+            ContentResponse response = getClient()
+                    .newRequest(getEndpointURI())
                     .header("Accept", "application/json")
                     .send();
             String body = response.getContentAsString();

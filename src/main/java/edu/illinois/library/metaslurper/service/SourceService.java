@@ -9,17 +9,7 @@ import java.util.stream.Stream;
  * resource, typically a web server, and assemble and normalize content from
  * it.
  */
-public interface SourceService {
-
-    /**
-     * Closes all resources used by the service.
-     */
-    void close();
-
-    /**
-     * @return The service name.
-     */
-    String getName();
+public interface SourceService extends Service {
 
     /**
      * @return Number of items publicly available in the service. Should be

@@ -1,4 +1,9 @@
-# DLS
-service.medusa_dls.endpoint = https://digital.library.illinois.edu
-service.medusa_dls.batch_size = 100
-service.medusa_dls.throttle_msec = 200
+# Sink (destination) service
+service.sink.endpoint = https://metadata.library.illinois.edu
+service.sink.username =
+service.sink.secret =
+
+# DLS source service
+service.source.medusa_dls.endpoint = https://digital.library.illinois.edu
+service.source.medusa_dls.batch_size = 100
+service.source.medusa_dls.throttle_msec = 200

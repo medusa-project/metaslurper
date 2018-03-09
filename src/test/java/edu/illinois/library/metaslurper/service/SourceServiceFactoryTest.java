@@ -9,19 +9,36 @@ import static org.junit.Assert.*;
 public class SourceServiceFactoryTest {
 
     @Test
-    public void testAllServices() {
-        Set<SourceService> actual = ServiceFactory.allServices();
+    public void testAllSinkServices() {
+        Set<SinkService> actual = ServiceFactory.allSinkServices();
         assertEquals(1, actual.size());
     }
 
     @Test
-    public void testGetServiceWithBogusName() {
-        assertNull(ServiceFactory.getService("bogus"));
+    public void testAllSourceServices() {
+        Set<SourceService> actual = ServiceFactory.allSourceServices();
+        assertEquals(1, actual.size());
     }
 
     @Test
-    public void testGetServiceWithValidName() {
-        assertTrue(ServiceFactory.getService(new MedusaDLSService().getName())
+    public void testGetSinkServiceWithBogusName() {
+        assertNull(ServiceFactory.getSinkService("bogus"));
+    }
+
+    @Test
+    public void testGetSinkServiceWithValidName() {
+        assertTrue(ServiceFactory.getSinkService(new MetaslurpService().getName())
+                instanceof MetaslurpService);
+    }
+
+    @Test
+    public void testGetSourceServiceWithBogusName() {
+        assertNull(ServiceFactory.getSourceService("bogus"));
+    }
+
+    @Test
+    public void testGetSourceServiceWithValidName() {
+        assertTrue(ServiceFactory.getSourceService(new MedusaDLSService().getName())
                 instanceof MedusaDLSService);
     }
 

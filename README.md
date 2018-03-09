@@ -1,3 +1,6 @@
+Metaslurper is a command-line tool for retrieving (slurping) content from one
+or more source endpoints, transforming it, and uploading it to a sink endpoint.
+
 # Building
 
 `mvn clean package`

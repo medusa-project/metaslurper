@@ -1,5 +1,6 @@
 package edu.illinois.library.metaslurper;
 
+import edu.illinois.library.metaslurper.service.SinkService;
 import edu.illinois.library.metaslurper.service.SourceService;
 import edu.illinois.library.metaslurper.service.ServiceFactory;
 import edu.illinois.library.metaslurper.slurp.SlurpResult;
@@ -21,17 +22,19 @@ public final class Application {
             }
         }
 
+        final SinkService sink = ServiceFactory.getSinkService("metaslurp");
+
         final Slurper slurper = new Slurper();
         SlurpResult result = null;
 
         if (serviceStr == null || serviceStr.equals("all")) {
-            result = slurper.slurpAll();
+            result = slurper.slurpAll(sink);
         } else {
-            SourceService service = ServiceFactory.getService(serviceStr);
-            if (service != null) {
-                result = slurper.slurp(service);
+            SourceService source = ServiceFactory.getSourceService(serviceStr);
+            if (source != null) {
+                result = slurper.slurp(source, sink);
             } else {
-                String allServices = ServiceFactory.allServices()
+                String allServices = ServiceFactory.allSourceServices()
                         .stream()
                         .map(SourceService::getName)
                         .collect(Collectors.joining(", "));
