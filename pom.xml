@@ -13,6 +13,18 @@
     </properties>
 
     <dependencies>
+        <!-- Application configuration system -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-configuration2</artifactId>
+            <version>2.2</version>
+        </dependency>
+        <!-- Commons Configuration needs this -->
+        <dependency>
+            <groupId>commons-beanutils</groupId>
+            <artifactId>commons-beanutils</artifactId>
+            <version>1.9.3</version>
+        </dependency>
         <!-- Application logging interface -->
         <dependency>
             <groupId>org.slf4j</groupId>

@@ -1,0 +1,3 @@
+service.medusa_dls.endpoint = https://digital.library.illinois.edu/
+service.medusa_dls.batch_size = 200
+service.medusa_dls.throttle_msec = 200
