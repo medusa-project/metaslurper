@@ -8,18 +8,18 @@ public final class ServiceFactory {
     /**
      * @return Set of all known services.
      */
-    public static Set<Service> allServices() {
-        Set<Service> services = new HashSet<>();
+    public static Set<SourceService> allServices() {
+        Set<SourceService> services = new HashSet<>();
         services.add(new MedusaDLSService());
         return services;
     }
 
     /**
-     * @param name {@link Service#getName() Service name}.
+     * @param name {@link SourceService#getName() Service name}.
      * @return     Service with the given name or {@literal null}.
      */
-    public static Service getService(String name) {
-        for (Service service : allServices()) {
+    public static SourceService getService(String name) {
+        for (SourceService service : allServices()) {
             if (service.getName().equals(name)) {
                 return service;
             }

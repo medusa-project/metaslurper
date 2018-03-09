@@ -1,6 +1,6 @@
 package edu.illinois.library.metaslurper.slurp;
 
-import edu.illinois.library.metaslurper.service.Service;
+import edu.illinois.library.metaslurper.service.SourceService;
 import edu.illinois.library.metaslurper.service.ServiceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,7 +18,7 @@ public final class Slurper {
     public SlurpResult slurpAll() {
         final SlurpResult result = new SlurpResult(0, 0, Duration.ZERO);
 
-        for (Service service : ServiceFactory.allServices()) {
+        for (SourceService service : ServiceFactory.allServices()) {
             result.add(slurp(service));
             service.close();
         }
@@ -30,7 +30,7 @@ public final class Slurper {
      *
      * @param service Service to slurp.
      */
-    public SlurpResult slurp(Service service) {
+    public SlurpResult slurp(SourceService service) {
         final long start = System.currentTimeMillis();
         final int numItems = service.numItems();
         final AtomicInteger index = new AtomicInteger();

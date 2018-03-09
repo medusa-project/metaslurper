@@ -22,7 +22,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
-final class MedusaDLSService implements Service {
+final class MedusaDLSService implements SourceService {
 
     private static final Logger LOGGER =
             LoggerFactory.getLogger(MedusaDLSService.class);

@@ -9,7 +9,7 @@ import java.util.stream.Stream;
  * resource, typically a web server, and assemble and normalize content from
  * it.
  */
-public interface Service {
+public interface SourceService {
 
     /**
      * Closes all resources used by the service.

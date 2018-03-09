@@ -1,6 +1,6 @@
 package edu.illinois.library.metaslurper;
 
-import edu.illinois.library.metaslurper.service.Service;
+import edu.illinois.library.metaslurper.service.SourceService;
 import edu.illinois.library.metaslurper.service.ServiceFactory;
 import edu.illinois.library.metaslurper.slurp.SlurpResult;
 import edu.illinois.library.metaslurper.slurp.Slurper;
@@ -24,20 +24,20 @@ public final class Application {
         final Slurper slurper = new Slurper();
         SlurpResult result = null;
 
-        if (serviceStr != null) {
-            Service service = ServiceFactory.getService(serviceStr);
+        if (serviceStr == null || serviceStr.equals("all")) {
+            result = slurper.slurpAll();
+        } else {
+            SourceService service = ServiceFactory.getService(serviceStr);
             if (service != null) {
                 result = slurper.slurp(service);
             } else {
                 String allServices = ServiceFactory.allServices()
                         .stream()
-                        .map(Service::getName)
+                        .map(SourceService::getName)
                         .collect(Collectors.joining(", "));
                 System.err.println("Unrecognized service: " + serviceStr);
                 System.err.println("Available services: " + allServices);
             }
-        } else {
-            result = slurper.slurpAll();
         }
 
         if (result != null) {
