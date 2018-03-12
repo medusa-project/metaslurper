@@ -1,27 +1,35 @@
 package edu.illinois.library.metaslurper.slurp;
 
-import edu.illinois.library.metaslurper.async.ThreadPool;
+import edu.illinois.library.metaslurper.config.ConfigurationFactory;
 import edu.illinois.library.metaslurper.entity.Item;
 import edu.illinois.library.metaslurper.service.SinkService;
 import edu.illinois.library.metaslurper.service.SourceService;
 import edu.illinois.library.metaslurper.service.ServiceFactory;
+import org.apache.commons.configuration2.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.time.Duration;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 public final class Slurper {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Slurper.class);
 
-    private final BlockingQueue<Item> sinkQueue = new LinkedBlockingQueue<>();
+    private static final int DEFAULT_NUM_THREADS = 1;
 
-    private static float percent(int index, int total) {
-        return (index / (float) total) * 100;
+    private static int getNumThreads() {
+        Configuration config = ConfigurationFactory.getConfiguration();
+        return config.getInt("threads", DEFAULT_NUM_THREADS);
+    }
+
+    private static String percent(int numerator, int denominator) {
+        return String.format("%.2f%%", (numerator / (float) denominator) * 100);
     }
 
     /**
@@ -48,44 +56,55 @@ public final class Slurper {
     public SlurpResult slurp(SourceService source,
                              SinkService sink) throws IOException {
         final long start                 = System.currentTimeMillis();
+        final int numThreads             = getNumThreads();
         final int numItems               = source.numItems();
         final AtomicInteger index        = new AtomicInteger();
         final AtomicInteger numSucceeded = new AtomicInteger();
         final AtomicInteger numFailed    = new AtomicInteger();
 
-        // Rather than ingesting items into the sink in the main thread, we
-        // will add them to a queue which is consumed in another thread.
-        ThreadPool.getInstance().submit(() -> {
-            while (index.get() < numItems) {
-                try {
-                    Item item = sinkQueue.take();
-                    sink.ingest(item);
+        LOGGER.info("Slurping {} items from {} into {} using {} threads",
+                numItems, source, sink, numThreads);
 
-                    LOGGER.debug(String.format("Ingested %s into %s [%d/%d] [%.2f%%]",
-                            item, sink,
-                            index.getAndIncrement(), numItems,
-                            percent(numSucceeded.incrementAndGet(), numItems)));
-                } catch (IOException e) {
-                    LOGGER.warn("slurp(): {}", e.getMessage());
-                    numFailed.incrementAndGet();
-                } catch (InterruptedException ignore) {
-                    numFailed.incrementAndGet();
-                }
-            }
-        });
+        final ForkJoinPool pool = new ForkJoinPool(numThreads);
+        final CountDownLatch threadLatch = new CountDownLatch(numThreads - 1);
 
-        source.items().parallel().forEach(item -> {
+        pool.submit(() -> {
             try {
-                if (item != null) {
-                    LOGGER.debug("Slurped {} from {}", item, source);
-                    sinkQueue.add(item);
-                } else {
-                    numFailed.incrementAndGet();
+                try (Stream<Item> items = source.items().parallel()) {
+                    items.forEach(item -> {
+                        try {
+                            if (item != null) {
+                                LOGGER.debug("Slurped {} from {}", item, source);
+                                try {
+                                    sink.ingest(item);
+
+                                    LOGGER.debug("Ingested {} into {} [{}/{}] [{}]",
+                                            item, sink, index.get(), numItems,
+                                            percent(numSucceeded.incrementAndGet(), numItems));
+                                } catch (IOException e) {
+                                    LOGGER.warn("slurp(): {}", e.getMessage());
+                                    numFailed.incrementAndGet();
+                                }
+                            } else {
+                                numFailed.incrementAndGet();
+                            }
+                        } finally {
+                            index.incrementAndGet();
+                        }
+                    });
                 }
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             } finally {
-                index.incrementAndGet();
+                threadLatch.countDown();
             }
         });
+
+        try {
+            threadLatch.await();
+        } catch (InterruptedException e) {
+            LOGGER.info("Interrupted");
+        }
 
         final long end = System.currentTimeMillis();
 
