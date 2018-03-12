@@ -29,7 +29,10 @@ public final class Slurper {
     }
 
     private static String percent(int numerator, int denominator) {
-        return String.format("%.2f%%", (numerator / (float) denominator) * 100);
+        if (denominator > 0) {
+            return String.format("%.2f%%", (numerator / (float) denominator) * 100);
+        }
+        return "?%";
     }
 
     /**

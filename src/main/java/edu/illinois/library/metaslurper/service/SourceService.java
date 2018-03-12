@@ -14,7 +14,9 @@ public interface SourceService extends Service {
 
     /**
      * @return Number of items publicly available in the service. Should be
-     *         equal to the number of items provided by {@link #items()}.
+     *         equal to the number of items provided by {@link #items()}. May
+     *         be a negative number if calculating the number of items would
+     *         be too burdensome.
      */
     int numItems() throws IOException;
 
@@ -25,14 +27,17 @@ public interface SourceService extends Service {
      * <p>If an item cannot be provided for some reason, it may be {@literal
      * null}.</p>
      *
-     * <p>Implementations should try to be efficient and not try to load a
-     * million results into memory.</p>
+     * <p>Implementations should try to be efficient and not load a lot of
+     * results into memory.</p>
+     *
+     * <p>If {@link #numItems()} returns a non-negative value, the number of
+     * items in the stream (whether or not they are {@literal null}) should be
+     * equal to that.</p>
      *
      * <p>N.B.: Returned instances should be {@link Stream#close() closed}
      * after use.</p>
      *
-     * @return Stream of items. The number of items in the stream is equal to
-     *         {@link #numItems()}.
+     * @return Stream of items.
      */
     Stream<Item> items() throws IOException;
 
