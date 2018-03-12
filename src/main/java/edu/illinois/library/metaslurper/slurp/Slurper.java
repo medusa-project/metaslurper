@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
@@ -65,24 +66,19 @@ public final class Slurper {
         final AtomicInteger numSucceeded = new AtomicInteger();
         final AtomicInteger numFailed    = new AtomicInteger();
 
-        LOGGER.info("Slurping {} items from {} into {} using {} threads",
-                numItems, source, sink, numThreads);
-
-        final ForkJoinPool pool = new ForkJoinPool(numThreads);
-        final CountDownLatch threadLatch = new CountDownLatch(numThreads - 1);
-
-        pool.submit(() -> {
+        final Runnable slurper = () -> {
             try {
-                try (Stream<Item> items = source.items().parallel()) {
+                Stream<Item> items = source.items();
+                items = (numThreads > 1) ? items.parallel() : items;
+                try {
                     items.forEach(item -> {
                         try {
                             if (item != null) {
-                                LOGGER.debug("Slurped {} from {}", item, source);
                                 try {
                                     sink.ingest(item);
 
-                                    LOGGER.debug("Ingested {} into {} [{}/{}] [{}]",
-                                            item, sink, index.get(), numItems,
+                                    LOGGER.debug("Slurped {} from {} into {} [{}/{}] [{}]",
+                                            item, source, sink, index.get(), numItems,
                                             percent(numSucceeded.incrementAndGet(), numItems));
                                 } catch (IOException e) {
                                     LOGGER.warn("slurp(): {}", e.getMessage());
@@ -95,18 +91,26 @@ public final class Slurper {
                             index.incrementAndGet();
                         }
                     });
+                } finally {
+                    items.close();
                 }
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
-            } finally {
-                threadLatch.countDown();
             }
-        });
+        };
 
-        try {
-            threadLatch.await();
-        } catch (InterruptedException e) {
-            LOGGER.info("Interrupted");
+        LOGGER.info("Slurping {} items from {} into {} using {} threads",
+                numItems, source, sink, numThreads);
+
+        if (numThreads > 1) {
+            final ForkJoinPool pool = new ForkJoinPool(numThreads);
+            try {
+                pool.submit(slurper).get(); // get() will block
+            } catch (InterruptedException | ExecutionException e) {
+                LOGGER.info(e.getMessage(), e);
+            }
+        } else {
+            slurper.run();
         }
 
         final long end = System.currentTimeMillis();
