@@ -22,13 +22,15 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
+/**
+ * @author Alex Dolski UIUC
+ */
 final class MedusaDLSService implements SourceService {
 
     private static final Logger LOGGER =
             LoggerFactory.getLogger(MedusaDLSService.class);
 
     private static final int DEFAULT_BATCH_SIZE    = 200;
-    private static final int DEFAULT_THROTTLE_MSEC = 500;
 
     private static final String NAME = "DLS";
 
@@ -84,12 +86,6 @@ final class MedusaDLSService implements SourceService {
                 endpoint + "items" : endpoint + "/items";
     }
 
-    private int getThrottleMsec() {
-        Configuration config = ConfigurationFactory.getConfiguration();
-        return config.getInt("service.source.medusa_dls.throttle_msec",
-                DEFAULT_THROTTLE_MSEC);
-    }
-
     @Override
     public int numItems() {
         if (numItems < 0) {
@@ -115,7 +111,6 @@ final class MedusaDLSService implements SourceService {
         return Stream.generate(() -> {
             try {
                 String uri = resultsQueue.take();
-                throttle();
                 return fetchItem(uri);
             } catch (InterruptedException | ExecutionException |
                     TimeoutException e) {
@@ -165,7 +160,6 @@ final class MedusaDLSService implements SourceService {
                     TimeoutException e) {
                 LOGGER.error("fetchAndQueueResults(): ", e.getMessage(), e);
             }
-            throttle();
         }
 
         LOGGER.debug("Done fetching results");
@@ -203,14 +197,6 @@ final class MedusaDLSService implements SourceService {
             }
         }
         return null;
-    }
-
-    private void throttle() {
-        try {
-            Thread.sleep(getThrottleMsec());
-        } catch (InterruptedException e) {
-            LOGGER.warn("throttle(): ", e.getMessage());
-        }
     }
 
     @Override
