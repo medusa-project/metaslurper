@@ -30,7 +30,12 @@ final class MedusaDLSService implements SourceService {
     private static final Logger LOGGER =
             LoggerFactory.getLogger(MedusaDLSService.class);
 
-    private static final int DEFAULT_BATCH_SIZE    = 200;
+    /**
+     * N.B.: 100 is the maximum the DLS allows.
+     */
+    private static final int DEFAULT_BATCH_SIZE = 100;
+
+    static final String ITEM_ID_PREFIX = "dls-";
 
     private static final String NAME = "DLS";
 
@@ -176,7 +181,7 @@ final class MedusaDLSService implements SourceService {
         try {
             JSONObject jobj = new JSONObject(body);
 
-            Item item = new Item(jobj.getString("id"));
+            Item item = new Item(ITEM_ID_PREFIX + jobj.getString("id"));
 
             JSONArray jelements = jobj.getJSONArray("elements");
 
