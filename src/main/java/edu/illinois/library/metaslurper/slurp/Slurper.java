@@ -29,7 +29,7 @@ public final class Slurper {
      *
      * @param sink Service to slurp into.
      */
-    public SlurpResult slurpAll(SinkService sink) {
+    public SlurpResult slurpAll(SinkService sink) throws IOException {
         final SlurpResult result = new SlurpResult(0, 0, Duration.ZERO);
 
         for (SourceService service : ServiceFactory.allSourceServices()) {
@@ -45,7 +45,8 @@ public final class Slurper {
      * @param source Service to slurp.
      * @param sink Service to slurp into.
      */
-    public SlurpResult slurp(SourceService source, SinkService sink) {
+    public SlurpResult slurp(SourceService source,
+                             SinkService sink) throws IOException {
         final long start                 = System.currentTimeMillis();
         final int numItems               = source.numItems();
         final AtomicInteger index        = new AtomicInteger();

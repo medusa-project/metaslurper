@@ -6,6 +6,7 @@ import edu.illinois.library.metaslurper.service.ServiceFactory;
 import edu.illinois.library.metaslurper.slurp.SlurpResult;
 import edu.illinois.library.metaslurper.slurp.Slurper;
 
+import java.io.IOException;
 import java.util.stream.Collectors;
 
 public final class Application {
@@ -13,7 +14,7 @@ public final class Application {
     public static final String CONFIG_VM_ARGUMENT =
             "edu.illinois.library.metaslurper.config";
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         String serviceStr = null;
 
         for (int i = 0; i < args.length; i++) {
