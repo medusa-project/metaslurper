@@ -16,6 +16,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -182,6 +184,7 @@ final class MedusaDLSService implements SourceService {
             JSONObject jobj = new JSONObject(body);
 
             Item item = new Item(ITEM_ID_PREFIX + jobj.getString("id"));
+            item.setSourceURI(new URI(jobj.getString("public_uri")));
 
             JSONArray jelements = jobj.getJSONArray("elements");
 
@@ -200,6 +203,9 @@ final class MedusaDLSService implements SourceService {
                 LOGGER.warn("fetchItem(): Invalid JSON for URI: {}\nResponse body: {}",
                         itemURI, body);
             }
+        } catch (URISyntaxException e) {
+            LOGGER.warn("fetchItem(): Invalid public_uri for item: {}",
+                    itemURI);
         }
         return null;
     }

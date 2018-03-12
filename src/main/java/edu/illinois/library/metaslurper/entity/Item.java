@@ -1,11 +1,13 @@
 package edu.illinois.library.metaslurper.entity;
 
+import java.net.URI;
 import java.util.HashSet;
 import java.util.Set;
 
 public final class Item {
 
     private String id;
+    private URI sourceURI;
 
     private final Set<Element> elements = new HashSet<>();
 
@@ -41,9 +43,23 @@ public final class Item {
         return elements;
     }
 
+    /**
+     * @return URI of the item in the source system.
+     */
+    public URI getSourceURI() {
+        return sourceURI;
+    }
+
+    /**
+     * @param sourceURI URI of the item in the source system.
+     */
+    public void setSourceURI(URI sourceURI) {
+        this.sourceURI = sourceURI;
+    }
+
     @Override
     public String toString() {
-        return "" + getID();
+        return getID();
     }
 
 }
