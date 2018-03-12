@@ -6,7 +6,7 @@ import java.util.Set;
 
 import static org.junit.Assert.*;
 
-public class SourceServiceFactoryTest {
+public class ServiceFactoryTest {
 
     @Test
     public void testAllSinkServices() {
