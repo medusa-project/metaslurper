@@ -5,10 +5,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.util.stream.Stream;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class MedusaDLSServiceTest {
 
@@ -27,13 +24,10 @@ public class MedusaDLSServiceTest {
 
     @Test
     public void testItems() throws Exception {
-        try (Stream<Item> stream = instance.items().limit(2)) {
-            assertEquals(2, stream.count());
-        }
-        try (Stream<Item> stream = instance.items()) {
-            Item item = stream.findFirst().get();
-            assertTrue(item.getID().matches(MedusaDLSService.ITEM_ID_PREFIX + "[a-f0-9-]+"));
-        }
+        ConcurrentIterator<Item> it = instance.items();
+
+        Item item = (Item) it.next();
+        assertTrue(item.getID().matches(MedusaDLSService.ITEM_ID_PREFIX + "[a-f0-9-]+"));
     }
 
 }

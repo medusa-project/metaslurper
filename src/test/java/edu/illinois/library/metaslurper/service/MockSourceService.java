@@ -4,8 +4,8 @@ import edu.illinois.library.metaslurper.entity.Item;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
-import java.util.stream.Stream;
 
 public class MockSourceService implements SourceService {
 
@@ -24,12 +24,20 @@ public class MockSourceService implements SourceService {
     }
 
     @Override
-    public Stream<Item> items() throws IOException {
+    public ConcurrentIterator<Item> items() throws IOException {
         List<Item> items = new ArrayList<>();
         for (int i = 0; i < numItems(); i++) {
             items.add(new Item("ID " + (i + 1)));
         }
-        return items.stream();
+
+        return new ConcurrentIterator<Item>() {
+            private Iterator<Item> it = items.iterator();
+
+            @Override
+            public Object next() {
+                return it.next();
+            }
+        };
     }
 
 }

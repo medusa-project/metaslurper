@@ -22,7 +22,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Stream;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author Alex Dolski UIUC
@@ -103,7 +103,7 @@ final class MedusaDLSService implements SourceService {
             fetchNumItems();
         }
         //return numItems;
-        return 300;
+        return 100;
     }
 
     /**
@@ -113,7 +113,7 @@ final class MedusaDLSService implements SourceService {
      * stream.
      */
     @Override
-    public Stream<Item> items() throws IOException {
+    public ConcurrentIterator<Item> items() throws IOException {
         final int numItems = numItems();
 
         LOGGER.debug("{} items to fetch", numItems);
@@ -127,17 +127,26 @@ final class MedusaDLSService implements SourceService {
             }
         });
 
-        // Return a stream that consumes the queue.
-        return Stream.generate(() -> {
-            try {
-                String uri = resultsQueue.take();
-                return fetchItem(uri);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            } catch (InterruptedException e) {
-                throw new UncheckedIOException(new IOException(e));
+        // Return an iterator that consumes the queue.
+        return new ConcurrentIterator<Item>() {
+            private final AtomicInteger index = new AtomicInteger();
+
+            @Override
+            public Object next() {
+                try {
+                    if (index.getAndIncrement() < numItems) {
+                        String uri = resultsQueue.take();
+                        return fetchItem(uri);
+                    } else {
+                        return -1;
+                    }
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                } catch (InterruptedException e) {
+                    throw new UncheckedIOException(new IOException(e));
+                }
             }
-        }).limit(numItems);
+        };
     }
 
     /**

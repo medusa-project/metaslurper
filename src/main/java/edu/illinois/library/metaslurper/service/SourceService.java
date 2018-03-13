@@ -3,7 +3,6 @@ package edu.illinois.library.metaslurper.service;
 import edu.illinois.library.metaslurper.entity.Item;
 
 import java.io.IOException;
-import java.util.stream.Stream;
 
 /**
  * Encapsulates a remote source of content. Instances will connect to some
@@ -21,8 +20,8 @@ public interface SourceService extends Service {
     int numItems() throws IOException;
 
     /**
-     * <p>Provides a stream of all items publicly available in the service, in
-     * an undefined order.</p>
+     * <p>Provides a thread-safe iterator of all items publicly available in
+     * the service, in undefined order.</p>
      *
      * <p>If an item cannot be provided for some reason, it may be {@literal
      * null}.</p>
@@ -31,14 +30,11 @@ public interface SourceService extends Service {
      * results into memory.</p>
      *
      * <p>If {@link #numItems()} returns a non-negative value, the number of
-     * items in the stream (whether or not they are {@literal null}) should be
+     * items iterated (whether or not they are {@literal null}) should be
      * equal to that.</p>
      *
-     * <p>N.B.: Returned instances should be {@link Stream#close() closed}
-     * after use.</p>
-     *
-     * @return Stream of items.
+     * @return Iterator of items.
      */
-    Stream<Item> items() throws IOException;
+    ConcurrentIterator<Item> items() throws IOException;
 
 }

@@ -2,6 +2,7 @@ package edu.illinois.library.metaslurper.slurp;
 
 import edu.illinois.library.metaslurper.config.ConfigurationFactory;
 import edu.illinois.library.metaslurper.entity.Item;
+import edu.illinois.library.metaslurper.service.ConcurrentIterator;
 import edu.illinois.library.metaslurper.service.SinkService;
 import edu.illinois.library.metaslurper.service.SourceService;
 import edu.illinois.library.metaslurper.service.ServiceFactory;
@@ -13,9 +14,9 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
 
 public final class Slurper {
 
@@ -61,63 +62,60 @@ public final class Slurper {
         final long start                 = System.currentTimeMillis();
         final AtomicInteger numSucceeded = new AtomicInteger();
         final AtomicInteger numFailed    = new AtomicInteger();
+        final int numThreads             = getNumThreads();
+        final ExecutorService pool       = Executors.newFixedThreadPool(numThreads);
         try {
-            final int numThreads       = getNumThreads();
-            final int numItems         = source.numItems();
-            final AtomicInteger index  = new AtomicInteger();
-            final CountDownLatch latch = new CountDownLatch(numThreads - 1);
+            final int numItems                  = source.numItems();
+            final AtomicInteger index           = new AtomicInteger();
+            final CountDownLatch latch          = new CountDownLatch(numThreads);
+            final ConcurrentIterator<Item> iter = source.items();
 
-            final Runnable slurper = () -> {
-                try {
-                    Stream<Item> items = source.items();
-                    items = (numThreads > 1) ? items.parallel() : items;
+            for (int i = 0; i < numThreads; i++) {
+                pool.submit(() -> {
                     try {
-                        items.forEach(item -> {
-                            try {
-                                if (item != null) {
+                        while (true) {
+                            final Object obj = iter.next();
+                            if (obj != null) {
+                                if (obj instanceof Item) {
+                                    Item item = (Item) obj;
                                     try {
                                         sink.ingest(item);
+                                        numSucceeded.incrementAndGet();
 
                                         LOGGER.debug("Slurped {} from {} into {} [{}/{}] [{}]",
-                                                item, source, sink, index.get(), numItems,
-                                                percent(numSucceeded.incrementAndGet(), numItems));
+                                                item, source, sink,
+                                                index.get() + 1, numItems,
+                                                percent(index.get() + 1, numItems));
                                     } catch (IOException e) {
                                         LOGGER.warn("slurp(): {}", e.getMessage());
                                         numFailed.incrementAndGet();
                                     }
                                 } else {
-                                    numFailed.incrementAndGet();
+                                    return;
                                 }
-                            } finally {
-                                index.incrementAndGet();
+                            } else {
+                                numFailed.incrementAndGet();
                             }
-                        });
+                            index.incrementAndGet();
+                        }
                     } finally {
-                        items.close();
+                        latch.countDown();
                     }
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                } finally {
-                    latch.countDown();
-                }
-            };
+                });
+            }
 
             LOGGER.info("Slurping {} items from {} into {} using {} threads",
                     numItems, source, sink, numThreads);
 
-            if (numThreads > 1) {
-                final ForkJoinPool pool = new ForkJoinPool(numThreads);
-                pool.submit(slurper);
-                try {
-                    latch.await();
-                } catch (InterruptedException e) {
-                    LOGGER.info(e.getMessage(), e);
-                }
-            } else {
-                slurper.run();
+            try {
+                latch.await();
+            } catch (InterruptedException e) {
+                LOGGER.info(e.getMessage(), e);
             }
         } catch (IOException | UncheckedIOException e) {
             LOGGER.error(e.getMessage());
+        } finally {
+            pool.shutdown();
         }
 
         final long end = System.currentTimeMillis();
