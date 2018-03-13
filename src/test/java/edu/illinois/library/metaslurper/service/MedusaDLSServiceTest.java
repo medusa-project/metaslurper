@@ -21,12 +21,12 @@ public class MedusaDLSServiceTest {
 
     @Test
     @Ignore // TODO: this takes too long to test
-    public void testNumItems() {
+    public void testNumItems() throws Exception {
         assertTrue(instance.numItems() > 100000);
     }
 
     @Test
-    public void testItems() {
+    public void testItems() throws Exception {
         try (Stream<Item> stream = instance.items().limit(2)) {
             assertEquals(2, stream.count());
         }

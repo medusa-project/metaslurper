@@ -1,12 +1,14 @@
 package edu.illinois.library.metaslurper.slurp;
 
+import edu.illinois.library.metaslurper.service.MockErroringSourceService1;
+import edu.illinois.library.metaslurper.service.MockErroringSourceService2;
+import edu.illinois.library.metaslurper.service.MockErroringSourceService3;
 import edu.illinois.library.metaslurper.service.MockSinkService;
 import edu.illinois.library.metaslurper.service.MockSourceService;
 import edu.illinois.library.metaslurper.service.ServiceFactory;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -44,7 +46,7 @@ public class SlurperTest {
     }
 
     @Test
-    public void testSlurp() throws IOException {
+    public void testSlurp() throws Exception {
         MockSourceService source = new MockSourceService();
         MockSinkService sink = new MockSinkService();
 
@@ -52,6 +54,30 @@ public class SlurperTest {
         assertEquals(source.numItems(), sink.getIngestedItems().size());
         assertEquals(source.numItems(), result.getNumSucceeded());
         assertEquals(0, result.getNumFailed());
+    }
+
+    @Test
+    public void testSlurpWithSourceNumItemsMethodThrowingIOException() {
+        MockErroringSourceService1 source = new MockErroringSourceService1();
+        MockSinkService sink = new MockSinkService();
+
+        instance.slurp(source, sink);
+    }
+
+    @Test
+    public void testSlurpWithSourceItemsMethodThrowingIOException() {
+        MockErroringSourceService2 source = new MockErroringSourceService2();
+        MockSinkService sink = new MockSinkService();
+
+        instance.slurp(source, sink);
+    }
+
+    @Test
+    public void testSlurpWithSourceStreamThrowingUncheckedIOException() {
+        MockErroringSourceService3 source = new MockErroringSourceService3();
+        MockSinkService sink = new MockSinkService();
+
+        instance.slurp(source, sink);
     }
 
 }

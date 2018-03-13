@@ -11,7 +11,7 @@ public interface Service {
     String getName();
 
     /**
-     * Closes all resources used by the service.
+     * Closes all resources used by the service, and stops all of its threads.
      */
     void close();
 

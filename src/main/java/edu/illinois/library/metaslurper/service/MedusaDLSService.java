@@ -9,7 +9,6 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +21,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
 /**
@@ -43,6 +43,8 @@ final class MedusaDLSService implements SourceService {
 
     private HttpClient client;
 
+    private final AtomicBoolean isClosed = new AtomicBoolean();
+
     /**
      * Queue of item URIs.
      */
@@ -53,6 +55,8 @@ final class MedusaDLSService implements SourceService {
 
     @Override
     public void close() {
+        isClosed.set(true);
+
         if (client != null) {
             try {
                 client.stop();
@@ -94,11 +98,12 @@ final class MedusaDLSService implements SourceService {
     }
 
     @Override
-    public int numItems() {
+    public int numItems() throws IOException {
         if (numItems < 0) {
             fetchNumItems();
         }
-        return numItems;
+        //return numItems;
+        return 300;
     }
 
     /**
@@ -108,19 +113,28 @@ final class MedusaDLSService implements SourceService {
      * stream.
      */
     @Override
-    public Stream<Item> items() {
+    public Stream<Item> items() throws IOException {
         final int numItems = numItems();
 
         LOGGER.debug("{} items to fetch", numItems);
 
-        ThreadPool.getInstance().submit(() -> fetchAndQueueResults(numItems));
+        // Start a separate thread to load results page-by-page into a queue.
+        ThreadPool.getInstance().submit(() -> {
+            try {
+                fetchAndQueueResults(numItems);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        });
 
+        // Return a stream that consumes the queue.
         return Stream.generate(() -> {
             try {
                 String uri = resultsQueue.take();
                 return fetchItem(uri);
-            } catch (InterruptedException | ExecutionException |
-                    TimeoutException e) {
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            } catch (InterruptedException e) {
                 throw new UncheckedIOException(new IOException(e));
             }
         }).limit(numItems);
@@ -129,7 +143,7 @@ final class MedusaDLSService implements SourceService {
     /**
      * Fetches the item count into {@link #numItems}.
      */
-    private void fetchNumItems() {
+    private void fetchNumItems() throws IOException {
         try {
             ContentResponse response = getClient()
                     .newRequest(getEndpointURI())
@@ -140,72 +154,93 @@ final class MedusaDLSService implements SourceService {
             numItems = jobj.getInt("numResults");
         } catch (ExecutionException | InterruptedException |
                 TimeoutException e) {
-            LOGGER.error("fetchNumItems(): {}", e.getMessage(), e);
+            throw new IOException(e);
         }
     }
 
-    private void fetchAndQueueResults(int numResults) {
+    private void fetchAndQueueResults(int numResults) throws IOException {
         final int batchSize = getBatchSize();
+        final int numPages = (int) Math.ceil(numResults / batchSize);
 
-        for (int page = 0; page < Math.ceil(numResults / batchSize); page++) {
+        for (int page = 0; page < numPages; page++) {
+            if (isClosed.get()) {
+                LOGGER.debug("fetchAndQueueResults(): stopping");
+                return;
+            }
             final String url = String.format("%s?start=%d&limit=%d",
                     getEndpointURI(), page * batchSize, batchSize);
-            LOGGER.debug("Fetching {} results: {}", batchSize, url);
+            LOGGER.debug("Fetching {} results (page {} of {}): {}",
+                    batchSize, page + 1, numPages, url);
 
             try {
                 ContentResponse response = getClient().newRequest(url)
                         .header("Accept", "application/json")
                         .send();
-                String body = response.getContentAsString();
-                JSONObject jobj = new JSONObject(body);
-                JSONArray jarr = jobj.getJSONArray("results");
-                for (int i = 0; i < jarr.length(); i++) {
-                    String itemURI = jarr.getJSONObject(i).getString("uri");
-                    resultsQueue.add(itemURI);
+                if (response.getStatus() == 200) {
+                    String body = response.getContentAsString();
+                    JSONObject jobj = new JSONObject(body);
+                    JSONArray jarr = jobj.getJSONArray("results");
+                    for (int i = 0; i < jarr.length(); i++) {
+                        String itemURI = jarr.getJSONObject(i).getString("uri");
+                        resultsQueue.add(itemURI);
+                    }
+                } else {
+                    throw new IOException("Got HTTP " + response.getStatus() +
+                            " for " + url);
                 }
             } catch (ExecutionException | InterruptedException |
                     TimeoutException e) {
-                LOGGER.error("fetchAndQueueResults(): ", e.getMessage(), e);
+                throw new IOException(e);
             }
         }
-
         LOGGER.debug("Done fetching results");
     }
 
-    private Item fetchItem(String itemURI) throws ExecutionException,
-            InterruptedException, TimeoutException {
+    private Item fetchItem(String itemURI) throws IOException {
         LOGGER.debug("Fetching item: {}", itemURI);
-
-        ContentResponse response = getClient().newRequest(itemURI)
-                .header("Accept", "application/json")
-                .send();
-        String body = response.getContentAsString();
         try {
-            JSONObject jobj = new JSONObject(body);
+            ContentResponse response = getClient().newRequest(itemURI)
+                    .header("Accept", "application/json")
+                    .send();
+            if ("application/json".equals(response.getMediaType())) {
+                switch (response.getStatus()) {
+                    case 200:
+                        String body = response.getContentAsString();
+                        try {
+                            JSONObject jobj = new JSONObject(body);
 
-            Item item = new Item(ITEM_ID_PREFIX + jobj.getString("id"));
-            item.setSourceURI(new URI(jobj.getString("public_uri")));
+                            Item item = new Item(ITEM_ID_PREFIX + jobj.getString("id"));
+                            item.setSourceURI(new URI(jobj.getString("public_uri")));
 
-            JSONArray jelements = jobj.getJSONArray("elements");
+                            JSONArray jelements = jobj.getJSONArray("elements");
 
-            for (int i = 0; i < jelements.length(); i++) {
-                JSONObject jelement = jelements.getJSONObject(i);
-                String name = jelement.getString("name");
-                String value = jelement.getString("value");
-                Element element = new Element(name, value);
-                item.getElements().add(element);
-            }
-            return item;
-        } catch (JSONException e) {
-            if (body.substring(0, 20).trim().startsWith("<!DOCTYPE")) {
-                LOGGER.warn("fetchItem(): received HTML for URI: {}", itemURI);
+                            for (int i = 0; i < jelements.length(); i++) {
+                                JSONObject jelement = jelements.getJSONObject(i);
+                                String name = jelement.getString("name");
+                                String value = jelement.getString("value");
+                                Element element = new Element(name, value);
+                                item.getElements().add(element);
+                            }
+                            return item;
+                        } catch (URISyntaxException e) {
+                            LOGGER.warn("fetchItem(): Invalid public_uri value for item: {}",
+                                    itemURI);
+                        }
+                        break;
+                    default:
+                        body = response.getContentAsString();
+                        JSONObject jobj = new JSONObject(body);
+                        String message = jobj.getString("error");
+
+                        throw new IOException("Got HTTP " + response.getStatus() +
+                                " for " + itemURI + ": " + message);
+                }
             } else {
-                LOGGER.warn("fetchItem(): Invalid JSON for URI: {}\nResponse body: {}",
-                        itemURI, body);
+                throw new IOException("Unsupported response Content-Type: " +
+                        response.getMediaType());
             }
-        } catch (URISyntaxException e) {
-            LOGGER.warn("fetchItem(): Invalid public_uri for item: {}",
-                    itemURI);
+        } catch (ExecutionException | InterruptedException | TimeoutException e) {
+            throw new IOException(e);
         }
         return null;
     }
