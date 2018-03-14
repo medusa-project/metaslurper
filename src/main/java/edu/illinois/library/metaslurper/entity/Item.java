@@ -6,7 +6,7 @@ import java.util.Set;
 
 public final class Item {
 
-    private String id;
+    private String id, serviceKey;
     private URI sourceURI;
 
     private final Set<Element> elements = new HashSet<>();
@@ -43,11 +43,22 @@ public final class Item {
         return elements;
     }
 
+    public String getServiceKey() {
+        return serviceKey;
+    }
+
     /**
      * @return URI of the item in the source system.
      */
     public URI getSourceURI() {
         return sourceURI;
+    }
+
+    /**
+     * @param key Source service key.
+     */
+    public void setServiceKey(String key) {
+        this.serviceKey = key;
     }
 
     /**

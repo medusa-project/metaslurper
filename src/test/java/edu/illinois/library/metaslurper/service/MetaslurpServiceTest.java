@@ -29,6 +29,7 @@ public class MetaslurpServiceTest {
     public void testIngestWithValidItem() throws Exception {
         Item item = new Item("cats");
         item.setSourceURI(new URI("http://example.org/test"));
+        item.setServiceKey("test");
         item.getElements().add(new Element("title", "test"));
         instance.ingest(item);
     }

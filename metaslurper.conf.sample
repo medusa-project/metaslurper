@@ -8,6 +8,7 @@ threads = 2
 service.source.hathitrust.nuc_code = UIU
 
 # DLS
+service.source.medusa_dls.key = dls
 service.source.medusa_dls.endpoint = https://digital.library.illinois.edu
 service.source.medusa_dls.batch_size = 100
 

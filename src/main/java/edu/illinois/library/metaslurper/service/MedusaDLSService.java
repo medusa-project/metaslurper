@@ -214,27 +214,7 @@ final class MedusaDLSService implements SourceService {
                 switch (response.getStatus()) {
                     case 200:
                         String body = response.getContentAsString();
-                        try {
-                            JSONObject jobj = new JSONObject(body);
-
-                            Item item = new Item(ITEM_ID_PREFIX + jobj.getString("id"));
-                            item.setSourceURI(new URI(jobj.getString("public_uri")));
-
-                            JSONArray jelements = jobj.getJSONArray("elements");
-
-                            for (int i = 0; i < jelements.length(); i++) {
-                                JSONObject jelement = jelements.getJSONObject(i);
-                                String name = jelement.getString("name");
-                                String value = jelement.getString("value");
-                                Element element = new Element(name, value);
-                                item.getElements().add(element);
-                            }
-                            return item;
-                        } catch (URISyntaxException e) {
-                            LOGGER.warn("fetchItem(): Invalid public_uri value for item: {}",
-                                    itemURI);
-                        }
-                        break;
+                        return fromJSON(body);
                     default:
                         body = response.getContentAsString();
                         JSONObject jobj = new JSONObject(body);
@@ -250,7 +230,27 @@ final class MedusaDLSService implements SourceService {
         } catch (ExecutionException | InterruptedException | TimeoutException e) {
             throw new IOException(e);
         }
-        return null;
+    }
+
+    private Item fromJSON(String json) {
+        try {
+            JSONObject jobj = new JSONObject(json);
+            Item item = new Item(ITEM_ID_PREFIX + jobj.getString("id"));
+            item.setSourceURI(new URI(jobj.getString("public_uri")));
+
+            JSONArray jelements = jobj.getJSONArray("elements");
+
+            for (int i = 0; i < jelements.length(); i++) {
+                JSONObject jelement = jelements.getJSONObject(i);
+                String name = jelement.getString("name");
+                String value = jelement.getString("value");
+                Element element = new Element(name, value);
+                item.getElements().add(element);
+            }
+            return item;
+        } catch (URISyntaxException e) {
+            throw new IllegalArgumentException(e);
+        }
     }
 
     @Override
