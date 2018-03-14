@@ -1,15 +1,19 @@
 package edu.illinois.library.metaslurper.service;
 
 import edu.illinois.library.metaslurper.config.ConfigurationFactory;
+import edu.illinois.library.metaslurper.entity.Element;
 import edu.illinois.library.metaslurper.entity.Item;
 import org.apache.commons.configuration2.Configuration;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.util.BasicAuthentication;
+import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,14 +93,16 @@ final class MetaslurpService implements SinkService {
 
     @Override
     public void ingest(Item item) throws IOException {
-        LOGGER.debug("Ingesting {}", item);
-/*
         final URI itemURI = getURI(item);
+        final String entity = toJSON(item);
+
+        LOGGER.debug("Ingesting {}: {}", item, entity);
         try {
             ContentResponse response = getClient()
                     .newRequest(itemURI)
                     .method(HttpMethod.PUT)
                     .header("Content-Type", "application/json")
+                    .content(new StringContentProvider(entity), "application/json")
                     .send();
             if (response.getStatus() != HttpStatus.NO_CONTENT_204) {
                 throw new IOException("Received HTTP " + response.getStatus() +
@@ -106,7 +112,26 @@ final class MetaslurpService implements SinkService {
                 TimeoutException e) {
             throw new IOException(e);
         }
-*/
+    }
+
+    private String toJSON(Item item) {
+        JSONObject jobj = new JSONObject();
+
+        // ID
+        jobj.put("index_id", item.getID());
+        // source URI
+        jobj.put("source_uri", item.getSourceURI());
+        // elements
+        JSONArray jelements = new JSONArray();
+        for (Element element : item.getElements()) {
+            JSONObject jelement = new JSONObject();
+            jelement.put("name", element.getName());
+            jelement.put("value", element.getValue());
+            jelements.put(jelement);
+        }
+        jobj.put("elements", jelements);
+
+        return jobj.toString();
     }
 
     @Override
