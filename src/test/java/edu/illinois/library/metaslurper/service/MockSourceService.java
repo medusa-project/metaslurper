@@ -1,5 +1,6 @@
 package edu.illinois.library.metaslurper.service;
 
+import edu.illinois.library.metaslurper.entity.BasicItem;
 import edu.illinois.library.metaslurper.entity.Item;
 
 import java.io.IOException;
@@ -27,14 +28,16 @@ public class MockSourceService implements SourceService {
     public ConcurrentIterator<Item> items() throws IOException {
         List<Item> items = new ArrayList<>();
         for (int i = 0; i < numItems(); i++) {
-            items.add(new Item("ID " + (i + 1)));
+            BasicItem item = new BasicItem();
+            item.setID("ID " + (i + 1));
+            items.add(item);
         }
 
         return new ConcurrentIterator<Item>() {
             private Iterator<Item> it = items.iterator();
 
             @Override
-            public Object next() {
+            public Item next() {
                 return it.next();
             }
         };

@@ -17,6 +17,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -28,6 +30,51 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Alex Dolski UIUC
  */
 final class MedusaDLSService implements SourceService {
+
+    private static class DLSItem implements Item {
+
+        private JSONObject rootObject;
+
+        private DLSItem(JSONObject rootObject) {
+            this.rootObject = rootObject;
+        }
+
+        @Override
+        public Set<Element> getElements() {
+            final Set<Element> elements = new HashSet<>();
+            final JSONArray jelements = rootObject.getJSONArray("elements");
+
+            for (int i = 0; i < jelements.length(); i++) {
+                JSONObject jelement = jelements.getJSONObject(i);
+                String name = jelement.getString("name");
+                String value = jelement.getString("value");
+                Element element = new Element(name, value);
+                elements.add(element);
+            }
+            return elements;
+        }
+
+        @Override
+        public String getID() {
+            return ITEM_ID_PREFIX + rootObject.getString("id");
+        }
+
+        @Override
+        public String getServiceKey() {
+            Configuration config = ConfigurationFactory.getConfiguration();
+            return config.getString("service.source.medusa_dls.key");
+        }
+
+        @Override
+        public URI getSourceURI() {
+            try {
+                return new URI(rootObject.getString("public_uri"));
+            } catch (URISyntaxException e) {
+                throw new IllegalArgumentException(e);
+            }
+        }
+
+    }
 
     private static final Logger LOGGER =
             LoggerFactory.getLogger(MedusaDLSService.class);
@@ -214,7 +261,7 @@ final class MedusaDLSService implements SourceService {
                 switch (response.getStatus()) {
                     case 200:
                         String body = response.getContentAsString();
-                        return fromJSON(body);
+                        return new DLSItem(new JSONObject(body));
                     default:
                         body = response.getContentAsString();
                         JSONObject jobj = new JSONObject(body);
@@ -229,27 +276,6 @@ final class MedusaDLSService implements SourceService {
             }
         } catch (ExecutionException | InterruptedException | TimeoutException e) {
             throw new IOException(e);
-        }
-    }
-
-    private Item fromJSON(String json) {
-        try {
-            JSONObject jobj = new JSONObject(json);
-            Item item = new Item(ITEM_ID_PREFIX + jobj.getString("id"));
-            item.setSourceURI(new URI(jobj.getString("public_uri")));
-
-            JSONArray jelements = jobj.getJSONArray("elements");
-
-            for (int i = 0; i < jelements.length(); i++) {
-                JSONObject jelement = jelements.getJSONObject(i);
-                String name = jelement.getString("name");
-                String value = jelement.getString("value");
-                Element element = new Element(name, value);
-                item.getElements().add(element);
-            }
-            return item;
-        } catch (URISyntaxException e) {
-            throw new IllegalArgumentException(e);
         }
     }
 

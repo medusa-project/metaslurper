@@ -1,7 +1,7 @@
 package edu.illinois.library.metaslurper.service;
 
+import edu.illinois.library.metaslurper.entity.BasicItem;
 import edu.illinois.library.metaslurper.entity.Element;
-import edu.illinois.library.metaslurper.entity.Item;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -27,7 +27,8 @@ public class MetaslurpServiceTest {
 
     @Test
     public void testIngestWithValidItem() throws Exception {
-        Item item = new Item("cats");
+        BasicItem item = new BasicItem();
+        item.setID("cats");
         item.setSourceURI(new URI("http://example.org/test"));
         item.setServiceKey("test");
         item.getElements().add(new Element("title", "test"));
@@ -36,7 +37,8 @@ public class MetaslurpServiceTest {
 
     @Test(expected = IOException.class)
     public void testIngestWithInvalidItem() throws Exception {
-        Item item = new Item("cats");
+        BasicItem item = new BasicItem();
+        item.setID("cats");
         instance.ingest(item);
     }
 
