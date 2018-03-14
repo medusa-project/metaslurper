@@ -3,20 +3,20 @@ package edu.illinois.library.metaslurper.service;
 import java.util.Iterator;
 
 /**
- * Iterator that works a little differently than {@link Iterator}, making it
- * better-suited to concurrent usage. Instead of a method like {@link
- * Iterator#hasNext()} returning {@literal false}, {@link #next()} simply
- * returns an instance of a type other than {@link T} as a signal to stop
- * iterating.
+ * <p>Iterator designed for concurrent usage.</p>
+ *
+ * <p>Instead of a method like {@link Iterator#hasNext()} returning {@literal
+ * false}, {@link #next()} simply throws an exception when iteration is
+ * complete.</p>
  */
 public interface ConcurrentIterator<T> {
 
     /**
      * Must be thread-safe.
      *
-     * @return {@link T} when returning an expected element, or an instance of
-     *         some other class as a signal that iteration has concluded.
+     * @return {@link T} The next element iterated.
+     * @throws EndOfIterationException when iteration is complete.
      */
-    Object next();
+    T next() throws EndOfIterationException;
 
 }

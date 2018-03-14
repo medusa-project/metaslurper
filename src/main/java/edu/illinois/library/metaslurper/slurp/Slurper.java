@@ -3,6 +3,7 @@ package edu.illinois.library.metaslurper.slurp;
 import edu.illinois.library.metaslurper.config.ConfigurationFactory;
 import edu.illinois.library.metaslurper.entity.Item;
 import edu.illinois.library.metaslurper.service.ConcurrentIterator;
+import edu.illinois.library.metaslurper.service.EndOfIterationException;
 import edu.illinois.library.metaslurper.service.SinkService;
 import edu.illinois.library.metaslurper.service.SourceService;
 import edu.illinois.library.metaslurper.service.ServiceFactory;
@@ -74,27 +75,24 @@ public final class Slurper {
                 pool.submit(() -> {
                     try {
                         while (true) {
-                            final Object obj = iter.next();
-                            if (obj != null) {
-                                if (obj instanceof Item) {
-                                    Item item = (Item) obj;
-                                    try {
-                                        sink.ingest(item);
-                                        numSucceeded.incrementAndGet();
+                            try {
+                                final Item item = iter.next();
+                                if (item != null) {
+                                    sink.ingest(item);
+                                    numSucceeded.incrementAndGet();
 
-                                        LOGGER.debug("Slurped {} from {} into {} [{}/{}] [{}]",
-                                                item, source, sink,
-                                                index.get() + 1, numItems,
-                                                percent(index.get() + 1, numItems));
-                                    } catch (IOException e) {
-                                        LOGGER.warn("slurp(): {}", e.getMessage());
-                                        numFailed.incrementAndGet();
-                                    }
+                                    LOGGER.debug("Slurped {} from {} into {} [{}/{}] [{}]",
+                                            item, source, sink,
+                                            index.get() + 1, numItems,
+                                            percent(index.get() + 1, numItems));
                                 } else {
-                                    return;
+                                    numFailed.incrementAndGet();
                                 }
-                            } else {
+                            } catch (IOException e) {
+                                LOGGER.warn("slurp(): {}", e.getMessage());
                                 numFailed.incrementAndGet();
+                            } catch (EndOfIterationException e) {
+                                return;
                             }
                             index.incrementAndGet();
                         }

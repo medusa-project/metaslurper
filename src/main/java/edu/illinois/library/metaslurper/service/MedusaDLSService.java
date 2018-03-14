@@ -102,8 +102,7 @@ final class MedusaDLSService implements SourceService {
         if (numItems < 0) {
             fetchNumItems();
         }
-        //return numItems;
-        return 100;
+        return numItems;
     }
 
     /**
@@ -132,13 +131,13 @@ final class MedusaDLSService implements SourceService {
             private final AtomicInteger index = new AtomicInteger();
 
             @Override
-            public Object next() {
+            public Item next() throws EndOfIterationException {
                 try {
                     if (index.getAndIncrement() < numItems) {
                         String uri = resultsQueue.take();
                         return fetchItem(uri);
                     } else {
-                        return -1;
+                        throw new EndOfIterationException();
                     }
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
