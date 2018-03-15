@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class MockSourceService implements SourceService {
 
@@ -34,11 +35,17 @@ public class MockSourceService implements SourceService {
         }
 
         return new ConcurrentIterator<Item>() {
-            private Iterator<Item> it = items.iterator();
+            private final int numItems = numItems();
+            private final AtomicInteger index = new AtomicInteger();
+            private final Iterator<Item> it = items.iterator();
 
             @Override
-            public Item next() {
-                return it.next();
+            public Item next() throws EndOfIterationException {
+                if (index.getAndIncrement() < numItems) {
+                    return it.next();
+                } else {
+                    throw new EndOfIterationException();
+                }
             }
         };
     }

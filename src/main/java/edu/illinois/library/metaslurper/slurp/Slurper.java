@@ -83,7 +83,7 @@ public final class Slurper {
                             } catch (EndOfIterationException e) {
                                 return;
                             } catch (IOException | RuntimeException e) {
-                                LOGGER.error("slurp(): {}", e.getMessage());
+                                LOGGER.error("slurp(): {}", e.getMessage(), e);
                                 numFailed.incrementAndGet();
                             }
                             index.incrementAndGet();
