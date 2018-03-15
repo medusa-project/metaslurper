@@ -88,11 +88,11 @@ public final class Slurper {
                                 } else {
                                     numFailed.incrementAndGet();
                                 }
-                            } catch (IOException e) {
-                                LOGGER.warn("slurp(): {}", e.getMessage());
-                                numFailed.incrementAndGet();
                             } catch (EndOfIterationException e) {
                                 return;
+                            } catch (IOException | RuntimeException e) {
+                                LOGGER.error("slurp(): {}", e.getMessage());
+                                numFailed.incrementAndGet();
                             }
                             index.incrementAndGet();
                         }

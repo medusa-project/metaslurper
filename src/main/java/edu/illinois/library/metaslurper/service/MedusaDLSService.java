@@ -39,27 +39,33 @@ final class MedusaDLSService implements SourceService {
 
         @Override
         public String getAccessImageURI() {
-            return rootObject.getString("effective_representative_image_uri");
+            final String key = "representative_image_uri";
+            return rootObject.has(key) ? rootObject.getString(key) : null;
         }
 
         @Override
         public Set<Element> getElements() {
+            final String key = "elements";
             final Set<Element> elements = new HashSet<>();
-            final JSONArray jelements = rootObject.getJSONArray("elements");
+            if (rootObject.has(key)) {
+                final JSONArray jelements = rootObject.getJSONArray(key);
 
-            for (int i = 0; i < jelements.length(); i++) {
-                JSONObject jelement = jelements.getJSONObject(i);
-                String name = jelement.getString("name");
-                String value = jelement.getString("value");
-                Element element = new Element(name, value);
-                elements.add(element);
+                for (int i = 0; i < jelements.length(); i++) {
+                    JSONObject jelement = jelements.getJSONObject(i);
+                    String name = jelement.getString("name");
+                    String value = jelement.getString("value");
+                    Element element = new Element(name, value);
+                    elements.add(element);
+                }
             }
             return elements;
         }
 
         @Override
         public String getID() {
-            return ITEM_ID_PREFIX + rootObject.getString("id");
+            final String key = "id";
+            return rootObject.has(key) ?
+                    ITEM_ID_PREFIX + rootObject.getString(key) : null;
         }
 
         @Override
@@ -70,7 +76,8 @@ final class MedusaDLSService implements SourceService {
 
         @Override
         public String getSourceURI() {
-            return rootObject.getString("public_uri");
+            final String key = "public_uri";
+            return rootObject.has(key) ? rootObject.getString(key) : null;
         }
 
     }
