@@ -8,9 +8,10 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 
-import static edu.illinois.library.metaslurper.Application.CONFIG_VM_ARGUMENT;
-
 public final class ConfigurationFactory {
+
+    public static final String CONFIG_VM_ARGUMENT =
+            "edu.illinois.library.metaslurper.config";
 
     private static Configuration config;
 

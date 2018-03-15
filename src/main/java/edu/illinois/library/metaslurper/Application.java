@@ -1,5 +1,6 @@
 package edu.illinois.library.metaslurper;
 
+import edu.illinois.library.metaslurper.config.ConfigurationFactory;
 import edu.illinois.library.metaslurper.service.SinkService;
 import edu.illinois.library.metaslurper.service.SourceService;
 import edu.illinois.library.metaslurper.service.ServiceFactory;
@@ -36,9 +37,6 @@ public final class Application {
             this.isRequired = isRequired;
         }
     }
-
-    public static final String CONFIG_VM_ARGUMENT =
-            "edu.illinois.library.metaslurper.config";
 
     private static int numThreads = 1;
 
@@ -88,7 +86,7 @@ public final class Application {
                 // output...
                 Thread.sleep(1);
                 HelpFormatter formatter = new HelpFormatter();
-                formatter.printHelp("java -jar <jarfile> -D" + CONFIG_VM_ARGUMENT + "=<config file>",
+                formatter.printHelp("java -jar <jarfile> -D" + ConfigurationFactory.CONFIG_VM_ARGUMENT + "=<config file>",
                         getOptions());
                 System.exit(-1);
             } catch (InterruptedException ignore) {}

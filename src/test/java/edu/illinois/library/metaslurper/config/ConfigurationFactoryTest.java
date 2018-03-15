@@ -1,6 +1,5 @@
 package edu.illinois.library.metaslurper.config;
 
-import edu.illinois.library.metaslurper.Application;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.configuration2.PropertiesConfiguration;
 import org.junit.After;
@@ -15,20 +14,20 @@ public class ConfigurationFactoryTest {
 
     @Before
     public void setUp() {
-        vmArgValue = System.getProperty(Application.CONFIG_VM_ARGUMENT);
+        vmArgValue = System.getProperty(ConfigurationFactory.CONFIG_VM_ARGUMENT);
         ConfigurationFactory.clearInstance();
     }
 
     @After
     public void tearDown() {
         if (vmArgValue != null) {
-            System.setProperty(Application.CONFIG_VM_ARGUMENT, vmArgValue);
+            System.setProperty(ConfigurationFactory.CONFIG_VM_ARGUMENT, vmArgValue);
         }
     }
 
     @Test
     public void testGetInstanceWithNonExistentConfigFile() {
-        System.setProperty(Application.CONFIG_VM_ARGUMENT, "bogus");
+        System.setProperty(ConfigurationFactory.CONFIG_VM_ARGUMENT, "bogus");
 
         Configuration config = ConfigurationFactory.getConfiguration();
         assertNull(config);
@@ -37,7 +36,7 @@ public class ConfigurationFactoryTest {
     @Test
     public void testGetInstanceWithValidConfigFile() {
 
-        System.setProperty(Application.CONFIG_VM_ARGUMENT, "./metaslurper.conf");
+        System.setProperty(ConfigurationFactory.CONFIG_VM_ARGUMENT, "./metaslurper.conf");
 
         Configuration config = ConfigurationFactory.getConfiguration();
         assertTrue(config instanceof PropertiesConfiguration);
