@@ -1,9 +1,13 @@
 package edu.illinois.library.metaslurper.entity;
 
-import java.net.URI;
 import java.util.Set;
 
 public interface Item {
+
+    /**
+     * @return URI of a high-quality access image. May be {@literal null}.
+     */
+    String getAccessImageURI();
 
     /**
      * @return The instance's ID within the sink service.
@@ -23,6 +27,6 @@ public interface Item {
     /**
      * @return URI of the item in the source system.
      */
-    URI getSourceURI();
+    String getSourceURI();
 
 }

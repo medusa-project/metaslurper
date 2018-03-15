@@ -23,6 +23,10 @@ import java.net.URISyntaxException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
+/**
+ * @see <a href="https://github.com/medusa-project/metaslurp">Metaslurp
+ *   GitHub</a>
+ */
 final class MetaslurpService implements SinkService {
 
     private static final Logger LOGGER =
@@ -116,13 +120,14 @@ final class MetaslurpService implements SinkService {
 
     private String toJSON(Item item) {
         JSONObject jobj = new JSONObject();
-
         // ID
         jobj.put("index_id", item.getID());
         // service key
         jobj.put("service_key", item.getServiceKey());
         // source URI
         jobj.put("source_uri", item.getSourceURI());
+        // access image URI
+        jobj.put("access_image_uri", item.getAccessImageURI());
         // elements
         JSONArray jelements = new JSONArray();
         for (Element element : item.getElements()) {

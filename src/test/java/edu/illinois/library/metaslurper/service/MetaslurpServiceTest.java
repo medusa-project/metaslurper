@@ -7,7 +7,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.net.URI;
 
 import static org.junit.Assert.*;
 
@@ -29,7 +28,7 @@ public class MetaslurpServiceTest {
     public void testIngestWithValidItem() throws Exception {
         BasicItem item = new BasicItem();
         item.setID("cats");
-        item.setSourceURI(new URI("http://example.org/test"));
+        item.setSourceURI("http://example.org/test");
         item.setServiceKey("test");
         item.getElements().add(new Element("title", "test"));
         instance.ingest(item);

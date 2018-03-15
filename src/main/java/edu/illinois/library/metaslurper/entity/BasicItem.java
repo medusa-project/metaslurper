@@ -1,7 +1,5 @@
 package edu.illinois.library.metaslurper.entity;
 
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -10,10 +8,14 @@ import java.util.Set;
  */
 public class BasicItem implements Item {
 
-    private String id, serviceKey;
-    private URI sourceURI;
+    private String id, serviceKey, accessImageURI, sourceURI;
 
     private final Set<Element> elements = new HashSet<>();
+
+    @Override
+    public String getAccessImageURI() {
+        return accessImageURI;
+    }
 
     @Override
     public Set<Element> getElements() {
@@ -31,8 +33,19 @@ public class BasicItem implements Item {
     }
 
     @Override
-    public URI getSourceURI() {
+    public String getSourceURI() {
         return sourceURI;
+    }
+
+    /**
+     * @throws IllegalArgumentException if the argument is {@literal null} or
+     *         empty.
+     */
+    public void setAccessImageURI(String imageURI) {
+        if (imageURI == null || imageURI.isEmpty()) {
+            throw new IllegalArgumentException("Argument is null or empty");
+        }
+        this.accessImageURI = imageURI;
     }
 
     /**
@@ -58,25 +71,12 @@ public class BasicItem implements Item {
     }
 
     /**
-     * @throws IllegalArgumentException if the argument is an illegal URI.
+     * @throws IllegalArgumentException if the argument is {@literal null} or
+     *         empty.
      */
     public void setSourceURI(String sourceURI) {
         if (sourceURI == null || sourceURI.isEmpty()) {
             throw new IllegalArgumentException("Argument is null or empty");
-        }
-        try {
-            setSourceURI(new URI(sourceURI));
-        } catch (URISyntaxException e) {
-            throw new IllegalArgumentException(e);
-        }
-    }
-
-    /**
-     * @throws IllegalArgumentException if the argument is {@literal null}.
-     */
-    public void setSourceURI(URI sourceURI) {
-        if (sourceURI == null) {
-            throw new IllegalArgumentException("Argument is null");
         }
         this.sourceURI = sourceURI;
     }

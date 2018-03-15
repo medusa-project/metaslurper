@@ -15,8 +15,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
@@ -37,6 +35,11 @@ final class MedusaDLSService implements SourceService {
 
         private DLSItem(JSONObject rootObject) {
             this.rootObject = rootObject;
+        }
+
+        @Override
+        public String getAccessImageURI() {
+            return rootObject.getString("effective_representative_image_uri");
         }
 
         @Override
@@ -66,12 +69,8 @@ final class MedusaDLSService implements SourceService {
         }
 
         @Override
-        public URI getSourceURI() {
-            try {
-                return new URI(rootObject.getString("public_uri"));
-            } catch (URISyntaxException e) {
-                throw new IllegalArgumentException(e);
-            }
+        public String getSourceURI() {
+            return rootObject.getString("public_uri");
         }
 
     }

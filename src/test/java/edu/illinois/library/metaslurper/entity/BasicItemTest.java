@@ -3,8 +3,6 @@ package edu.illinois.library.metaslurper.entity;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.net.URI;
-
 import static org.junit.Assert.*;
 
 public class BasicItemTest {
@@ -16,6 +14,18 @@ public class BasicItemTest {
         instance = new BasicItem();
         instance.setID("id");
         instance.setServiceKey("key");
+    }
+
+    /* setAccessImageURI() */
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testSetAccessImageURIWithEmptyArgument() {
+        instance.setAccessImageURI("");
+    }
+
+    @Test
+    public void testSetAccessImageURIWithValidArgument() {
+        instance.setAccessImageURI("http://example.org/cats");
     }
 
     /* setID() */
@@ -52,23 +62,16 @@ public class BasicItemTest {
         instance.setID("cats");
     }
 
-    /* setSourceURI(String) */
+    /* setSourceURI() */
 
     @Test(expected = IllegalArgumentException.class)
-    public void testSetSourceURIWithStringWithEmptyArgument() {
+    public void testSetSourceURIWithEmptyArgument() {
         instance.setSourceURI("");
     }
 
     @Test
-    public void testSetSourceURIWithStringWithValidArgument() {
+    public void testSetSourceURIWithValidArgument() {
         instance.setSourceURI("http://example.org/cats");
-    }
-
-    /* setSourceURI(URI) */
-
-    @Test
-    public void testSetSourceURIWithURIWithValidArgument() throws Exception {
-        instance.setSourceURI(new URI("http://example.org/cats"));
     }
 
     @Test
