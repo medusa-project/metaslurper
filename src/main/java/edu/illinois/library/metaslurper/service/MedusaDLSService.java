@@ -39,7 +39,7 @@ final class MedusaDLSService implements SourceService {
 
         @Override
         public String getAccessImageURI() {
-            final String key = "representative_image_uri";
+            final String key = "access_image_uri";
             return rootObject.has(key) ? rootObject.getString(key) : null;
         }
 
