@@ -1,13 +1,12 @@
 package edu.illinois.library.metaslurper.slurp;
 
-import edu.illinois.library.metaslurper.config.ConfigurationFactory;
+import edu.illinois.library.metaslurper.Application;
 import edu.illinois.library.metaslurper.entity.Item;
 import edu.illinois.library.metaslurper.service.ConcurrentIterator;
 import edu.illinois.library.metaslurper.service.EndOfIterationException;
 import edu.illinois.library.metaslurper.service.SinkService;
 import edu.illinois.library.metaslurper.service.SourceService;
 import edu.illinois.library.metaslurper.service.ServiceFactory;
-import org.apache.commons.configuration2.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,13 +21,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 public final class Slurper {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Slurper.class);
-
-    private static final int DEFAULT_NUM_THREADS = 1;
-
-    private static int getNumThreads() {
-        Configuration config = ConfigurationFactory.getConfiguration();
-        return config.getInt("threads", DEFAULT_NUM_THREADS);
-    }
 
     private static String percent(int numerator, int denominator) {
         if (denominator > 0) {
@@ -63,7 +55,7 @@ public final class Slurper {
         final long start                 = System.currentTimeMillis();
         final AtomicInteger numSucceeded = new AtomicInteger();
         final AtomicInteger numFailed    = new AtomicInteger();
-        final int numThreads             = getNumThreads();
+        final int numThreads             = Application.getNumThreads();
         final ExecutorService pool       = Executors.newFixedThreadPool(numThreads);
         try {
             final int numItems                  = source.numItems();

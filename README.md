@@ -1,23 +1,50 @@
-Metaslurper is a command-line tool for retrieving (slurping) content from one
-or more source endpoints, transforming it, and uploading it to a sink endpoint.
+# About
 
-# Building
+Metaslurper is a command-line tool that harvests (slurps) digital object
+properties and metadata from one or more source services, normalizes it, and
+uploads it to a sink service. It supports efficient multi-threaded streaming of
+large numbers of items from any number of source services, and support for new
+services is easy to implement.
+
+Metaslurper passes along whatever key-value item metadata the source services
+make available to the sink service without modifying it. The sink service
+decides what to do with these disparate elements: which ones to keep, how to
+map them, etc. This decouples the difficult task of metadata mapping from the
+harvester, and enables it to run with minimal user interaction.
+
+Metaslurper is designed to work in conjunction with the
+[Metaslurp](https://github.com/medusa-project/metaslurp) sink service, but sink
+services are modular, too.
+
+# Requirements
+
+The only requirement is JDK 8+.
+
+# Build
 
 `mvn clean package`
 
-# Running
+# Run
 
-1. Copy `metaslurp.conf.sample` to `metaslurper.conf` and edit as necessary.
+1. Copy `metaslurper.conf.sample` to `metaslurper.conf` and edit as necessary.
 2. Invoke:
 ```
 java -Dedu.illinois.library.metaslurper.config=metaslurper.conf \
-    -jar metaslurper-VERSION.jar -service all
+    -jar metaslurper-VERSION.jar \
+    -Xmx128m -source all -sink metaslurp -threads 2
 ```
 
-Change `all` to a service name to limit the slurping to a specific service.
-Use `bogus` to get a list of service names.
+Change `-source all` to a service name to limit the slurping to a specific
+service. Use a bogus name to get a list of available service names.
 
-# Adding a service
+# Adding a source service
 
 1. Add a class that implements `e.i.l.m.service.SourceService`
-2. Add it to the return value of `e.i.l.m.service.ServiceFactory.allServices()`
+2. Add it to the return value of
+   `e.i.l.m.service.ServiceFactory.allSourceServices()`
+
+# Adding a sink service
+
+1. Add a class that implements `e.i.l.m.service.SinkService`
+2. Add it to the return value of
+   `e.i.l.m.service.ServiceFactory.allSinkServices()`

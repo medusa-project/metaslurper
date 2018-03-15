@@ -1,11 +1,6 @@
-threads = 2
-
 #######################################################################
 # SOURCE SERVICES
 #######################################################################
-
-# HathiTrust
-service.source.hathitrust.nuc_code = UIU
 
 # DLS
 service.source.medusa_dls.key = dls
