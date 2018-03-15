@@ -37,7 +37,7 @@ public class ConfigurationFactoryTest {
     @Test
     public void testGetInstanceWithValidConfigFile() {
 
-        System.setProperty(Application.CONFIG_VM_ARGUMENT, "./metaslurper.conf.sample");
+        System.setProperty(Application.CONFIG_VM_ARGUMENT, "./metaslurper.conf");
 
         Configuration config = ConfigurationFactory.getConfiguration();
         assertTrue(config instanceof PropertiesConfiguration);
