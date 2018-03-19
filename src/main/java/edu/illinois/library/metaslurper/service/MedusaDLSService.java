@@ -30,6 +30,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 final class MedusaDLSService implements SourceService {
 
+    /**
+     * N.B.: DLS item and collection JSON representations are more-or-less the
+     * same.
+     */
     private static class DLSEntity implements Entity {
 
         private JSONObject rootObject;
@@ -66,7 +70,7 @@ final class MedusaDLSService implements SourceService {
         public String getID() {
             final String key = "id";
             return rootObject.has(key) ?
-                    ITEM_ID_PREFIX + rootObject.getString(key) : null;
+                    ENTITY_ID_PREFIX + rootObject.getString(key) : null;
         }
 
         @Override
@@ -83,8 +87,23 @@ final class MedusaDLSService implements SourceService {
 
         @Override
         public Type getType() {
-            return Type.ITEM;
+            final String key = "class";
+            if (rootObject.has(key)) {
+                switch (rootObject.getString(key)) {
+                    case "Collection":
+                        return Type.COLLECTION;
+                    default:
+                        return Type.ITEM;
+                }
+            }
+            return Type.UNKNOWN;
         }
+
+        @Override
+        public String toString() {
+            return getID();
+        }
+
     }
 
     private static final Logger LOGGER =
@@ -95,7 +114,7 @@ final class MedusaDLSService implements SourceService {
      */
     private static final int DEFAULT_BATCH_SIZE = 100;
 
-    static final String ITEM_ID_PREFIX = "dls-";
+    static final String ENTITY_ID_PREFIX = "dls-";
 
     private static final String NAME = "DLS";
 
@@ -104,12 +123,33 @@ final class MedusaDLSService implements SourceService {
     private final AtomicBoolean isClosed = new AtomicBoolean();
 
     /**
-     * Queue of item URIs.
+     * Queue of item and collection URIs.
      */
     private final BlockingQueue<String> resultsQueue =
             new LinkedBlockingQueue<>();
 
-    private int numItems = -1;
+    private int numItems = -1, numCollections = -1;
+
+    private static int getBatchSize() {
+        Configuration config = ConfigurationFactory.getConfiguration();
+        return config.getInt("service.source.medusa_dls.batch_size",
+                DEFAULT_BATCH_SIZE);
+    }
+
+    private static String getEndpointURI() {
+        Configuration config = ConfigurationFactory.getConfiguration();
+        String endpoint = config.getString("service.source.medusa_dls.endpoint");
+        return (endpoint.endsWith("/")) ?
+                endpoint.substring(0, endpoint.length() - 1) : endpoint;
+    }
+
+    private static String getCollectionsURI() {
+        return getEndpointURI() + "/collections";
+    }
+
+    private static String getItemsURI() {
+        return getEndpointURI() + "/items";
+    }
 
     @Override
     public void close() {
@@ -129,7 +169,7 @@ final class MedusaDLSService implements SourceService {
         return NAME;
     }
 
-    private HttpClient getClient() {
+    private synchronized HttpClient getClient() {
         if (client == null) {
             client = new HttpClient(new SslContextFactory());
             client.setFollowRedirects(true);
@@ -142,43 +182,62 @@ final class MedusaDLSService implements SourceService {
         return client;
     }
 
-    private int getBatchSize() {
-        Configuration config = ConfigurationFactory.getConfiguration();
-        return config.getInt("service.source.medusa_dls.batch_size",
-                DEFAULT_BATCH_SIZE);
-    }
-
-    private String getEndpointURI() {
-        Configuration config = ConfigurationFactory.getConfiguration();
-        String endpoint = config.getString("service.source.medusa_dls.endpoint");
-        return (endpoint.endsWith("/")) ?
-                endpoint + "items" : endpoint + "/items";
-    }
-
     @Override
     public int numEntities() throws IOException {
+        return numCollections() + numItems();
+    }
+
+    private int numCollections() throws IOException {
+        if (numCollections < 0) {
+            numCollections = fetchNumEntities(getCollectionsURI());
+        }
+        return numCollections;
+    }
+
+    private int numItems() throws IOException {
         if (numItems < 0) {
-            fetchNumItems();
+            numItems = fetchNumEntities(getItemsURI());
         }
         return numItems;
     }
 
     /**
+     * Fetches the item count into {@link #numItems}.
+     */
+    private int fetchNumEntities(String endpoint) throws IOException {
+        try {
+            ContentResponse response = getClient()
+                    .newRequest(endpoint)
+                    .header("Accept", "application/json")
+                    .send();
+            String body = response.getContentAsString();
+            JSONObject jobj = new JSONObject(body);
+            return jobj.getInt("numResults");
+        } catch (ExecutionException | InterruptedException |
+                TimeoutException e) {
+            throw new IOException(e);
+        }
+    }
+
+    /**
      * Provides a stream of entities. A producer thread fetches results list
-     * pages, parses them, and feeds the item URIs they contain into a queue.
+     * pages, parses them, and feeds the entity URIs they contain into a queue.
      * Entity representations are fetched on-demand as the client consumes the
      * stream.
      */
     @Override
     public ConcurrentIterator<Entity> entities() throws IOException {
-        final int numItems = numEntities();
+        final int numItems = numItems();
+        final int numCollections = numCollections();
 
-        LOGGER.debug("{} entities to fetch", numItems);
+        LOGGER.debug("{} collections and {} items to fetch",
+                numCollections, numItems);
 
         // Start a separate thread to load results page-by-page into a queue.
         ThreadPool.getInstance().submit(() -> {
             try {
-                fetchAndQueueResults(numItems);
+                fetchAndQueueResults(getCollectionsURI(), numCollections);
+                fetchAndQueueResults(getItemsURI(), numItems);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
@@ -191,9 +250,9 @@ final class MedusaDLSService implements SourceService {
             @Override
             public Entity next() throws EndOfIterationException {
                 try {
-                    if (index.getAndIncrement() < numItems) {
+                    if (index.getAndIncrement() < numItems + numCollections) {
                         String uri = resultsQueue.take();
-                        return fetchItem(uri);
+                        return fetchEntity(uri);
                     } else {
                         throw new EndOfIterationException();
                     }
@@ -206,40 +265,23 @@ final class MedusaDLSService implements SourceService {
         };
     }
 
-    /**
-     * Fetches the item count into {@link #numItems}.
-     */
-    private void fetchNumItems() throws IOException {
-        try {
-            ContentResponse response = getClient()
-                    .newRequest(getEndpointURI())
-                    .header("Accept", "application/json")
-                    .send();
-            String body = response.getContentAsString();
-            JSONObject jobj = new JSONObject(body);
-            numItems = jobj.getInt("numResults");
-        } catch (ExecutionException | InterruptedException |
-                TimeoutException e) {
-            throw new IOException(e);
-        }
-    }
-
-    private void fetchAndQueueResults(int numResults) throws IOException {
+    private void fetchAndQueueResults(final String endpointURI,
+                                      final int numResults) throws IOException {
         final int batchSize = getBatchSize();
-        final int numPages = (int) Math.ceil(numResults / batchSize);
+        final int numPages = (int) Math.ceil(numResults / (float) batchSize);
 
         for (int page = 0; page < numPages; page++) {
             if (isClosed.get()) {
                 LOGGER.debug("fetchAndQueueResults(): stopping");
                 return;
             }
-            final String url = String.format("%s?start=%d&limit=%d",
-                    getEndpointURI(), page * batchSize, batchSize);
+            final String uri = String.format("%s?start=%d&limit=%d",
+                    endpointURI, page * batchSize, batchSize);
             LOGGER.debug("Fetching {} results (page {} of {}): {}",
-                    batchSize, page + 1, numPages, url);
+                    batchSize, page + 1, numPages, uri);
 
             try {
-                ContentResponse response = getClient().newRequest(url)
+                ContentResponse response = getClient().newRequest(uri)
                         .header("Accept", "application/json")
                         .send();
                 if (response.getStatus() == 200) {
@@ -247,25 +289,25 @@ final class MedusaDLSService implements SourceService {
                     JSONObject jobj = new JSONObject(body);
                     JSONArray jarr = jobj.getJSONArray("results");
                     for (int i = 0; i < jarr.length(); i++) {
-                        String itemURI = jarr.getJSONObject(i).getString("uri");
-                        resultsQueue.add(itemURI);
+                        String juri = jarr.getJSONObject(i).getString("uri");
+                        resultsQueue.add(juri);
                     }
                 } else {
                     throw new IOException("Got HTTP " + response.getStatus() +
-                            " for " + url);
+                            " for " + uri);
                 }
             } catch (ExecutionException | InterruptedException |
                     TimeoutException e) {
                 throw new IOException(e);
             }
         }
-        LOGGER.debug("Done fetching results");
+        LOGGER.debug("Fetched {} results", numResults);
     }
 
-    private Entity fetchItem(String itemURI) throws IOException {
-        LOGGER.debug("Fetching item: {}", itemURI);
+    private Entity fetchEntity(String uri) throws IOException {
+        LOGGER.debug("Fetching entity: {}", uri);
         try {
-            ContentResponse response = getClient().newRequest(itemURI)
+            ContentResponse response = getClient().newRequest(uri)
                     .header("Accept", "application/json")
                     .send();
             if ("application/json".equals(response.getMediaType())) {
@@ -279,7 +321,7 @@ final class MedusaDLSService implements SourceService {
                         String message = jobj.getString("error");
 
                         throw new IOException("Got HTTP " + response.getStatus() +
-                                " for " + itemURI + ": " + message);
+                                " for " + uri + ": " + message);
                 }
             } else {
                 throw new IOException("Unsupported response Content-Type: " +

@@ -25,7 +25,7 @@ public class MedusaDLSServiceTest {
         ConcurrentIterator<Entity> it = instance.entities();
 
         Entity entity = it.next();
-        assertTrue(entity.getID().matches(MedusaDLSService.ITEM_ID_PREFIX + "[a-f0-9-]+"));
+        assertTrue(entity.getID().matches(MedusaDLSService.ENTITY_ID_PREFIX + "[a-f0-9-]+"));
     }
 
 }

@@ -57,16 +57,10 @@ final class MetaslurpService implements SinkService {
     }
 
     private static URI getURI(Entity entity) {
-        final URI uri = getEndpointURI();
-        switch (entity.getType()) {
-            case COLLECTION:
-                return uri.resolve("/api/v1/collections/" + entity.getID());
-            default:
-                return uri.resolve("/api/v1/items/" + entity.getID());
-        }
+        return getEndpointURI().resolve("/api/v1/items/" + entity.getID());
     }
 
-    private HttpClient getClient() {
+    private synchronized HttpClient getClient() {
         if (client == null) {
             client = new HttpClient(new SslContextFactory());
             client.setFollowRedirects(true);
@@ -115,7 +109,7 @@ final class MetaslurpService implements SinkService {
                     .send();
             if (response.getStatus() != HttpStatus.NO_CONTENT_204) {
                 throw new IOException("Received HTTP " + response.getStatus() +
-                        " from " + uri);
+                        " from " + uri + " for PUT " + json);
             }
         } catch (InterruptedException | ExecutionException |
                 TimeoutException e) {
@@ -125,6 +119,17 @@ final class MetaslurpService implements SinkService {
 
     private String toJSON(Entity entity) {
         JSONObject jobj = new JSONObject();
+        // class
+        String clazz;
+        switch (entity.getType()) {
+            case COLLECTION:
+                clazz = "Collection";
+                break;
+            default:
+                clazz  = "Item";
+                break;
+        }
+        jobj.put("class", clazz);
         // ID
         jobj.put("index_id", entity.getID());
         // service key

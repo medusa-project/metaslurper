@@ -58,9 +58,9 @@ public final class Slurper {
         final int numThreads             = Application.getNumThreads();
         final ExecutorService pool       = Executors.newFixedThreadPool(numThreads);
         try {
-            final int numEntities                  = source.numEntities();
-            final AtomicInteger index           = new AtomicInteger();
-            final CountDownLatch latch          = new CountDownLatch(numThreads);
+            final int numEntities                 = source.numEntities();
+            final AtomicInteger index             = new AtomicInteger();
+            final CountDownLatch latch            = new CountDownLatch(numThreads);
             final ConcurrentIterator<Entity> iter = source.entities();
 
             for (int i = 0; i < numThreads; i++) {
