@@ -1,13 +1,13 @@
 package edu.illinois.library.metaslurper.service;
 
-import edu.illinois.library.metaslurper.entity.Item;
+import edu.illinois.library.metaslurper.entity.Entity;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class MockSinkService implements SinkService {
 
-    private final List<Item> ingestedItems = new ArrayList<>();
+    private final List<Entity> ingestedEntities = new ArrayList<>();
 
     @Override
     public String getName() {
@@ -19,12 +19,12 @@ public class MockSinkService implements SinkService {
     }
 
     @Override
-    public void ingest(Item item) {
-        ingestedItems.add(item);
+    public void ingest(Entity entity) {
+        ingestedEntities.add(entity);
     }
 
-    public List<Item> getIngestedItems() {
-        return ingestedItems;
+    public List<Entity> getIngestedEntities() {
+        return ingestedEntities;
     }
 
 }

@@ -1,6 +1,6 @@
 package edu.illinois.library.metaslurper.service;
 
-import edu.illinois.library.metaslurper.entity.Item;
+import edu.illinois.library.metaslurper.entity.Entity;
 
 import java.io.IOException;
 
@@ -12,29 +12,29 @@ import java.io.IOException;
 public interface SourceService extends Service {
 
     /**
-     * @return Number of items publicly available in the service. Should be
-     *         equal to the number of items provided by {@link #items()}. May
-     *         be a negative number if calculating the number of items would
-     *         be too burdensome.
+     * @return Number of entities publicly available in the service. Should be
+     *         equal to the number of entities provided by {@link #entities()}.
+     *         May be a negative number if finding the actual count would be
+     *         too burdensome.
      */
-    int numItems() throws IOException;
+    int numEntities() throws IOException;
 
     /**
-     * <p>Provides a thread-safe iterator of all items publicly available in
+     * <p>Provides a thread-safe iterator of all entities publicly available in
      * the service, in undefined order.</p>
      *
-     * <p>If an item cannot be provided for some reason, it may be {@literal
+     * <p>If an entity cannot be provided for some reason, it may be {@literal
      * null}.</p>
      *
      * <p>Implementations should try to be efficient and not load a lot of
      * results into memory.</p>
      *
-     * <p>If {@link #numItems()} returns a non-negative value, the number of
-     * items iterated (whether or not they are {@literal null}) should be
+     * <p>If {@link #numEntities()} returns a non-negative value, the number of
+     * entities iterated (whether or not they are {@literal null}) should be
      * equal to that.</p>
      *
-     * @return Iterator of items.
+     * @return Iterator of entities.
      */
-    ConcurrentIterator<Item> items() throws IOException;
+    ConcurrentIterator<Entity> entities() throws IOException;
 
 }

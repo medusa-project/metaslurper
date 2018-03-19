@@ -1,7 +1,7 @@
 package edu.illinois.library.metaslurper.service;
 
-import edu.illinois.library.metaslurper.entity.BasicItem;
-import edu.illinois.library.metaslurper.entity.Item;
+import edu.illinois.library.metaslurper.entity.BasicEntity;
+import edu.illinois.library.metaslurper.entity.Entity;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -21,27 +21,27 @@ public class MockSourceService implements SourceService {
     }
 
     @Override
-    public int numItems() throws IOException {
+    public int numEntities() throws IOException {
         return 2;
     }
 
     @Override
-    public ConcurrentIterator<Item> items() throws IOException {
-        List<Item> items = new ArrayList<>();
-        for (int i = 0; i < numItems(); i++) {
-            BasicItem item = new BasicItem();
+    public ConcurrentIterator<Entity> entities() throws IOException {
+        List<Entity> entities = new ArrayList<>();
+        for (int i = 0; i < numEntities(); i++) {
+            BasicEntity item = new BasicEntity();
             item.setID("ID " + (i + 1));
-            items.add(item);
+            entities.add(item);
         }
 
-        return new ConcurrentIterator<Item>() {
-            private final int numItems = numItems();
+        return new ConcurrentIterator<Entity>() {
+            private final int numEntities = numEntities();
             private final AtomicInteger index = new AtomicInteger();
-            private final Iterator<Item> it = items.iterator();
+            private final Iterator<Entity> it = entities.iterator();
 
             @Override
-            public Item next() throws EndOfIterationException {
-                if (index.getAndIncrement() < numItems) {
+            public Entity next() throws EndOfIterationException {
+                if (index.getAndIncrement() < numEntities) {
                     return it.next();
                 } else {
                     throw new EndOfIterationException();

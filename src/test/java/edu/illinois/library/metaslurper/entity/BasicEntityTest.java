@@ -5,13 +5,13 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-public class BasicItemTest {
+public class BasicEntityTest {
 
-    private BasicItem instance;
+    private BasicEntity instance;
 
     @Before
     public void setUp() {
-        instance = new BasicItem();
+        instance = new BasicEntity();
         instance.setID("id");
         instance.setServiceKey("key");
     }

@@ -2,7 +2,7 @@ package edu.illinois.library.metaslurper.service;
 
 import edu.illinois.library.metaslurper.config.ConfigurationFactory;
 import edu.illinois.library.metaslurper.entity.Element;
-import edu.illinois.library.metaslurper.entity.Item;
+import edu.illinois.library.metaslurper.entity.Entity;
 import org.apache.commons.configuration2.Configuration;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.AuthenticationStore;
@@ -36,7 +36,7 @@ final class MetaslurpService implements SinkService {
 
     private HttpClient client;
 
-    private URI getEndpointURI() {
+    private static URI getEndpointURI() {
         Configuration config = ConfigurationFactory.getConfiguration();
         String endpoint = config.getString("service.sink.endpoint");
         try {
@@ -46,19 +46,24 @@ final class MetaslurpService implements SinkService {
         }
     }
 
-    private String getUsername() {
+    private static String getUsername() {
         Configuration config = ConfigurationFactory.getConfiguration();
         return config.getString("service.sink.username");
     }
 
-    private String getSecret() {
+    private static String getSecret() {
         Configuration config = ConfigurationFactory.getConfiguration();
         return config.getString("service.sink.secret");
     }
 
-    private URI getURI(Item item) {
+    private static URI getURI(Entity entity) {
         final URI uri = getEndpointURI();
-        return uri.resolve("/api/v1/items/" + item.getID());
+        switch (entity.getType()) {
+            case COLLECTION:
+                return uri.resolve("/api/v1/collections/" + entity.getID());
+            default:
+                return uri.resolve("/api/v1/items/" + entity.getID());
+        }
     }
 
     private HttpClient getClient() {
@@ -96,21 +101,21 @@ final class MetaslurpService implements SinkService {
     }
 
     @Override
-    public void ingest(Item item) throws IOException {
-        final URI itemURI = getURI(item);
-        final String entity = toJSON(item);
+    public void ingest(Entity entity) throws IOException {
+        final URI uri = getURI(entity);
+        final String json = toJSON(entity);
 
-        LOGGER.debug("Ingesting {}: {}", item, entity);
+        LOGGER.debug("Ingesting {}: {}", entity, json);
         try {
             ContentResponse response = getClient()
-                    .newRequest(itemURI)
+                    .newRequest(uri)
                     .method(HttpMethod.PUT)
                     .header("Content-Type", "application/json")
-                    .content(new StringContentProvider(entity), "application/json")
+                    .content(new StringContentProvider(json), "application/json")
                     .send();
             if (response.getStatus() != HttpStatus.NO_CONTENT_204) {
                 throw new IOException("Received HTTP " + response.getStatus() +
-                        " from " + itemURI);
+                        " from " + uri);
             }
         } catch (InterruptedException | ExecutionException |
                 TimeoutException e) {
@@ -118,19 +123,19 @@ final class MetaslurpService implements SinkService {
         }
     }
 
-    private String toJSON(Item item) {
+    private String toJSON(Entity entity) {
         JSONObject jobj = new JSONObject();
         // ID
-        jobj.put("index_id", item.getID());
+        jobj.put("index_id", entity.getID());
         // service key
-        jobj.put("service_key", item.getServiceKey());
+        jobj.put("service_key", entity.getServiceKey());
         // source URI
-        jobj.put("source_uri", item.getSourceURI());
+        jobj.put("source_uri", entity.getSourceURI());
         // access image URI
-        jobj.put("access_image_uri", item.getAccessImageURI());
+        jobj.put("access_image_uri", entity.getAccessImageURI());
         // elements
         JSONArray jelements = new JSONArray();
-        for (Element element : item.getElements()) {
+        for (Element element : entity.getElements()) {
             JSONObject jelement = new JSONObject();
             jelement.put("name", element.getName());
             jelement.put("value", element.getValue());

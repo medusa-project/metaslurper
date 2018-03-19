@@ -1,7 +1,7 @@
 package edu.illinois.library.metaslurper.slurp;
 
 import edu.illinois.library.metaslurper.Application;
-import edu.illinois.library.metaslurper.entity.Item;
+import edu.illinois.library.metaslurper.entity.Entity;
 import edu.illinois.library.metaslurper.service.ConcurrentIterator;
 import edu.illinois.library.metaslurper.service.EndOfIterationException;
 import edu.illinois.library.metaslurper.service.SinkService;
@@ -58,25 +58,25 @@ public final class Slurper {
         final int numThreads             = Application.getNumThreads();
         final ExecutorService pool       = Executors.newFixedThreadPool(numThreads);
         try {
-            final int numItems                  = source.numItems();
+            final int numEntities                  = source.numEntities();
             final AtomicInteger index           = new AtomicInteger();
             final CountDownLatch latch          = new CountDownLatch(numThreads);
-            final ConcurrentIterator<Item> iter = source.items();
+            final ConcurrentIterator<Entity> iter = source.entities();
 
             for (int i = 0; i < numThreads; i++) {
                 pool.submit(() -> {
                     try {
                         while (true) {
                             try {
-                                final Item item = iter.next();
-                                if (item != null) {
-                                    sink.ingest(item);
+                                final Entity entity = iter.next();
+                                if (entity != null) {
+                                    sink.ingest(entity);
                                     numSucceeded.incrementAndGet();
 
                                     LOGGER.debug("Slurped {} from {} into {} [{}/{}] [{}]",
-                                            item, source, sink,
-                                            index.get() + 1, numItems,
-                                            percent(index.get() + 1, numItems));
+                                            entity, source, sink,
+                                            index.get() + 1, numEntities,
+                                            percent(index.get() + 1, numEntities));
                                 } else {
                                     numFailed.incrementAndGet();
                                 }
@@ -94,8 +94,8 @@ public final class Slurper {
                 });
             }
 
-            LOGGER.info("Slurping {} items from {} into {} using {} threads",
-                    numItems, source, sink, numThreads);
+            LOGGER.info("Slurping {} entities from {} into {} using {} threads",
+                    numEntities, source, sink, numThreads);
 
             try {
                 latch.await();

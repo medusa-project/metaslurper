@@ -4,11 +4,12 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Ready-made {@link Item} implementation.
+ * Ready-made bean-style {@link Entity} implementation.
  */
-public class BasicItem implements Item {
+public class BasicEntity implements Entity {
 
     private String id, serviceKey, accessImageURI, sourceURI;
+    private Type type = Type.UNKNOWN;
 
     private final Set<Element> elements = new HashSet<>();
 
@@ -35,6 +36,11 @@ public class BasicItem implements Item {
     @Override
     public String getSourceURI() {
         return sourceURI;
+    }
+
+    @Override
+    public Type getType() {
+        return type;
     }
 
     /**
@@ -79,6 +85,10 @@ public class BasicItem implements Item {
             throw new IllegalArgumentException("Argument is null or empty");
         }
         this.sourceURI = sourceURI;
+    }
+
+    public void setType(Type type) {
+        this.type = type;
     }
 
     @Override

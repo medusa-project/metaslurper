@@ -1,6 +1,6 @@
 package edu.illinois.library.metaslurper.service;
 
-import edu.illinois.library.metaslurper.entity.Item;
+import edu.illinois.library.metaslurper.entity.Entity;
 
 import java.io.IOException;
 
@@ -10,8 +10,8 @@ import java.io.IOException;
 public interface SinkService extends Service {
 
     /**
-     * @param item Item to ingest.
+     * @param entity Entity to ingest.
      */
-    void ingest(Item item) throws IOException;
+    void ingest(Entity entity) throws IOException;
 
 }

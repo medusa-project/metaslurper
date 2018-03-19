@@ -3,10 +3,10 @@
 Metaslurper is a command-line tool that harvests (slurps) digital object
 properties and metadata from one or more source services, normalizes it, and
 uploads it to a sink service. It supports efficient multi-threaded streaming of
-large numbers of items from any number of source services, and support for new
-services is easy to implement.
+large numbers of entities from any number of source services, and support for
+new services is straightforward to implement.
 
-Metaslurper passes along whatever key-value item metadata the source services
+Metaslurper passes along whatever key-value entity metadata the source services
 make available to the sink service without modifying it. The sink service
 decides what to do with these disparate elements: which ones to keep, how to
 map them, etc. This decouples the difficult task of metadata mapping from the

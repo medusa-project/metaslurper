@@ -3,7 +3,8 @@ package edu.illinois.library.metaslurper.service;
 import edu.illinois.library.metaslurper.async.ThreadPool;
 import edu.illinois.library.metaslurper.config.ConfigurationFactory;
 import edu.illinois.library.metaslurper.entity.Element;
-import edu.illinois.library.metaslurper.entity.Item;
+import edu.illinois.library.metaslurper.entity.Entity;
+import edu.illinois.library.metaslurper.entity.Type;
 import org.apache.commons.configuration2.Configuration;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -29,11 +30,11 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 final class MedusaDLSService implements SourceService {
 
-    private static class DLSItem implements Item {
+    private static class DLSEntity implements Entity {
 
         private JSONObject rootObject;
 
-        private DLSItem(JSONObject rootObject) {
+        private DLSEntity(JSONObject rootObject) {
             this.rootObject = rootObject;
         }
 
@@ -80,6 +81,10 @@ final class MedusaDLSService implements SourceService {
             return rootObject.has(key) ? rootObject.getString(key) : null;
         }
 
+        @Override
+        public Type getType() {
+            return Type.ITEM;
+        }
     }
 
     private static final Logger LOGGER =
@@ -151,7 +156,7 @@ final class MedusaDLSService implements SourceService {
     }
 
     @Override
-    public int numItems() throws IOException {
+    public int numEntities() throws IOException {
         if (numItems < 0) {
             fetchNumItems();
         }
@@ -159,16 +164,16 @@ final class MedusaDLSService implements SourceService {
     }
 
     /**
-     * Provides a stream of items. A producer thread fetches results list
+     * Provides a stream of entities. A producer thread fetches results list
      * pages, parses them, and feeds the item URIs they contain into a queue.
-     * Item representations are fetched on-demand as the client consumes the
+     * Entity representations are fetched on-demand as the client consumes the
      * stream.
      */
     @Override
-    public ConcurrentIterator<Item> items() throws IOException {
-        final int numItems = numItems();
+    public ConcurrentIterator<Entity> entities() throws IOException {
+        final int numItems = numEntities();
 
-        LOGGER.debug("{} items to fetch", numItems);
+        LOGGER.debug("{} entities to fetch", numItems);
 
         // Start a separate thread to load results page-by-page into a queue.
         ThreadPool.getInstance().submit(() -> {
@@ -180,11 +185,11 @@ final class MedusaDLSService implements SourceService {
         });
 
         // Return an iterator that consumes the queue.
-        return new ConcurrentIterator<Item>() {
+        return new ConcurrentIterator<Entity>() {
             private final AtomicInteger index = new AtomicInteger();
 
             @Override
-            public Item next() throws EndOfIterationException {
+            public Entity next() throws EndOfIterationException {
                 try {
                     if (index.getAndIncrement() < numItems) {
                         String uri = resultsQueue.take();
@@ -257,7 +262,7 @@ final class MedusaDLSService implements SourceService {
         LOGGER.debug("Done fetching results");
     }
 
-    private Item fetchItem(String itemURI) throws IOException {
+    private Entity fetchItem(String itemURI) throws IOException {
         LOGGER.debug("Fetching item: {}", itemURI);
         try {
             ContentResponse response = getClient().newRequest(itemURI)
@@ -267,7 +272,7 @@ final class MedusaDLSService implements SourceService {
                 switch (response.getStatus()) {
                     case 200:
                         String body = response.getContentAsString();
-                        return new DLSItem(new JSONObject(body));
+                        return new DLSEntity(new JSONObject(body));
                     default:
                         body = response.getContentAsString();
                         JSONObject jobj = new JSONObject(body);

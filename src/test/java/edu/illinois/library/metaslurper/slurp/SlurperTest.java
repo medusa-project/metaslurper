@@ -35,8 +35,8 @@ public class SlurperTest {
 
         try {
             SlurpResult result = instance.slurpAll(sink);
-            assertEquals(source.numItems(), sink.getIngestedItems().size());
-            assertEquals(source.numItems(), result.getNumSucceeded());
+            assertEquals(source.numEntities(), sink.getIngestedEntities().size());
+            assertEquals(source.numEntities(), result.getNumSucceeded());
             assertEquals(0, result.getNumFailed());
         } finally {
             ServiceFactory.setSourceServices(null);
@@ -50,8 +50,8 @@ public class SlurperTest {
         MockSinkService sink = new MockSinkService();
 
         SlurpResult result = instance.slurp(source, sink);
-        assertEquals(source.numItems(), sink.getIngestedItems().size());
-        assertEquals(source.numItems(), result.getNumSucceeded());
+        assertEquals(source.numEntities(), sink.getIngestedEntities().size());
+        assertEquals(source.numEntities(), result.getNumSucceeded());
         assertEquals(0, result.getNumFailed());
     }
 
