@@ -55,29 +55,34 @@ public final class Application {
             String sinkStr = cmd.getOptionValue(Argument.SINK_SERVICE.longArg);
 
             final SinkService sink = ServiceFactory.getSinkService(sinkStr);
+            if (sink != null) {
+                final Slurper slurper = new Slurper();
+                SlurpResult result = null;
 
-            final Slurper slurper = new Slurper();
-            SlurpResult result = null;
-
-            if (sourceStr.equals("all")) {
-                result = slurper.slurpAll(sink);
-            } else {
-                SourceService source = ServiceFactory.getSourceService(sourceStr);
-                if (source != null) {
-                    try {
-                        result = slurper.slurp(source, sink);
-                    } finally {
-                        source.close();
-                    }
+                if (sourceStr.equals("all")) {
+                    result = slurper.slurpAll(sink);
                 } else {
-                    System.err.println("Unrecognized service: " + sourceStr);
-                    printSourceServices();
-                    System.exit(-1);
+                    SourceService source = ServiceFactory.getSourceService(sourceStr);
+                    if (source != null) {
+                        try {
+                            result = slurper.slurp(source, sink);
+                        } finally {
+                            source.close();
+                        }
+                    } else {
+                        System.err.println("Unrecognized service: " + sourceStr);
+                        printSourceServices();
+                        System.exit(-1);
+                    }
                 }
-            }
 
-            if (result != null) {
-                System.out.println(result);
+                if (result != null) {
+                    System.out.println(result);
+                }
+            } else {
+                System.err.println("Unrecognized service: " + sinkStr);
+                printSinkServices();
+                System.exit(-1);
             }
         } catch (ParseException e) {
             System.err.println(e.getMessage());
@@ -86,7 +91,9 @@ public final class Application {
                 // output...
                 Thread.sleep(1);
                 HelpFormatter formatter = new HelpFormatter();
-                formatter.printHelp("java -jar <jarfile> -D" + ConfigurationFactory.CONFIG_VM_ARGUMENT + "=<config file>",
+                formatter.printHelp("java -jar <jarfile> -D" +
+                                ConfigurationFactory.CONFIG_VM_ARGUMENT +
+                                "=<config file>",
                         getOptions());
                 System.exit(-1);
             } catch (InterruptedException ignore) {}
@@ -116,7 +123,15 @@ public final class Application {
                 .stream()
                 .map(SourceService::getName)
                 .collect(Collectors.joining(", "));
-        System.err.println("Available services: " + allSources);
+        System.err.println("Available source services: " + allSources);
+    }
+
+    private static void printSinkServices() {
+        String allSources = ServiceFactory.allSinkServices()
+                .stream()
+                .map(SinkService::getName)
+                .collect(Collectors.joining(", "));
+        System.err.println("Available sink services: " + allSources);
     }
 
 }
