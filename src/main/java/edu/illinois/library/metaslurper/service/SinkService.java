@@ -10,11 +10,6 @@ import java.io.IOException;
 public interface SinkService extends Service {
 
     /**
-     * Closes all resources used by the service.
-     */
-    void close();
-
-    /**
      * @param item Item to ingest.
      */
     void ingest(Item item) throws IOException;
