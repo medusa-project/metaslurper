@@ -57,7 +57,7 @@ final class MetaslurpService implements SinkService {
     }
 
     private static URI getURI(Entity entity) {
-        return getEndpointURI().resolve("/api/v1/items/" + entity.getID());
+        return getEndpointURI().resolve("/api/v1/items/" + entity.getSinkID());
     }
 
     private synchronized HttpClient getClient() {
@@ -130,8 +130,10 @@ final class MetaslurpService implements SinkService {
                 break;
         }
         jobj.put("class", clazz);
-        // ID
-        jobj.put("index_id", entity.getID());
+        // source ID
+        jobj.put("source_id", entity.getSourceID());
+        // sink ID
+        jobj.put("index_id", entity.getSinkID());
         // service key
         jobj.put("service_key", entity.getServiceKey());
         // source URI

@@ -15,14 +15,19 @@ public interface Entity {
     Set<Element> getElements();
 
     /**
-     * @return The instance's ID within the sink service.
-     */
-    String getID();
-
-    /**
      * @return Source service key.
      */
     String getServiceKey();
+
+    /**
+     * @return The instance's ID within the sink service.
+     */
+    String getSinkID();
+
+    /**
+     * @return Identifier of the entity in the source system.
+     */
+    String getSourceID();
 
     /**
      * @return URI of the item in the source system.

@@ -8,7 +8,7 @@ import java.util.Set;
  */
 public class BasicEntity implements Entity {
 
-    private String id, serviceKey, accessImageURI, sourceURI;
+    private String sourceID, sinkID, serviceKey, accessImageURI, sourceURI;
     private Type type = Type.UNKNOWN;
 
     private final Set<Element> elements = new HashSet<>();
@@ -24,13 +24,18 @@ public class BasicEntity implements Entity {
     }
 
     @Override
-    public String getID() {
-        return id;
+    public String getServiceKey() {
+        return serviceKey;
     }
 
     @Override
-    public String getServiceKey() {
-        return serviceKey;
+    public String getSinkID() {
+        return sinkID;
+    }
+
+    @Override
+    public String getSourceID() {
+        return sourceID;
     }
 
     @Override
@@ -58,22 +63,33 @@ public class BasicEntity implements Entity {
      * @throws IllegalArgumentException if the argument is {@literal null} or
      *         empty.
      */
-    public void setID(String id) {
-        if (id == null || id.isEmpty()) {
+    public void setServiceKey(String key) {
+        if (key == null || key.isEmpty()) {
             throw new IllegalArgumentException("Argument is null or empty");
         }
-        this.id = id;
+        this.serviceKey = key;
     }
 
     /**
      * @throws IllegalArgumentException if the argument is {@literal null} or
      *         empty.
      */
-    public void setServiceKey(String key) {
-        if (key == null || key.isEmpty()) {
+    public void setSinkID(String id) {
+        if (id == null || id.isEmpty()) {
             throw new IllegalArgumentException("Argument is null or empty");
         }
-        this.serviceKey = key;
+        this.sinkID = id;
+    }
+
+    /**
+     * @throws IllegalArgumentException if the argument is {@literal null} or
+     *         empty.
+     */
+    public void setSourceID(String id) {
+        if (id == null || id.isEmpty()) {
+            throw new IllegalArgumentException("Argument is null or empty");
+        }
+        this.sourceID = id;
     }
 
     /**
@@ -93,7 +109,7 @@ public class BasicEntity implements Entity {
 
     @Override
     public String toString() {
-        return getServiceKey() + " " + getID();
+        return getServiceKey() + " " + getSinkID();
     }
 
 }

@@ -30,7 +30,7 @@ public class MockSourceService implements SourceService {
         List<Entity> entities = new ArrayList<>();
         for (int i = 0; i < numEntities(); i++) {
             BasicEntity item = new BasicEntity();
-            item.setID("ID " + (i + 1));
+            item.setSinkID("ID " + (i + 1));
             entities.add(item);
         }
 

@@ -27,7 +27,7 @@ public class MetaslurpServiceTest {
     @Test
     public void testIngestWithValidEntity() throws Exception {
         BasicEntity item = new BasicEntity();
-        item.setID("cats");
+        item.setSinkID("cats");
         item.setSourceURI("http://example.org/test");
         item.setServiceKey("test");
         item.getElements().add(new Element("title", "test"));
@@ -37,7 +37,7 @@ public class MetaslurpServiceTest {
     @Test(expected = IOException.class)
     public void testIngestWithInvalidEntity() throws Exception {
         BasicEntity item = new BasicEntity();
-        item.setID("cats");
+        item.setSinkID("cats");
         instance.ingest(item);
     }
 

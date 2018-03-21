@@ -67,16 +67,22 @@ final class MedusaDLSService implements SourceService {
         }
 
         @Override
-        public String getID() {
+        public String getServiceKey() {
+            Configuration config = ConfigurationFactory.getConfiguration();
+            return config.getString("service.source.medusa_dls.key");
+        }
+
+        @Override
+        public String getSinkID() {
             final String key = "id";
             return rootObject.has(key) ?
                     ENTITY_ID_PREFIX + rootObject.getString(key) : null;
         }
 
         @Override
-        public String getServiceKey() {
-            Configuration config = ConfigurationFactory.getConfiguration();
-            return config.getString("service.source.medusa_dls.key");
+        public String getSourceID() {
+            final String key = "id";
+            return rootObject.has(key) ? rootObject.getString(key) : null;
         }
 
         @Override
@@ -101,7 +107,7 @@ final class MedusaDLSService implements SourceService {
 
         @Override
         public String toString() {
-            return getID();
+            return getSourceID() + " / " + getSinkID();
         }
 
     }

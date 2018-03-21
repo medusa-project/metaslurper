@@ -48,3 +48,10 @@ service. Use a bogus name to get a list of available service names.
 1. Add a class that implements `e.i.l.m.service.SinkService`
 2. Add it to the return value of
    `e.i.l.m.service.ServiceFactory.allSinkServices()`
+
+# Controlling what information gets harvested
+
+1. Modify the `e.i.l.m.entity.Entity` interface.
+2. Modify all of its implementations.
+3. Modify all `e.i.l.m.service.SinkService` implementations to understand the
+   changes.

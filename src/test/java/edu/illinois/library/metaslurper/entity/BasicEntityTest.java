@@ -12,7 +12,7 @@ public class BasicEntityTest {
     @Before
     public void setUp() {
         instance = new BasicEntity();
-        instance.setID("id");
+        instance.setSinkID("id");
         instance.setServiceKey("key");
     }
 
@@ -28,23 +28,6 @@ public class BasicEntityTest {
         instance.setAccessImageURI("http://example.org/cats");
     }
 
-    /* setID() */
-
-    @Test(expected = IllegalArgumentException.class)
-    public void testSetIDWithNullArgument() {
-        instance.setID(null);
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void testSetIDWithEmptyArgument() {
-        instance.setID("");
-    }
-
-    @Test
-    public void testSetIDWithValidArgument() {
-        instance.setID("cats");
-    }
-
     /* setServiceKey() */
 
     @Test(expected = IllegalArgumentException.class)
@@ -54,12 +37,46 @@ public class BasicEntityTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testSetServiceKeyWithEmptyArgument() {
-        instance.setID("");
+        instance.setSinkID("");
     }
 
     @Test
     public void testSetServiceKeyWithValidArgument() {
-        instance.setID("cats");
+        instance.setSinkID("cats");
+    }
+
+    /* setSinkID() */
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testSetSinkIDWithNullArgument() {
+        instance.setSinkID(null);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testSetSinkIDWithEmptyArgument() {
+        instance.setSinkID("");
+    }
+
+    @Test
+    public void testSetSinkIDWithValidArgument() {
+        instance.setSinkID("cats");
+    }
+
+    /* setSourceID() */
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testSetSourceIDWithNullArgument() {
+        instance.setSourceID(null);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testSetSourceIDWithEmptyArgument() {
+        instance.setSourceID("");
+    }
+
+    @Test
+    public void testSetSourceIDWithValidArgument() {
+        instance.setSourceID("cats");
     }
 
     /* setSourceURI() */
