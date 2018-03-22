@@ -11,6 +11,6 @@ service.source.medusa_dls.batch_size = 100
 # SINK SERVICE
 #######################################################################
 
-service.sink.endpoint = https://metadata.library.illinois.edu
-service.sink.username =
-service.sink.secret =
+service.sink.metaslurp.endpoint = https://metadata.library.illinois.edu
+service.sink.metaslurp.username =
+service.sink.metaslurp.secret =

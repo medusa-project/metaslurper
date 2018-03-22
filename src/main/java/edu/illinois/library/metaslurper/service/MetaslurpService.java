@@ -38,7 +38,7 @@ final class MetaslurpService implements SinkService {
 
     private static URI getEndpointURI() {
         Configuration config = ConfigurationFactory.getConfiguration();
-        String endpoint = config.getString("service.sink.endpoint");
+        String endpoint = config.getString("service.sink.metaslurp.endpoint");
         try {
             return new URI(endpoint);
         } catch (URISyntaxException e) {
@@ -48,12 +48,12 @@ final class MetaslurpService implements SinkService {
 
     private static String getUsername() {
         Configuration config = ConfigurationFactory.getConfiguration();
-        return config.getString("service.sink.username");
+        return config.getString("service.sink.metaslurp.username");
     }
 
     private static String getSecret() {
         Configuration config = ConfigurationFactory.getConfiguration();
-        return config.getString("service.sink.secret");
+        return config.getString("service.sink.metaslurp.secret");
     }
 
     private static URI getURI(Entity entity) {
@@ -109,7 +109,9 @@ final class MetaslurpService implements SinkService {
                     .send();
             if (response.getStatus() != HttpStatus.NO_CONTENT_204) {
                 throw new IOException("Received HTTP " + response.getStatus() +
-                        " from " + uri + " for PUT " + json);
+                        " for PUT " + uri + "\n" +
+                        "Request body: " + json + "\n" +
+                        "Response body: " + response.getContentAsString());
             }
         } catch (InterruptedException | ExecutionException |
                 TimeoutException e) {
