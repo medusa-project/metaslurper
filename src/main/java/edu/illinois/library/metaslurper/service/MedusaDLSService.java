@@ -4,7 +4,7 @@ import edu.illinois.library.metaslurper.async.ThreadPool;
 import edu.illinois.library.metaslurper.config.ConfigurationFactory;
 import edu.illinois.library.metaslurper.entity.Element;
 import edu.illinois.library.metaslurper.entity.Entity;
-import edu.illinois.library.metaslurper.entity.Type;
+import edu.illinois.library.metaslurper.entity.Variant;
 import org.apache.commons.configuration2.Configuration;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -97,17 +97,17 @@ final class MedusaDLSService implements SourceService {
         }
 
         @Override
-        public Type getType() {
+        public Variant getVariant() {
             final String key = "class";
             if (rootObject.has(key)) {
                 switch (rootObject.getString(key)) {
                     case "Collection":
-                        return Type.COLLECTION;
+                        return Variant.COLLECTION;
                     default:
-                        return Type.ITEM;
+                        return Variant.ITEM;
                 }
             }
-            return Type.UNKNOWN;
+            return Variant.UNKNOWN;
         }
 
         @Override

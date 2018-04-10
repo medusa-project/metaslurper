@@ -35,8 +35,8 @@ public interface Entity {
     String getSourceURI();
 
     /**
-     * @return Type of the entity.
+     * @return Variant of the entity.
      */
-    Type getType();
+    Variant getVariant();
 
 }

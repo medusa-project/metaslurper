@@ -123,7 +123,7 @@ final class MetaslurpService implements SinkService {
         JSONObject jobj = new JSONObject();
         // class
         String clazz;
-        switch (entity.getType()) {
+        switch (entity.getVariant()) {
             case COLLECTION:
                 clazz = "Collection";
                 break;

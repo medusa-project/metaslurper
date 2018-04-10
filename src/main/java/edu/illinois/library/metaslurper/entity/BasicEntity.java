@@ -9,7 +9,7 @@ import java.util.Set;
 public class BasicEntity implements Entity {
 
     private String sourceID, sinkID, serviceKey, accessImageURI, sourceURI;
-    private Type type = Type.UNKNOWN;
+    private Variant variant = Variant.UNKNOWN;
 
     private final Set<Element> elements = new HashSet<>();
 
@@ -44,8 +44,8 @@ public class BasicEntity implements Entity {
     }
 
     @Override
-    public Type getType() {
-        return type;
+    public Variant getVariant() {
+        return variant;
     }
 
     /**
@@ -103,8 +103,8 @@ public class BasicEntity implements Entity {
         this.sourceURI = sourceURI;
     }
 
-    public void setType(Type type) {
-        this.type = type;
+    public void setVariant(Variant variant) {
+        this.variant = variant;
     }
 
     @Override

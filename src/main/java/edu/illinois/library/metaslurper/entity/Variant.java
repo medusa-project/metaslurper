@@ -1,6 +1,6 @@
 package edu.illinois.library.metaslurper.entity;
 
-public enum Type {
+public enum Variant {
 
     COLLECTION, ITEM, UNKNOWN
 
