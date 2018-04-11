@@ -72,6 +72,11 @@ final class MedusaDLSService implements SourceService {
         }
 
         @Override
+        public String getMediaType() {
+            return null;
+        }
+
+        @Override
         public String getServiceKey() {
             Configuration config = ConfigurationFactory.getConfiguration();
             return config.getString("service.source.medusa_dls.key");

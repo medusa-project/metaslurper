@@ -8,7 +8,8 @@ import java.util.Set;
  */
 public class BasicEntity implements Entity {
 
-    private String sourceID, sinkID, serviceKey, accessImageURI, sourceURI;
+    private String mediaType, sourceID, sinkID, serviceKey, accessImageURI,
+            sourceURI;
     private Variant variant = Variant.UNKNOWN;
 
     private final Set<Element> elements = new HashSet<>();
@@ -21,6 +22,11 @@ public class BasicEntity implements Entity {
     @Override
     public Set<Element> getElements() {
         return elements;
+    }
+
+    @Override
+    public String getMediaType() {
+        return mediaType;
     }
 
     @Override
@@ -57,6 +63,10 @@ public class BasicEntity implements Entity {
             throw new IllegalArgumentException("Argument is null or empty");
         }
         this.accessImageURI = imageURI;
+    }
+
+    public void setMediaType(String mediaType) {
+        this.mediaType = mediaType;
     }
 
     /**

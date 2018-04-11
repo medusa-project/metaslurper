@@ -15,6 +15,14 @@ public interface Entity {
     Set<Element> getElements();
 
     /**
+     * @return IANA media type of the main binary represented by the item.
+     *         Should be a specific type and not e.g. {@literal
+     *         application/octet-stream} (unless it really is unspecified
+     *         binary data). Should be {@literal null} if unknown.
+     */
+    String getMediaType();
+
+    /**
      * @return Source service key.
      */
     String getServiceKey();

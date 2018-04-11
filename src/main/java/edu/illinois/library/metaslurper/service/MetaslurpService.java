@@ -132,6 +132,8 @@ final class MetaslurpService implements SinkService {
                 break;
         }
         jobj.put("class", clazz);
+        // media type
+        jobj.put("media_type", entity.getMediaType());
         // source ID
         jobj.put("source_id", entity.getSourceID());
         // sink ID
