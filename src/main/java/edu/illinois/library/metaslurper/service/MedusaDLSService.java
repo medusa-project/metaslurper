@@ -22,6 +22,7 @@ import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -134,6 +135,8 @@ final class MedusaDLSService implements SourceService {
 
     private static final String NAME = "DLS";
 
+    private static final long REQUEST_TIMEOUT = 30;
+
     private HttpClient client;
 
     private final AtomicBoolean isClosed = new AtomicBoolean();
@@ -225,6 +228,7 @@ final class MedusaDLSService implements SourceService {
             ContentResponse response = getClient()
                     .newRequest(endpoint)
                     .header("Accept", "application/json")
+                    .timeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
                     .send();
             String body = response.getContentAsString();
             JSONObject jobj = new JSONObject(body);
@@ -299,6 +303,7 @@ final class MedusaDLSService implements SourceService {
             try {
                 ContentResponse response = getClient().newRequest(uri)
                         .header("Accept", "application/json")
+                        .timeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
                         .send();
                 if (response.getStatus() == 200) {
                     String body = response.getContentAsString();
@@ -325,6 +330,7 @@ final class MedusaDLSService implements SourceService {
         try {
             ContentResponse response = getClient().newRequest(uri)
                     .header("Accept", "application/json")
+                    .timeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
                     .send();
             if ("application/json".equals(response.getMediaType())) {
                 switch (response.getStatus()) {
