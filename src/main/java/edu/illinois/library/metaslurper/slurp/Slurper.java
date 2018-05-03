@@ -73,7 +73,8 @@ public final class Slurper {
                                     sink.ingest(entity);
                                     numSucceeded.incrementAndGet();
 
-                                    LOGGER.debug("Slurped {} from {} into {} [{}/{}] [{}]",
+                                    LOGGER.debug("Slurped {} {} from {} into {} [{}/{}] [{}]",
+                                            entity.getVariant().name().toLowerCase(),
                                             entity, source, sink,
                                             index.get() + 1, numEntities,
                                             percent(index.get() + 1, numEntities));
@@ -103,7 +104,7 @@ public final class Slurper {
                 LOGGER.info(e.getMessage(), e);
             }
         } catch (IOException | UncheckedIOException e) {
-            LOGGER.error(e.getMessage());
+            LOGGER.error(e.getMessage(), e);
         } finally {
             pool.shutdown();
         }

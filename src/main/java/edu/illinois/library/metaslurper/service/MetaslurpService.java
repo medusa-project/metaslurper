@@ -99,7 +99,8 @@ final class MetaslurpService implements SinkService {
         final URI uri = getURI(entity);
         final String json = toJSON(entity);
 
-        LOGGER.debug("Ingesting {}: {}", entity, json);
+        LOGGER.debug("Ingesting {} {}: {}",
+                entity.getVariant().name().toLowerCase(), entity, json);
         try {
             ContentResponse response = getClient()
                     .newRequest(uri)
