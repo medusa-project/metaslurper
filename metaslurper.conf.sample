@@ -7,6 +7,10 @@ service.source.medusa_dls.key = dls
 service.source.medusa_dls.endpoint = https://digital.library.illinois.edu
 service.source.medusa_dls.batch_size = 100
 
+# IDEALS
+service.source.ideals.key = ideals
+service.source.ideals.endpoint = https://www.ideals.illinois.edu/dspace-oai/request
+
 #######################################################################
 # SINK SERVICE
 #######################################################################

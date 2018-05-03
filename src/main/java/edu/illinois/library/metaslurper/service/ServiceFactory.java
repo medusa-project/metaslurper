@@ -10,6 +10,7 @@ public final class ServiceFactory {
     private static Set<SourceService> DEFAULT_SOURCE_SERVICES =
             Collections.unmodifiableSet(
                     new HashSet<>(Arrays.asList(
+                            new IDEALSService(),
                             new MedusaDLSService())));
     private static Set<SinkService> DEFAULT_SINK_SERVICES =
             Collections.unmodifiableSet(
