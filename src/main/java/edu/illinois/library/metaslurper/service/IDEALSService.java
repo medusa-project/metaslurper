@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
@@ -197,11 +198,14 @@ final class IDEALSService implements SourceService {
 
     @Override
     public ConcurrentIterator<Entity> entities() throws IOException {
+        final AtomicBoolean shouldAbort = new AtomicBoolean();
+
         // Harvest results into a queue in a separate thread.
         ThreadPool.getInstance().submit(() -> {
             try {
                 harvester.harvest();
             } catch (IOException e) {
+                shouldAbort.set(true);
                 throw new UncheckedIOException(e);
             }
         });
@@ -214,6 +218,11 @@ final class IDEALSService implements SourceService {
 
             @Override
             public Entity next() throws EndOfIterationException {
+                if (shouldAbort.get()) {
+                    throw new EndOfIterationException("Aborting prematurely. " +
+                            "Something probably went wrong in a ListRecords " +
+                            "or ListSets response.");
+                }
                 try {
                     if (index.getAndIncrement() < numEntities) {
                         return resultsQueue.take();

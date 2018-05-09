@@ -247,6 +247,7 @@ final class MedusaDLSService implements SourceService {
      */
     @Override
     public ConcurrentIterator<Entity> entities() throws IOException {
+        final AtomicBoolean shouldAbort = new AtomicBoolean();
         final int numItems = numItems();
         final int numCollections = numCollections();
 
@@ -259,6 +260,7 @@ final class MedusaDLSService implements SourceService {
                 fetchAndQueueResults(getCollectionsURI(), numCollections);
                 fetchAndQueueResults(getItemsURI(), numItems);
             } catch (IOException e) {
+                shouldAbort.set(true);
                 throw new UncheckedIOException(e);
             }
         });
@@ -269,6 +271,10 @@ final class MedusaDLSService implements SourceService {
 
             @Override
             public Entity next() throws EndOfIterationException {
+                if (shouldAbort.get()) {
+                    throw new EndOfIterationException("Aborting prematurely. " +
+                            "Something probably went wrong in a results response.");
+                }
                 try {
                     if (index.getAndIncrement() < numItems + numCollections) {
                         String uri = resultsQueue.take();
