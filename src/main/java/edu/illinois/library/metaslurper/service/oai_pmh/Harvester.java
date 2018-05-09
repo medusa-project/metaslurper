@@ -109,7 +109,9 @@ public final class Harvester implements AutoCloseable {
 
         LOGGER.debug("getNumRecords(): requesting {}", uri);
 
-        getClient().newRequest(uri).send(responseListener);
+        getClient().newRequest(uri)
+                .timeout(REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                .send(responseListener);
 
         try {
             // Wait for the response headers to arrive.
@@ -150,7 +152,9 @@ public final class Harvester implements AutoCloseable {
 
         LOGGER.debug("getNumSets(): requesting {}", uri);
 
-        getClient().newRequest(uri).send(responseListener);
+        getClient().newRequest(uri)
+                .timeout(REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                .send(responseListener);
 
         try {
             // Wait for the response headers to arrive.
