@@ -14,10 +14,11 @@ public interface SourceService extends Service {
     /**
      * @return Number of entities publicly available in the service. Should be
      *         equal to the number of entities provided by {@link #entities()}.
-     *         May be a negative number if finding the actual count would be
-     *         too burdensome.
+     * @throws IOException if there is an error in obtaining the count.
+     * @throws UnsupportedOperationException if finding the actual count is not
+     *         possible or would be too burdensome.
      */
-    int numEntities() throws IOException;
+    int numEntities() throws IOException, UnsupportedOperationException;
 
     /**
      * <p>Provides a thread-safe iterator of all entities publicly available in
