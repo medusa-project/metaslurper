@@ -4,6 +4,7 @@ import edu.illinois.library.metaslurper.Application;
 import edu.illinois.library.metaslurper.entity.Entity;
 import edu.illinois.library.metaslurper.service.ConcurrentIterator;
 import edu.illinois.library.metaslurper.service.EndOfIterationException;
+import edu.illinois.library.metaslurper.service.IterationException;
 import edu.illinois.library.metaslurper.service.SinkService;
 import edu.illinois.library.metaslurper.service.SourceService;
 import edu.illinois.library.metaslurper.service.ServiceFactory;
@@ -83,6 +84,9 @@ public final class Slurper {
                                 }
                             } catch (EndOfIterationException e) {
                                 return;
+                            } catch (IterationException e) {
+                                LOGGER.error("slurp(): {}", e.getMessage(), e);
+                                break;
                             } catch (IOException | RuntimeException e) {
                                 LOGGER.error("slurp(): {}", e.getMessage(), e);
                                 numFailed.incrementAndGet();
