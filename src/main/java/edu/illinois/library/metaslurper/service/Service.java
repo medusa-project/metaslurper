@@ -3,7 +3,7 @@ package edu.illinois.library.metaslurper.service;
 /**
  * Abstract base interface for services.
  */
-public interface Service {
+public interface Service extends AutoCloseable {
 
     /**
      * @return The service name.
