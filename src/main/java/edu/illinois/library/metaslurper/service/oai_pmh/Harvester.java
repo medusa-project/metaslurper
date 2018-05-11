@@ -1,5 +1,9 @@
 package edu.illinois.library.metaslurper.service.oai_pmh;
 
+import edu.illinois.library.metaslurper.entity.Element;
+import edu.illinois.library.metaslurper.service.ConcurrentIterator;
+import edu.illinois.library.metaslurper.service.EndOfIterationException;
+import edu.illinois.library.metaslurper.service.IterationException;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
@@ -7,44 +11,285 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-import org.xml.sax.XMLReader;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.parsers.SAXParser;
-import javax.xml.parsers.SAXParserFactory;
+import javax.xml.XMLConstants;
+import javax.xml.namespace.NamespaceContext;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpression;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.concurrent.ExecutionException;
+import java.net.URLEncoder;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * <p>Generic OAI-PMH metadata harvester. Uses SAX parsing for streaming
- * response handling.</p>
+ * <p>Generic pull-based OAI-PMH harvester.</p>
  *
  * <h1>Usage:</h1>
  *
  * <pre>
  * Harvester h = new Harvester();
  * h.setEndpointURI("http://...");
- * h.setListener(new Listener() { ... });
- * h.harvest();
+ *
+ * int numSets = h.numSets();
+ * int numRecords = h.numRecords();
+ *
+ * ConcurrentIterator&lt;PMHSet&gt; it = h.sets();
+ * while (true) {
+ *     try {
+ *         PMHSet set = it.next();
+ *     } catch (EndOfIterationException e) {
+ *         break;
+ *     }
+ * }
  * </pre>
- *
- * <h1>Notes</h1>
- *
- * <ul>
- *     <li>{@literal setSpec} elements are mapped to {@literal dc:identifier}
- *     elements.</li>
- *     <li>{@literal setName} elements are mapped to {@literal dc:title}
- *     elements.</li>
- * </ul>
  *
  * @author Alex Dolski UIUC
  */
 public final class Harvester implements AutoCloseable {
+
+    private abstract class AbstractIterator<T> {
+
+        int numEntities = -1;
+        final Queue<T> batch = new LinkedList<>();
+
+        private final AtomicInteger index = new AtomicInteger();
+        private String resumptionToken;
+
+        /**
+         * @param resumptionToken Current resumption token. Will be {@literal
+         *                        null} at the beginning of the harvest.
+         * @param batch           Queue to put harvested results into.
+         * @return                Next resumption token. Will be {@literal
+         *                        null} at the end of the harvest.
+         */
+        abstract String fetchBatch(String resumptionToken,
+                                   Queue<T> batch) throws IOException;
+
+        Document fetchDocument(String uri) throws IOException {
+            InputStreamResponseListener responseListener =
+                    new InputStreamResponseListener();
+
+            LOGGER.debug("fetchDocument(): requesting {}", uri);
+
+            getClient().newRequest(uri)
+                    .timeout(REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                    .send(responseListener);
+
+            try {
+                // Wait for the response headers to arrive.
+                Response response = responseListener.get(
+                        REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+
+                if (response.getStatus() == HttpStatus.OK_200) {
+                    final DocumentBuilderFactory factory =
+                            DocumentBuilderFactory.newInstance();
+                    factory.setNamespaceAware(true);
+                    final DocumentBuilder builder = factory.newDocumentBuilder();
+
+                    try (InputStream is = responseListener.getInputStream()) {
+                        return builder.parse(is);
+                    }
+                } else {
+                    throw new IOException("Received HTTP " + response.getStatus() +
+                            " for " + uri);
+                }
+            } catch (IOException e) {
+                throw e;
+            } catch (Exception e) {
+                throw new IOException(e);
+            }
+        }
+
+        public T next() throws EndOfIterationException, IterationException {
+            if (numEntities >= 0 && index.incrementAndGet() >= numEntities) {
+                throw new EndOfIterationException();
+            }
+
+            // If the queue is empty, fetch the next batch.
+            if (batch.peek() == null) {
+                try {
+                    resumptionToken = fetchBatch(resumptionToken, batch);
+                } catch (IOException e) {
+                    throw new IterationException(e);
+                }
+            }
+
+            return batch.remove();
+        }
+
+    }
+
+    private class RecordIterator<T> extends AbstractIterator<T>
+            implements ConcurrentIterator<T> {
+        @Override
+        String fetchBatch(String resumptionToken,
+                          Queue<T> batch) throws IOException {
+            if (numEntities < 0) {
+                numEntities = numRecords();
+            }
+
+            String uri;
+            if (resumptionToken != null) {
+                uri = String.format("%s?verb=ListRecords&resumptionToken=%s",
+                        endpointURI, URLEncoder.encode(resumptionToken, "UTF-8"));
+            } else {
+                uri = String.format("%s?verb=ListRecords&metadataPrefix=%s",
+                        endpointURI, metadataPrefix);
+            }
+
+            final Document doc = fetchDocument(uri);
+            final XPathFactory xPathFactory = XPathFactory.newInstance();
+            final XPath xpath = xPathFactory.newXPath();
+            xpath.setNamespaceContext(new OAINamespaceContext());
+
+            try {
+                // Transform each <record> element into a PMHRecord and add
+                // it to the batch queue.
+                XPathExpression expr = xpath.compile("//oai:record");
+
+                final NodeList nodes = (NodeList) expr.evaluate(
+                        doc, XPathConstants.NODESET);
+                for (int i = 0; i < nodes.getLength(); i++) {
+                    final Node recordNode = nodes.item(i);
+                    final PMHRecord record = new PMHRecord();
+                    // identifier
+                    XPathExpression recordExpr = xpath.compile(
+                            "oai:header/oai:identifier");
+                    record.setIdentifier(recordExpr.evaluate(recordNode));
+                    // datestamp
+                    recordExpr = xpath.compile("oai:header/oai:datestamp");
+                    record.setDatestamp(recordExpr.evaluate(recordNode));
+                    // setSpec
+                    recordExpr = xpath.compile("oai:header/oai:setSpec");
+                    record.setSetSpec(recordExpr.evaluate(recordNode));
+                    // metadata
+                    recordExpr = xpath.compile("oai:metadata/*/*");
+                    NodeList mdnodes = (NodeList) recordExpr.evaluate(
+                            recordNode, XPathConstants.NODESET);
+                    for (int j = 0; j < mdnodes.getLength(); j++) {
+                        Node mdnode = mdnodes.item(j);
+                        Element e = new Element(mdnode.getNodeName(),
+                                mdnode.getTextContent());
+                        if (e.getValue() != null && !e.getValue().isEmpty()) {
+                            record.getElements().add(e);
+                        }
+                    }
+                    batch.add((T) record);
+                }
+
+                // Pluck out the resumptionToken and return it.
+                expr = xpath.compile("//oai:resumptionToken");
+                return expr.evaluate(doc);
+            } catch (XPathExpressionException e) {
+                throw new IOException(e);
+            }
+        }
+    }
+
+    private class SetIterator<T> extends AbstractIterator<T>
+            implements ConcurrentIterator<T> {
+        @Override
+        String fetchBatch(String resumptionToken,
+                          Queue<T> batch) throws IOException {
+            if (numEntities < 0) {
+                numEntities = numSets();
+            }
+
+            String uri;
+            if (resumptionToken != null) {
+                uri = String.format("%s?verb=ListSets&resumptionToken=%s",
+                        endpointURI, URLEncoder.encode(resumptionToken, "UTF-8"));
+            } else {
+                uri = String.format("%s?verb=ListSets", endpointURI);
+            }
+
+            final Document doc = fetchDocument(uri);
+            final XPathFactory xPathFactory = XPathFactory.newInstance();
+            final XPath xpath = xPathFactory.newXPath();
+            xpath.setNamespaceContext(new OAINamespaceContext());
+
+            try {
+                // Transform each <record> element into a PMHRecord and add
+                // it to the batch queue.
+                XPathExpression expr = xpath.compile("//oai:set");
+
+                final NodeList nodes = (NodeList) expr.evaluate(
+                        doc, XPathConstants.NODESET);
+                for (int i = 0; i < nodes.getLength(); i++) {
+                    final Node setNode = nodes.item(i);
+                    final PMHSet set = new PMHSet();
+                    // spec
+                    XPathExpression setExpr = xpath.compile("oai:setSpec");
+                    set.setSpec(setExpr.evaluate(setNode));
+                    // name
+                    setExpr = xpath.compile("oai:setName");
+                    set.setName(setExpr.evaluate(setNode));
+                    // metadata
+                    setExpr = xpath.compile("oai:setDescription/*/*");
+                    NodeList mdnodes = (NodeList) setExpr.evaluate(
+                            setNode, XPathConstants.NODESET);
+                    for (int j = 0; j < mdnodes.getLength(); j++) {
+                        Node mdnode = mdnodes.item(j);
+                        Element e = new Element(mdnode.getNodeName(),
+                                mdnode.getTextContent());
+                        if (e.getValue() != null && !e.getValue().isEmpty()) {
+                            set.getElements().add(e);
+                        }
+                    }
+                    batch.add((T) set);
+                }
+
+                // Pluck out the resumptionToken and return it.
+                expr = xpath.compile("//oai:resumptionToken");
+                return expr.evaluate(doc);
+            } catch (XPathExpressionException e) {
+                throw new IOException(e);
+            }
+        }
+    }
+
+    private static final class OAINamespaceContext implements NamespaceContext {
+
+        @Override
+        public String getNamespaceURI(String prefix) {
+            if (prefix != null) {
+                switch (prefix) {
+                    case "dc":
+                        return "http://purl.org/dc/elements/1.1/";
+                    case "oai_dc":
+                        return "http://www.openarchives.org/OAI/2.0/oai_dc/";
+                    case "oai":
+                        return "http://www.openarchives.org/OAI/2.0/";
+                    default:
+                        return XMLConstants.NULL_NS_URI;
+                }
+            }
+            throw new NullPointerException("Null prefix");
+        }
+
+        @Override
+        public String getPrefix(String uri) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Iterator getPrefixes(String uri) {
+            throw new UnsupportedOperationException();
+        }
+
+    }
 
     private static final Logger LOGGER =
             LoggerFactory.getLogger(Harvester.class);
@@ -56,19 +301,6 @@ public final class Harvester implements AutoCloseable {
 
     private String endpointURI;
     private String metadataPrefix = DEFAULT_METADATA_PREFIX;
-
-    private Listener listener;
-
-    private static XMLReader newXMLReader() {
-        try {
-            SAXParserFactory spf = SAXParserFactory.newInstance();
-            spf.setNamespaceAware(true);
-            SAXParser parser = spf.newSAXParser();
-            return parser.getXMLReader();
-        } catch (ParserConfigurationException | SAXException e) {
-            throw new RuntimeException(e);
-        }
-    }
 
     private synchronized HttpClient getClient() {
         if (client == null) {
@@ -97,60 +329,30 @@ public final class Harvester implements AutoCloseable {
     /**
      * @return Total number of records available via the endpoint.
      */
-    public int getNumRecords() throws IOException {
-        if (endpointURI == null) {
-            throw new IllegalStateException("Endpoint URI is not set");
-        }
-        String uri = String.format(
-                "%s?verb=ListIdentifiers&metadataPrefix=%s",
+    public int numRecords() throws IOException {
+        String uri = String.format("%s?verb=ListIdentifiers&metadataPrefix=%s",
                 endpointURI, metadataPrefix);
-        InputStreamResponseListener responseListener =
-                new InputStreamResponseListener();
-
-        LOGGER.debug("getNumRecords(): requesting {}", uri);
-
-        getClient().newRequest(uri)
-                .timeout(REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-                .send(responseListener);
-
-        try {
-            // Wait for the response headers to arrive.
-            Response response = responseListener.get(
-                    REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-
-            if (response.getStatus() == HttpStatus.OK_200) {
-                XMLReader reader = newXMLReader();
-                ListRecordsResponseHandler handler =
-                        new ListRecordsResponseHandler();
-                reader.setContentHandler(handler);
-
-                try (InputStream is = responseListener.getInputStream()) {
-                    reader.parse(new InputSource(is));
-                }
-                return handler.getCompleteListSize();
-            } else {
-                throw new IOException("Received HTTP " + response.getStatus() +
-                        " for " + uri);
-            }
-        } catch (IOException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new IOException(e);
-        }
+        return fetchCountFromListResponse(uri, "header");
     }
 
     /**
      * @return Total number of sets available via the endpoint.
      */
-    public int getNumSets() throws IOException {
+    public int numSets() throws IOException {
+        String uri = String.format("%s?verb=ListSets", endpointURI);
+        return fetchCountFromListResponse(uri, "set");
+    }
+
+    private int fetchCountFromListResponse(final String uri,
+                                           final String elementToCount) throws IOException {
         if (endpointURI == null) {
             throw new IllegalStateException("Endpoint URI is not set");
         }
-        String uri = String.format("%s?verb=ListSets", endpointURI);
+
         InputStreamResponseListener responseListener =
                 new InputStreamResponseListener();
 
-        LOGGER.debug("getNumSets(): requesting {}", uri);
+        LOGGER.debug("numRecords(): requesting {}", uri);
 
         getClient().newRequest(uri)
                 .timeout(REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
@@ -162,14 +364,23 @@ public final class Harvester implements AutoCloseable {
                     REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
             if (response.getStatus() == HttpStatus.OK_200) {
-                XMLReader reader = newXMLReader();
-                ListSetsResponseHandler handler = new ListSetsResponseHandler();
-                reader.setContentHandler(handler);
-
                 try (InputStream is = responseListener.getInputStream()) {
-                    reader.parse(new InputSource(is));
+                    DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+                    DocumentBuilder builder = factory.newDocumentBuilder();
+                    Document doc = builder.parse(is);
+                    XPathFactory xPathfactory = XPathFactory.newInstance();
+                    XPath xpath = xPathfactory.newXPath();
+                    XPathExpression expr =
+                            xpath.compile("//resumptionToken/@completeListSize");
+                    int value;
+                    try {
+                        value = Integer.parseInt(expr.evaluate(doc));
+                    } catch (NumberFormatException e) {
+                        expr = xpath.compile("count(//" + elementToCount + ")");
+                        value = Integer.parseInt(expr.evaluate(doc));
+                    }
+                    return value;
                 }
-                return handler.getCompleteListSize();
             } else {
                 throw new IOException("Received HTTP " + response.getStatus() +
                         " for " + uri);
@@ -181,116 +392,20 @@ public final class Harvester implements AutoCloseable {
         }
     }
 
-    /**
-     * @throws IllegalStateException if {@link #setEndpointURI(String)} and
-     *                               {@link #setListener(Listener)} have not
-     *                               been called.
-     */
-    public void harvest() throws IOException {
+    public ConcurrentIterator<PMHRecord> records() {
         if (endpointURI == null) {
             throw new IllegalStateException("Endpoint URI is not set");
-        } else if (listener == null) {
-            throw new IllegalStateException("Listener is not set");
         }
-        harvestSets(null);
-        harvestRecords(null);
+
+        return new RecordIterator<>();
     }
 
-    /**
-     * @param resumptionToken May be {@literal null}.
-     */
-    private void harvestRecords(String resumptionToken) throws IOException {
-        String uri;
-        if (resumptionToken != null) {
-            uri = String.format("%s?verb=ListRecords&resumptionToken=%s",
-                    endpointURI, resumptionToken);
-        } else {
-            uri = String.format("%s?verb=ListRecords&metadataPrefix=%s",
-                    endpointURI, metadataPrefix);
+    public ConcurrentIterator<PMHSet> sets() {
+        if (endpointURI == null) {
+            throw new IllegalStateException("Endpoint URI is not set");
         }
 
-        InputStreamResponseListener responseListener =
-                new InputStreamResponseListener();
-
-        LOGGER.debug("harvestRecords(): requesting {}", uri);
-
-        getClient().newRequest(uri).send(responseListener);
-
-        try {
-            // Wait for the response headers to arrive.
-            Response response = responseListener.get(
-                    REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-
-            if (response.getStatus() == HttpStatus.OK_200) {
-                XMLReader reader = newXMLReader();
-                ListRecordsResponseHandler handler =
-                        new ListRecordsResponseHandler();
-                handler.setListener(listener);
-                reader.setContentHandler(handler);
-
-                try (InputStream is = responseListener.getInputStream()) {
-                    reader.parse(new InputSource(is));
-                }
-                String nextResumptionToken = handler.getResumptionToken();
-                if (nextResumptionToken != null) {
-                    harvestRecords(nextResumptionToken);
-                }
-            } else {
-                throw new IOException("Received HTTP " + response.getStatus() +
-                        " for " + uri);
-            }
-        } catch (InterruptedException | TimeoutException |
-                ExecutionException | SAXException | OAIPMHException e) {
-            throw new IOException(e);
-        }
-    }
-
-    /**
-     * @param resumptionToken May be {@literal null}.
-     */
-    private void harvestSets(String resumptionToken) throws IOException {
-        String uri;
-        if (resumptionToken != null) {
-            uri = String.format("%s?verb=ListSets&resumptionToken=%s",
-                    endpointURI, resumptionToken);
-        } else {
-            uri = String.format("%s?verb=ListSets", endpointURI);
-        }
-
-        InputStreamResponseListener responseListener =
-                new InputStreamResponseListener();
-
-        LOGGER.debug("harvestSets(): requesting {}", uri);
-
-        getClient().newRequest(uri).send(responseListener);
-
-        try {
-            // Wait for the response headers to arrive.
-            Response response = responseListener.get(
-                    REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-
-            if (response.getStatus() == HttpStatus.OK_200) {
-                XMLReader reader = newXMLReader();
-                ListSetsResponseHandler handler =
-                        new ListSetsResponseHandler();
-                handler.setListener(listener);
-                reader.setContentHandler(handler);
-
-                try (InputStream is = responseListener.getInputStream()) {
-                    reader.parse(new InputSource(is));
-                }
-                String nextResumptionToken = handler.getResumptionToken();
-                if (nextResumptionToken != null) {
-                    harvestSets(nextResumptionToken);
-                }
-            } else {
-                throw new IOException("Received HTTP " + response.getStatus() +
-                        " for " + uri);
-            }
-        } catch (InterruptedException | TimeoutException |
-                ExecutionException | SAXException | OAIPMHException e) {
-            throw new IOException(e);
-        }
+        return new SetIterator<>();
     }
 
     /**
@@ -298,14 +413,6 @@ public final class Harvester implements AutoCloseable {
      */
     public void setEndpointURI(String uri) {
         this.endpointURI = uri;
-    }
-
-    /**
-     * @param listener Object to listen for events generated by {@link
-     *                 #harvest()}.
-     */
-    public void setListener(Listener listener) {
-        this.listener = listener;
     }
 
     /**

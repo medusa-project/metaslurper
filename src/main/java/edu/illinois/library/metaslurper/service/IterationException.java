@@ -6,4 +6,8 @@ public class IterationException extends Exception {
         super(message);
     }
 
+    public IterationException(Throwable cause) {
+        super(cause);
+    }
+
 }

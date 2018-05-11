@@ -1,8 +1,8 @@
 package edu.illinois.library.metaslurper.service.oai_pmh;
 
+import edu.illinois.library.metaslurper.service.ConcurrentIterator;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -14,7 +14,9 @@ public class HarvesterTest {
     @Before
     public void setUp() {
         instance = new Harvester();
-        instance.setEndpointURI("https://digital.library.illinois.edu/oai-pmh");
+        // N.B.: This endpoint should return a resumptionToken in an initial
+        // ListRecords and ListSets response.
+        instance.setEndpointURI("https://www.ideals.illinois.edu/dspace-oai/request");
     }
 
     @After
@@ -23,19 +25,41 @@ public class HarvesterTest {
     }
 
     @Test
-    public void testGetNumRecords() throws Exception {
-        assertTrue(instance.getNumRecords() > 1000);
+    public void testNumRecords() throws Exception {
+        assertTrue(instance.numRecords() > 1000);
     }
 
     @Test
-    public void testGetNumSets() throws Exception {
-        assertTrue(instance.getNumSets() > 10);
+    public void testNumSets() throws Exception {
+        assertTrue(instance.numSets() > 120);
     }
 
     @Test
-    @Ignore
-    public void testHarvest() {
-        // TODO: write this
+    public void testRecords() throws Exception {
+        ConcurrentIterator<PMHRecord> it = instance.records();
+
+        final int windowSize = 100;
+        for (int i = 0; i < windowSize * 1.1; i++) {
+            PMHRecord record = it.next();
+            assertNotNull(record.getIdentifier());
+            assertNotNull(record.getDatestamp());
+            assertNotNull(record.getSetSpec());
+            assertFalse(record.getElements().isEmpty());
+        }
+    }
+
+    @Test
+    public void testSets() throws Exception {
+        ConcurrentIterator<PMHSet> it = instance.sets();
+
+        final int windowSize = 100;
+        for (int i = 0; i < windowSize * 1.1; i++) {
+            PMHSet set = it.next();
+            assertNotNull(set.getName());
+            assertNotNull(set.getSpec());
+            // TODO: most sets in IDEALS don't have these
+            //assertFalse(set.getElements().isEmpty());
+        }
     }
 
 }
