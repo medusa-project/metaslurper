@@ -270,10 +270,9 @@ final class MedusaDLSService implements SourceService {
             private final AtomicInteger index = new AtomicInteger();
 
             @Override
-            public Entity next() throws EndOfIterationException,
-                    IterationException {
+            public Entity next() throws Exception {
                 if (shouldAbort.get()) {
-                    throw new IterationException("Aborting prematurely. " +
+                    throw new Exception("Aborting prematurely. " +
                             "Something probably went wrong in a results response.");
                 }
                 try {

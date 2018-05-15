@@ -3,7 +3,6 @@ package edu.illinois.library.metaslurper.service.oai_pmh;
 import edu.illinois.library.metaslurper.entity.Element;
 import edu.illinois.library.metaslurper.service.ConcurrentIterator;
 import edu.illinois.library.metaslurper.service.EndOfIterationException;
-import edu.illinois.library.metaslurper.service.IterationException;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
@@ -114,7 +113,7 @@ public final class Harvester implements AutoCloseable {
             }
         }
 
-        public T next() throws EndOfIterationException, IterationException {
+        public T next() throws EndOfIterationException, IOException {
             if (numEntities.get() >= 0 && index.incrementAndGet() >= numEntities.get()) {
                 throw new EndOfIterationException();
             }
@@ -122,11 +121,7 @@ public final class Harvester implements AutoCloseable {
             // If the queue is empty, fetch the next batch.
             synchronized (this) {
                 if (batch.peek() == null) {
-                    try {
-                        resumptionToken = fetchBatch(resumptionToken, batch);
-                    } catch (IOException e) {
-                        throw new IterationException(e);
-                    }
+                    resumptionToken = fetchBatch(resumptionToken, batch);
                 }
             }
 

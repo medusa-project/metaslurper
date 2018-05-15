@@ -15,10 +15,9 @@ public interface ConcurrentIterator<T> {
      * Must be thread-safe.
      *
      * @return {@link T} The next element iterated.
-     * @throws EndOfIterationException when iteration is complete.
-     * @throws IterationException when the instance is no longer iterable due
-     *         to an error.
+     * @throws EndOfIterationException if iteration is complete.
+     * @throws Exception if there was an error iterating.
      */
-    T next() throws EndOfIterationException, IterationException;
+    T next() throws Exception;
 
 }
