@@ -19,6 +19,9 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * Harvests metadata in DIM format from the OAI-PMH endpoint of IDEALS.
+ */
 final class IDEALSService implements SourceService {
 
     private static abstract class IDEALSEntity {
@@ -71,17 +74,14 @@ final class IDEALSService implements SourceService {
 
         @Override
         public Set<Element> getElements() {
-            return pmhRecord.getElements()
-                    .stream()
-                    .filter(e -> e.getValue() != null && !e.getValue().isEmpty())
-                    .collect(Collectors.toSet());
+            return pmhRecord.getElements();
         }
 
         @Override
         public String getMediaType() {
             return pmhRecord.getElements()
                     .stream()
-                    .filter(e -> "dc:format".equals(e.getName()) &&
+                    .filter(e -> "dc:format:mimetype".equals(e.getName()) &&
                             e.getValue().matches("^\\w+/([^\\s]+)"))
                     .map(Element::getValue)
                     .findFirst()
@@ -93,12 +93,9 @@ final class IDEALSService implements SourceService {
          */
         @Override
         public String getSourceID() {
-            // Items may have multiple dc:identifier elements, and even
-            // different handle URIs in different dc:identifier
-            // elements.
             return pmhRecord.getElements()
                     .stream()
-                    .filter(e -> "dc:identifier".equals(e.getName()) &&
+                    .filter(e -> "dc:identifier:uri".equals(e.getName()) &&
                             e.getValue().matches("http://hdl\\.handle\\.net/\\d+/\\d+"))
                     .map(Element::getValue)
                     .findFirst()
@@ -185,6 +182,7 @@ final class IDEALSService implements SourceService {
         Configuration config = ConfigurationFactory.getConfiguration();
         String endpointURI = config.getString("service.source.ideals.endpoint");
         harvester.setEndpointURI(endpointURI);
+        harvester.setMetadataPrefix("dim");
     }
 
     @Override
@@ -199,7 +197,8 @@ final class IDEALSService implements SourceService {
 
     @Override
     public ConcurrentIterator<Entity> entities() {
-        final ConcurrentIterator<PMHRecord> records = harvester.records();
+        final ConcurrentIterator<PMHRecord> records =
+                harvester.records(new DIMElementTransformer());
         final ConcurrentIterator<PMHSet> sets = harvester.sets();
 
         return () -> {

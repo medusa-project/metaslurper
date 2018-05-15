@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="static/style.xsl"?>
+<OAI-PMH xmlns="http://www.openarchives.org/OAI/2.0/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd">
+    <responseDate>2018-05-15T17:04:02Z</responseDate>
+    <request verb="ListRecords" metadataPrefix="dim">https://www.ideals.illinois.edu/dspace-oai/request</request>
+    <ListRecords>
+        <record>
+            <header>
+                <identifier>oai:www.ideals.illinois.edu:2142/3</identifier>
+                <datestamp>2007-02-14T03:06:36Z</datestamp>
+                <setSpec>com_2142_1</setSpec>
+                <setSpec>col_2142_2</setSpec>
+            </header>
+            <metadata>
+                <dim:dim xmlns:dim="http://www.dspace.org/xmlns/dspace/dim" xmlns:doc="http://www.lyncode.com/xoai" xsi:schemaLocation="http://www.dspace.org/xmlns/dspace/dim http://www.dspace.org/schema/dim.xsd">
+                    <dim:field mdschema="dc" element="creator">Grady, Michael</dim:field>
+                    <dim:field mdschema="dc" element="creator">Mischo, William H.</dim:field>
+                    <dim:field mdschema="dc" element="creator">Sandore, Beth</dim:field>
+                    <dim:field mdschema="dc" element="date" qualifier="accessioned">2005-09-21T17:43:50Z</dim:field>
+                    <dim:field mdschema="dc" element="date" qualifier="available">2005-09-21T17:43:50Z</dim:field>
+                    <dim:field mdschema="dc" element="date" qualifier="issued">2004-04-07</dim:field>
+                    <dim:field mdschema="dc" element="identifier" qualifier="uri">http://hdl.handle.net/2142/3</dim:field>
+                    <dim:field mdschema="dc" element="description" qualifier="abstract" lang="en">Since the University's establishment in 1867, its scholarly output has been issued primarily in print, and the University Library and Archives have been readily able to collect, preserve, and to provide access to that output. Today, technological, economic, political and social forces are buffeting all means of scholarly communication. Scholars, academic institutions and publishers are engaged in debate about the impact of digital scholarship and open access publishing on the promotion and tenure process. The upsurge in digital scholarship affects many aspects of the academic enterprise, including how we record, evaluate, preserve, organize and disseminate scholarly work. The result has left the Library with no ready means by which to archive digitally produced publications, reports, presentations, and learning objects, much of which cannot be adequately represented in print form. In this incredibly fluid environment of digital scholarship, the critical question of how we will collect, preserve, and manage access to this important part of the University scholarly record demands a rational and forward-looking plan - one that includes perspectives from diverse scholarly disciplines, incorporates significant research breakthroughs in information science and computer science, and makes effective projections for future integration within the Library and computing services as a part of the campus infrastructure.</dim:field>
+                    <dim:field mdschema="dc" element="description" qualifier="provenance" lang="en">Submitted by Sarah Shreeves (sshreeve@uiuc.edu) on 2005-09-21T17:43:50Z&#xD;
+No. of bitstreams: 1&#xD;
+IDSWhitePaper.pdf: 225269 bytes, checksum: c4f17cc46765e0c8216b48f91b5dc378 (MD5)</dim:field>
+                    <dim:field mdschema="dc" element="description" qualifier="provenance" lang="en">Made available in DSpace on 2005-09-21T17:43:50Z (GMT). No. of bitstreams: 1&#xD;
+IDSWhitePaper.pdf: 225269 bytes, checksum: c4f17cc46765e0c8216b48f91b5dc378 (MD5)&#xD;
+  Previous issue date: 2004-04-07</dim:field>
+                    <dim:field mdschema="dc" element="description" qualifier="sponsorship" lang="en">Prepared jointly by the University of Illinois Library and CITES at the University of Illinois at Urbana-Champaign</dim:field>
+                    <dim:field mdschema="dc" element="format" qualifier="extent">225269 bytes</dim:field>
+                    <dim:field mdschema="dc" element="format" qualifier="mimetype">application/pdf</dim:field>
+                    <dim:field mdschema="dc" element="language" lang="en">en</dim:field>
+                    <dim:field mdschema="dc" element="subject" lang="en">Institutional repositories</dim:field>
+                    <dim:field mdschema="dc" element="title" lang="en">Illinois Digital Scholarship: Preserving and Accessing the Digital Past, Present, and Future</dim:field>
+                    <dim:field mdschema="dc" element="type" lang="en">text</dim:field>
+                    <dim:field mdschema="dc" element="type" qualifier="genre" lang="en">working paper</dim:field>
+                </dim:dim>
+            </metadata>
+        </record>
+        <record>
+            <header>
+                <identifier>oai:www.ideals.illinois.edu:2142/4</identifier>
+                <datestamp>2006-12-12T08:00:26Z</datestamp>
+                <setSpec>com_2142_1</setSpec>
+                <setSpec>col_2142_2</setSpec>
+            </header>
+            <metadata>
+                <dim:dim xmlns:dim="http://www.dspace.org/xmlns/dspace/dim" xmlns:doc="http://www.lyncode.com/xoai" xsi:schemaLocation="http://www.dspace.org/xmlns/dspace/dim http://www.dspace.org/schema/dim.xsd">
+                    <dim:field mdschema="dc" element="creator">Shreeves, Sarah L.</dim:field>
+                    <dim:field mdschema="dc" element="date" qualifier="accessioned">2005-09-21T17:47:35Z</dim:field>
+                    <dim:field mdschema="dc" element="date" qualifier="available">2005-09-21T17:47:35Z</dim:field>
+                    <dim:field mdschema="dc" element="date" qualifier="issued">2005-09</dim:field>
+                    <dim:field mdschema="dc" element="identifier" qualifier="uri">http://hdl.handle.net/2142/4</dim:field>
+                    <dim:field mdschema="dc" element="description" qualifier="abstract" lang="en">This is the project charter for the IDEALS initiative. It contains an outline of the strategic objectives and benefits, the deliverables, stakeholders, scope, and risks of the IDEALS Initiative.</dim:field>
+                    <dim:field mdschema="dc" element="description" qualifier="provenance" lang="en">Submitted by Sarah Shreeves (sshreeve@uiuc.edu) on 2005-09-21T17:47:35Z&#xD;
+No. of bitstreams: 1&#xD;
+IDEALS_Charter_Master.doc: 176640 bytes, checksum: 6230c3dad1a418cd1612a05f05b026e4 (MD5)</dim:field>
+                    <dim:field mdschema="dc" element="description" qualifier="provenance" lang="en">Made available in DSpace on 2005-09-21T17:47:35Z (GMT). No. of bitstreams: 1&#xD;
+IDEALS_Charter_Master.doc: 176640 bytes, checksum: 6230c3dad1a418cd1612a05f05b026e4 (MD5)&#xD;
+  Previous issue date: 2005-09</dim:field>
+                    <dim:field mdschema="dc" element="description" qualifier="sponsorship" lang="en">Sponsored by the Office of the Provost, the University Library, and CITES of the University of Illinois at Urbana-Champaign.</dim:field>
+                    <dim:field mdschema="dc" element="format" qualifier="extent">176640 bytes</dim:field>
+                    <dim:field mdschema="dc" element="format" qualifier="mimetype">application/msword</dim:field>
+                    <dim:field mdschema="dc" element="language" lang="en">en</dim:field>
+                    <dim:field mdschema="dc" element="subject" lang="en">Institutional repositories</dim:field>
+                    <dim:field mdschema="dc" element="subject" lang="en">Illinois Digital Environment for Access to Learning and Scholarship (IDEALS)</dim:field>
+                    <dim:field mdschema="dc" element="title" lang="en">IDEALS Project Charter</dim:field>
+                    <dim:field mdschema="dc" element="type" lang="en">text</dim:field>
+                    <dim:field mdschema="dc" element="type" qualifier="genre" lang="en">other</dim:field>
+                </dim:dim>
+            </metadata>
+        </record>
+        <record>
+            <header>
+                <identifier>oai:www.ideals.illinois.edu:2142/7</identifier>
+                <datestamp>2016-03-18T15:43:48Z</datestamp>
+                <setSpec>com_2142_1</setSpec>
+                <setSpec>col_2142_5</setSpec>
+            </header>
+            <metadata>
+                <dim:dim xmlns:dim="http://www.dspace.org/xmlns/dspace/dim" xmlns:doc="http://www.lyncode.com/xoai" xsi:schemaLocation="http://www.dspace.org/xmlns/dspace/dim http://www.dspace.org/schema/dim.xsd">
+                    <dim:field mdschema="dc" element="date" qualifier="accessioned">2006-03-10T16:44:39Z</dim:field>
+                    <dim:field mdschema="dc" element="date" qualifier="available">2006-03-10T16:44:39Z</dim:field>
+                    <dim:field mdschema="dc" element="date" qualifier="issued">2014-07</dim:field>
+                    <dim:field mdschema="dc" element="identifier" qualifier="uri">http://hdl.handle.net/2142/7</dim:field>
+                    <dim:field mdschema="dc" element="description" qualifier="abstract" lang="en">This collection policy document provides a general framework against which current and future collection decisions can be made. It is intended to be a dynamic and flexible document, responsive to changes in the academic environment and attentive to the work of other campus units and programs such as the University Archives and Compass. The Library and CITES expect to stage the growth of the collections in IDEALS in a scalable manner, but remain open to opportunities to add content as they present themselves.</dim:field>
+                    <dim:field mdschema="dc" element="description" qualifier="provenance" lang="en">Submitted by Sarah Shreeves (sshreeve@uiuc.edu) on 2006-03-10T16:44:39Z&#xD;
+No. of bitstreams: 2&#xD;
+IDEALS_CollectionPolicy_Sept2005.pdf: 82730 bytes, checksum: 250442e02f4017c76822aa96258e81d1 (MD5)&#xD;
+IDEALS_CollectionPolicy_Sept2005.txt: 5458 bytes, checksum: 5d22adb3ceb37f01030c45a62f364093 (MD5)</dim:field>
+                    <dim:field mdschema="dc" element="description" qualifier="provenance" lang="en">Made available in DSpace on 2006-03-10T16:44:39Z (GMT). No. of bitstreams: 2&#xD;
+IDEALS_CollectionPolicy_Sept2005.pdf: 82730 bytes, checksum: 250442e02f4017c76822aa96258e81d1 (MD5)&#xD;
+IDEALS_CollectionPolicy_Sept2005.txt: 5458 bytes, checksum: 5d22adb3ceb37f01030c45a62f364093 (MD5)&#xD;
+  Previous issue date: 2005-09</dim:field>
+                    <dim:field mdschema="dc" element="description" qualifier="sponsorship" lang="en">University Library, CITES, and the Office of the Provost of the University of Illinois at Urbana-Champaign</dim:field>
+                    <dim:field mdschema="dc" element="format" qualifier="extent">82730 bytes</dim:field>
+                    <dim:field mdschema="dc" element="format" qualifier="extent">5458 bytes</dim:field>
+                    <dim:field mdschema="dc" element="format" qualifier="mimetype">application/pdf</dim:field>
+                    <dim:field mdschema="dc" element="format" qualifier="mimetype">text/plain</dim:field>
+                    <dim:field mdschema="dc" element="language" lang="en">en</dim:field>
+                    <dim:field mdschema="dc" element="subject" lang="en">Collection Policy</dim:field>
+                    <dim:field mdschema="dc" element="title" lang="en">IDEALS Collection Policy</dim:field>
+                    <dim:field mdschema="dc" element="type" lang="en">text</dim:field>
+                    <dim:field mdschema="dc" element="type" qualifier="genre" lang="en">other</dim:field>
+                </dim:dim>
+            </metadata>
+        </record>
+    </ListRecords>
+</OAI-PMH>
