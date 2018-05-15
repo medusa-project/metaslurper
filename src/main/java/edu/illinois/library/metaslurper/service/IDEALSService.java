@@ -196,7 +196,7 @@ final class IDEALSService implements SourceService {
     }
 
     @Override
-    public ConcurrentIterator<Entity> entities() {
+    public ConcurrentIterator<Entity> entities() throws IOException {
         final ConcurrentIterator<PMHRecord> records =
                 harvester.records(new DIMElementTransformer());
         final ConcurrentIterator<PMHSet> sets = harvester.sets();

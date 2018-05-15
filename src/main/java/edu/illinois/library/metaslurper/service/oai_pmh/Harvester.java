@@ -1,8 +1,6 @@
 package edu.illinois.library.metaslurper.service.oai_pmh;
 
-import edu.illinois.library.metaslurper.entity.Element;
 import edu.illinois.library.metaslurper.service.ConcurrentIterator;
-import edu.illinois.library.metaslurper.service.EndOfIterationException;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
@@ -11,23 +9,15 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpression;
-import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URLEncoder;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * <p>Generic pull-based OAI-PMH harvester.</p>
@@ -55,223 +45,11 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public final class Harvester implements AutoCloseable {
 
-    private abstract class AbstractIterator<T> {
-
-        final AtomicInteger numEntities = new AtomicInteger(-1);
-        final Queue<T> batch = new ConcurrentLinkedQueue<>();
-        ElementTransformer elementTransformer;
-
-        private final AtomicInteger index = new AtomicInteger();
-        private String resumptionToken;
-
-        AbstractIterator(ElementTransformer tx) {
-            this.elementTransformer = tx;
-        }
-
-        /**
-         * @param resumptionToken Current resumption token. Will be {@literal
-         *                        null} at the beginning of the harvest.
-         * @param batch           Queue to put harvested results into.
-         * @return                Next resumption token. Will be {@literal
-         *                        null} at the end of the harvest.
-         */
-        abstract String fetchBatch(String resumptionToken,
-                                   Queue<T> batch) throws IOException;
-
-        Document fetchDocument(String uri) throws IOException {
-            InputStreamResponseListener responseListener =
-                    new InputStreamResponseListener();
-
-            LOGGER.debug("fetchDocument(): requesting {}", uri);
-
-            getClient().newRequest(uri)
-                    .timeout(REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-                    .send(responseListener);
-
-            try {
-                // Wait for the response headers to arrive.
-                Response response = responseListener.get(
-                        REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-
-                if (response.getStatus() == HttpStatus.OK_200) {
-                    final DocumentBuilderFactory factory =
-                            DocumentBuilderFactory.newInstance();
-                    factory.setNamespaceAware(true);
-                    final DocumentBuilder builder = factory.newDocumentBuilder();
-
-                    try (InputStream is = responseListener.getInputStream()) {
-                        return builder.parse(is);
-                    }
-                } else {
-                    throw new IOException("Received HTTP " + response.getStatus() +
-                            " for " + uri);
-                }
-            } catch (IOException e) {
-                throw e;
-            } catch (Exception e) {
-                throw new IOException(e);
-            }
-        }
-
-        public T next() throws EndOfIterationException, IOException {
-            if (numEntities.get() >= 0 && index.incrementAndGet() >= numEntities.get()) {
-                throw new EndOfIterationException();
-            }
-
-            // If the queue is empty, fetch the next batch.
-            synchronized (this) {
-                if (batch.peek() == null) {
-                    resumptionToken = fetchBatch(resumptionToken, batch);
-                }
-            }
-
-            return batch.remove();
-        }
-
-    }
-
-    private class RecordIterator<T> extends AbstractIterator<T>
-            implements ConcurrentIterator<T> {
-
-        RecordIterator(ElementTransformer tx) {
-            super(tx);
-        }
-
-        @Override
-        String fetchBatch(String resumptionToken,
-                          Queue<T> batch) throws IOException {
-            if (numEntities.get() < 0) {
-                numEntities.set(numRecords());
-            }
-
-            String uri;
-            if (resumptionToken != null) {
-                uri = String.format("%s?verb=ListRecords&resumptionToken=%s",
-                        endpointURI, URLEncoder.encode(resumptionToken, "UTF-8"));
-            } else {
-                uri = String.format("%s?verb=ListRecords&metadataPrefix=%s",
-                        endpointURI, metadataPrefix);
-            }
-
-            final Document doc = fetchDocument(uri);
-            final XPathFactory xPathFactory = XPathFactory.newInstance();
-            final XPath xpath = xPathFactory.newXPath();
-            xpath.setNamespaceContext(new OAINamespaceContext());
-
-            try {
-                // Transform each <record> element into a PMHRecord and add
-                // it to the batch queue.
-                XPathExpression expr = xpath.compile("//oai:record");
-
-                final NodeList nodes = (NodeList) expr.evaluate(
-                        doc, XPathConstants.NODESET);
-                for (int i = 0; i < nodes.getLength(); i++) {
-                    final Node recordNode = nodes.item(i);
-                    final PMHRecord record = new PMHRecord();
-                    // identifier
-                    XPathExpression recordExpr = xpath.compile(
-                            "oai:header/oai:identifier");
-                    record.setIdentifier(recordExpr.evaluate(recordNode));
-                    // datestamp
-                    recordExpr = xpath.compile("oai:header/oai:datestamp");
-                    record.setDatestamp(recordExpr.evaluate(recordNode));
-                    // setSpec
-                    recordExpr = xpath.compile("oai:header/oai:setSpec");
-                    record.setSetSpec(recordExpr.evaluate(recordNode));
-                    // metadata
-                    recordExpr = xpath.compile("oai:metadata/*/*");
-                    NodeList mdnodes = (NodeList) recordExpr.evaluate(
-                            recordNode, XPathConstants.NODESET);
-                    for (int j = 0; j < mdnodes.getLength(); j++) {
-                        Node mdnode = mdnodes.item(j);
-                        Element e = elementTransformer.transform(mdnode);
-                        if (e != null) {
-                            record.getElements().add(e);
-                        }
-                    }
-                    batch.add((T) record);
-                }
-
-                // Pluck out the resumptionToken and return it.
-                expr = xpath.compile("//oai:resumptionToken");
-                return expr.evaluate(doc);
-            } catch (XPathExpressionException e) {
-                throw new IOException(e);
-            }
-        }
-    }
-
-    private class SetIterator<T> extends AbstractIterator<T>
-            implements ConcurrentIterator<T> {
-
-        SetIterator(ElementTransformer tx) {
-            super(tx);
-        }
-
-        @Override
-        String fetchBatch(String resumptionToken,
-                          Queue<T> batch) throws IOException {
-            if (numEntities.get() < 0) {
-                numEntities.set(numSets());
-            }
-
-            String uri;
-            if (resumptionToken != null) {
-                uri = String.format("%s?verb=ListSets&resumptionToken=%s",
-                        endpointURI, URLEncoder.encode(resumptionToken, "UTF-8"));
-            } else {
-                uri = String.format("%s?verb=ListSets", endpointURI);
-            }
-
-            final Document doc = fetchDocument(uri);
-            final XPathFactory xPathFactory = XPathFactory.newInstance();
-            final XPath xpath = xPathFactory.newXPath();
-            xpath.setNamespaceContext(new OAINamespaceContext());
-
-            try {
-                // Transform each <record> element into a PMHRecord and add
-                // it to the batch queue.
-                XPathExpression expr = xpath.compile("//oai:set");
-
-                final NodeList nodes = (NodeList) expr.evaluate(
-                        doc, XPathConstants.NODESET);
-                for (int i = 0; i < nodes.getLength(); i++) {
-                    final Node setNode = nodes.item(i);
-                    final PMHSet set = new PMHSet();
-                    // spec
-                    XPathExpression setExpr = xpath.compile("oai:setSpec");
-                    set.setSpec(setExpr.evaluate(setNode));
-                    // name
-                    setExpr = xpath.compile("oai:setName");
-                    set.setName(setExpr.evaluate(setNode));
-                    // metadata
-                    setExpr = xpath.compile("oai:setDescription/*/*");
-                    NodeList mdnodes = (NodeList) setExpr.evaluate(
-                            setNode, XPathConstants.NODESET);
-                    for (int j = 0; j < mdnodes.getLength(); j++) {
-                        Node mdnode = mdnodes.item(j);
-                        Element e = elementTransformer.transform(mdnode);
-                        if (e != null) {
-                            set.getElements().add(e);
-                        }
-                    }
-                    batch.add((T) set);
-                }
-
-                // Pluck out the resumptionToken and return it.
-                expr = xpath.compile("//oai:resumptionToken");
-                return expr.evaluate(doc);
-            } catch (XPathExpressionException e) {
-                throw new IOException(e);
-            }
-        }
-    }
-
     private static final Logger LOGGER =
             LoggerFactory.getLogger(Harvester.class);
 
     private static final String DEFAULT_METADATA_PREFIX = "oai_dc";
-    private static final int REQUEST_TIMEOUT_SECONDS = 30;
+    static final int REQUEST_TIMEOUT_SECONDS = 30;
 
     private HttpClient client;
 
@@ -368,28 +146,29 @@ public final class Harvester implements AutoCloseable {
         }
     }
 
-    public ConcurrentIterator<PMHRecord> records() {
+    public ConcurrentIterator<PMHRecord> records() throws IOException {
         return records(new DefaultElementTransformer());
     }
 
-    public ConcurrentIterator<PMHRecord> records(ElementTransformer tx) {
+    public ConcurrentIterator<PMHRecord> records(ElementTransformer tx) throws IOException {
         if (endpointURI == null) {
             throw new IllegalStateException("Endpoint URI is not set");
         }
 
-        return new RecordIterator<>(tx);
+        return new RecordIterator<>(getClient(), endpointURI, metadataPrefix,
+                numRecords(), tx);
     }
 
-    public ConcurrentIterator<PMHSet> sets() {
+    public ConcurrentIterator<PMHSet> sets() throws IOException {
         return sets(new DefaultElementTransformer());
     }
 
-    public ConcurrentIterator<PMHSet> sets(ElementTransformer tx) {
+    public ConcurrentIterator<PMHSet> sets(ElementTransformer tx) throws IOException {
         if (endpointURI == null) {
             throw new IllegalStateException("Endpoint URI is not set");
         }
 
-        return new SetIterator<>(tx);
+        return new SetIterator<>(getClient(), endpointURI, numSets(), tx);
     }
 
     /**
