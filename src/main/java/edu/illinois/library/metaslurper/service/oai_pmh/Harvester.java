@@ -28,8 +28,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLEncoder;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -61,8 +61,8 @@ public final class Harvester implements AutoCloseable {
 
     private abstract class AbstractIterator<T> {
 
-        int numEntities = -1;
-        final Queue<T> batch = new LinkedList<>();
+        final AtomicInteger numEntities = new AtomicInteger(-1);
+        final Queue<T> batch = new ConcurrentLinkedQueue<>();
 
         private final AtomicInteger index = new AtomicInteger();
         private String resumptionToken;
@@ -113,16 +113,18 @@ public final class Harvester implements AutoCloseable {
         }
 
         public T next() throws EndOfIterationException, IterationException {
-            if (numEntities >= 0 && index.incrementAndGet() >= numEntities) {
+            if (numEntities.get() >= 0 && index.incrementAndGet() >= numEntities.get()) {
                 throw new EndOfIterationException();
             }
 
             // If the queue is empty, fetch the next batch.
-            if (batch.peek() == null) {
-                try {
-                    resumptionToken = fetchBatch(resumptionToken, batch);
-                } catch (IOException e) {
-                    throw new IterationException(e);
+            synchronized (this) {
+                if (batch.peek() == null) {
+                    try {
+                        resumptionToken = fetchBatch(resumptionToken, batch);
+                    } catch (IOException e) {
+                        throw new IterationException(e);
+                    }
                 }
             }
 
@@ -136,8 +138,8 @@ public final class Harvester implements AutoCloseable {
         @Override
         String fetchBatch(String resumptionToken,
                           Queue<T> batch) throws IOException {
-            if (numEntities < 0) {
-                numEntities = numRecords();
+            if (numEntities.get() < 0) {
+                numEntities.set(numRecords());
             }
 
             String uri;
@@ -203,8 +205,8 @@ public final class Harvester implements AutoCloseable {
         @Override
         String fetchBatch(String resumptionToken,
                           Queue<T> batch) throws IOException {
-            if (numEntities < 0) {
-                numEntities = numSets();
+            if (numEntities.get() < 0) {
+                numEntities.set(numSets());
             }
 
             String uri;
@@ -352,7 +354,7 @@ public final class Harvester implements AutoCloseable {
         InputStreamResponseListener responseListener =
                 new InputStreamResponseListener();
 
-        LOGGER.debug("numRecords(): requesting {}", uri);
+        LOGGER.debug("fetchCountFromListResponse(): requesting {}", uri);
 
         getClient().newRequest(uri)
                 .timeout(REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
