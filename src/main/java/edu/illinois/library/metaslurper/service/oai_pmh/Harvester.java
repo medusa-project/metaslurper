@@ -25,7 +25,6 @@ import javax.xml.xpath.XPathFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLEncoder;
-import java.util.Iterator;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
@@ -61,9 +60,14 @@ public final class Harvester implements AutoCloseable {
 
         final AtomicInteger numEntities = new AtomicInteger(-1);
         final Queue<T> batch = new ConcurrentLinkedQueue<>();
+        ElementTransformer elementTransformer;
 
         private final AtomicInteger index = new AtomicInteger();
         private String resumptionToken;
+
+        AbstractIterator(ElementTransformer tx) {
+            this.elementTransformer = tx;
+        }
 
         /**
          * @param resumptionToken Current resumption token. Will be {@literal
@@ -133,6 +137,11 @@ public final class Harvester implements AutoCloseable {
 
     private class RecordIterator<T> extends AbstractIterator<T>
             implements ConcurrentIterator<T> {
+
+        RecordIterator(ElementTransformer tx) {
+            super(tx);
+        }
+
         @Override
         String fetchBatch(String resumptionToken,
                           Queue<T> batch) throws IOException {
@@ -180,9 +189,8 @@ public final class Harvester implements AutoCloseable {
                             recordNode, XPathConstants.NODESET);
                     for (int j = 0; j < mdnodes.getLength(); j++) {
                         Node mdnode = mdnodes.item(j);
-                        Element e = new Element(mdnode.getNodeName(),
-                                mdnode.getTextContent());
-                        if (e.getValue() != null && !e.getValue().isEmpty()) {
+                        Element e = elementTransformer.transform(mdnode);
+                        if (e != null) {
                             record.getElements().add(e);
                         }
                     }
@@ -200,6 +208,11 @@ public final class Harvester implements AutoCloseable {
 
     private class SetIterator<T> extends AbstractIterator<T>
             implements ConcurrentIterator<T> {
+
+        SetIterator(ElementTransformer tx) {
+            super(tx);
+        }
+
         @Override
         String fetchBatch(String resumptionToken,
                           Queue<T> batch) throws IOException {
@@ -242,9 +255,8 @@ public final class Harvester implements AutoCloseable {
                             setNode, XPathConstants.NODESET);
                     for (int j = 0; j < mdnodes.getLength(); j++) {
                         Node mdnode = mdnodes.item(j);
-                        Element e = new Element(mdnode.getNodeName(),
-                                mdnode.getTextContent());
-                        if (e.getValue() != null && !e.getValue().isEmpty()) {
+                        Element e = elementTransformer.transform(mdnode);
+                        if (e != null) {
                             set.getElements().add(e);
                         }
                     }
@@ -362,19 +374,27 @@ public final class Harvester implements AutoCloseable {
     }
 
     public ConcurrentIterator<PMHRecord> records() {
+        return records(new DefaultElementTransformer());
+    }
+
+    public ConcurrentIterator<PMHRecord> records(ElementTransformer tx) {
         if (endpointURI == null) {
             throw new IllegalStateException("Endpoint URI is not set");
         }
 
-        return new RecordIterator<>();
+        return new RecordIterator<>(tx);
     }
 
     public ConcurrentIterator<PMHSet> sets() {
+        return sets(new DefaultElementTransformer());
+    }
+
+    public ConcurrentIterator<PMHSet> sets(ElementTransformer tx) {
         if (endpointURI == null) {
             throw new IllegalStateException("Endpoint URI is not set");
         }
 
-        return new SetIterator<>();
+        return new SetIterator<>(tx);
     }
 
     /**
