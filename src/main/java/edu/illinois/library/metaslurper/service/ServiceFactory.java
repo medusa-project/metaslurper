@@ -11,7 +11,8 @@ public final class ServiceFactory {
             Collections.unmodifiableSet(
                     new HashSet<>(Arrays.asList(
                             new IDEALSService(),
-                            new MedusaDLSService())));
+                            new MedusaDLSService(),
+                            new TestService())));
     private static Set<SinkService> DEFAULT_SINK_SERVICES =
             Collections.unmodifiableSet(
                     new HashSet<>(Collections.singletonList(

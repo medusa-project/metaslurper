@@ -17,7 +17,7 @@ public class ServiceFactoryTest {
     @Test
     public void testAllSourceServices() {
         Set<SourceService> actual = ServiceFactory.allSourceServices();
-        assertEquals(1, actual.size());
+        assertEquals(3, actual.size());
     }
 
     @Test
