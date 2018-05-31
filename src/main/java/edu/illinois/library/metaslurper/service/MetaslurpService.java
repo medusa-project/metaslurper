@@ -125,6 +125,9 @@ final class MetaslurpService implements SinkService {
         // class
         String clazz;
         switch (entity.getVariant()) {
+            case BOOK:
+                clazz = "Book";
+                break;
             case COLLECTION:
                 clazz = "Collection";
                 break;

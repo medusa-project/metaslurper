@@ -2,6 +2,10 @@
 # SOURCE SERVICES
 #######################################################################
 
+# Medusa Book Tracker
+service.source.medusa_book_tracker.key = book
+service.source.medusa_book_tracker.endpoint = https://medusa.library.illinois.edu/book_tracker
+
 # DLS
 service.source.medusa_dls.key = dls
 service.source.medusa_dls.endpoint = https://digital.library.illinois.edu
