@@ -55,7 +55,10 @@ final class MedusaBookTrackerService implements SourceService {
                     // If the object contains a `volume` key, append it to the
                     // title.
                     if ("title".equals(key) && rootObject.has("volume")) {
-                        value += " " + rootObject.get("volume");
+                        String volume = rootObject.get("volume").toString();
+                        if (!"null".equals(volume)) {
+                            value += " " + volume;
+                        }
                     }
 
                     if (!value.isEmpty() && !"null".equals(value)) {
