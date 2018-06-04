@@ -174,7 +174,10 @@ final class MedusaBookTrackerService implements SourceService {
     private void fetchNumEntities() throws IOException {
         try {
             ContentResponse response = getClient()
-                    .newRequest(getEndpointURI() + "/items")
+                    // allowed query keys: in[] (in), ni[] (not in)
+                    // allowed query values: "gb" (Google Books),
+                    // "ia" (Internet Archive), "ht" (HathiTrust)
+                    .newRequest(getEndpointURI() + "/items?ni[]=gb")
                     .header("Accept", "application/json")
                     .timeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
                     .send();
