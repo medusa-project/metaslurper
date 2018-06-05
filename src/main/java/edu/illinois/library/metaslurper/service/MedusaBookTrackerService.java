@@ -31,6 +31,14 @@ final class MedusaBookTrackerService implements SourceService {
 
     private static class BookTrackerEntity implements Entity {
 
+        /**
+         * JSON keys that will be expressed as {@link #getElements() elements}.
+         */
+        private static final String[] ELEMENTS = {
+                "author", "bib_id", "created_at", "date", "hathitrust_url",
+                "internet_archive_identifier", "internet_archive_url",
+                "obj_id", "oclc_number", "title", "updated_at" };
+
         private JSONObject rootObject;
 
         private BookTrackerEntity(JSONObject rootObject) {
@@ -46,17 +54,15 @@ final class MedusaBookTrackerService implements SourceService {
         public Set<Element> getElements() {
             final Set<Element> elements = new HashSet<>();
 
-            for (String key : new String[] { "author", "bib_id", "created_at",
-                    "date", "ia_identifier", "obj_id", "oclc_number", "title",
-                    "updated_at" }) {
+            for (String key : ELEMENTS) {
                 if (rootObject.has(key)) {
-                    String value = rootObject.get(key).toString();
+                    String value = rootObject.get(key).toString().trim();
 
                     // If the object contains a `volume` key, append it to the
                     // title.
                     if ("title".equals(key) && rootObject.has("volume")) {
-                        String volume = rootObject.get("volume").toString();
-                        if (!"null".equals(volume)) {
+                        String volume = rootObject.get("volume").toString().trim();
+                        if (!volume.isEmpty() && !"null".equals(volume)) {
                             value += " " + volume;
                         }
                     }
@@ -82,16 +88,12 @@ final class MedusaBookTrackerService implements SourceService {
 
         @Override
         public String getSinkID() {
-            final String key = "id";
-            return rootObject.has(key) ?
-                    getServiceKey() + "-" + rootObject.getInt(key) : null;
+            return getServiceKey() + "-" + getSourceID();
         }
 
         @Override
         public String getSourceID() {
-            final String key = "id";
-            return rootObject.has(key) ?
-                    Integer.toString(rootObject.getInt(key)) : null;
+            return Integer.toString(rootObject.getInt("id"));
         }
 
         @Override
