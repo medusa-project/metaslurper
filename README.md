@@ -10,7 +10,7 @@ Metaslurper passes along whatever key-value entity metadata the source services
 make available to the sink service without modifying it. The sink service
 decides what to do with these disparate elements: which ones to keep, how to
 map them, etc. This decouples the difficult task of metadata mapping from the
-harvester, and enables it to run with minimal user interaction.
+harvester, and enables it to run with minimal configuration.
 
 Metaslurper is designed to work in conjunction with the
 [Metaslurp](https://github.com/medusa-project/metaslurp) sink service, but sink
@@ -35,7 +35,7 @@ java -Dedu.illinois.library.metaslurper.config=metaslurper.conf \
 ```
 
 Change `-source all` to a service name to limit the slurping to a specific
-service. Use a bogus name to get a list of available service names.
+service. Using a bogus name will print a list of available service names.
 
 # Adding a source service
 
@@ -48,6 +48,13 @@ service. Use a bogus name to get a list of available service names.
 1. Add a class that implements `e.i.l.m.service.SinkService`
 2. Add it to the return value of
    `e.i.l.m.service.ServiceFactory.allSinkServices()`
+
+# Service implementation notes
+
+* The application configuration is available via
+  `ConfigurationFactory.getConfiguration()`.
+* A logger is available via `LoggerFactory.getLogger(ClassName.class)`.
+* Implementations can use any other dependency in the JDK or the POM.
 
 # Controlling what information gets harvested
 
