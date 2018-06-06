@@ -3,6 +3,7 @@ package edu.illinois.library.metaslurper.service;
 import edu.illinois.library.metaslurper.config.ConfigurationFactory;
 import edu.illinois.library.metaslurper.entity.Element;
 import edu.illinois.library.metaslurper.entity.Entity;
+import edu.illinois.library.metaslurper.entity.Variant;
 import org.apache.commons.configuration2.Configuration;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.AuthenticationStore;
@@ -122,20 +123,8 @@ final class MetaslurpService implements SinkService {
 
     private String toJSON(Entity entity) {
         JSONObject jobj = new JSONObject();
-        // class
-        String clazz;
-        switch (entity.getVariant()) {
-            case BOOK:
-                clazz = "Book";
-                break;
-            case COLLECTION:
-                clazz = "Collection";
-                break;
-            default:
-                clazz  = "Item";
-                break;
-        }
-        jobj.put("class", clazz);
+        // variant
+        jobj.put("variant", toString(entity.getVariant()));
         // media type
         jobj.put("media_type", entity.getMediaType());
         // source ID
@@ -159,6 +148,22 @@ final class MetaslurpService implements SinkService {
         jobj.put("elements", jelements);
 
         return jobj.toString();
+    }
+
+    private static String toString(Variant variant) {
+        String str;
+        switch (variant) {
+            case BOOK:
+                str = "Book";
+                break;
+            case COLLECTION:
+                str = "Collection";
+                break;
+            default:
+                str  = "Item";
+                break;
+        }
+        return str;
     }
 
     @Override
