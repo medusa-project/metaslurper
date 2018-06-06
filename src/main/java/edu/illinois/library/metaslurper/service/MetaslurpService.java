@@ -23,6 +23,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @see <a href="https://github.com/medusa-project/metaslurp">Metaslurp
@@ -36,6 +37,7 @@ final class MetaslurpService implements SinkService {
     private static final String NAME = "Metaslurp";
 
     private HttpClient client;
+    private final AtomicBoolean isClosed = new AtomicBoolean();
 
     private static URI getEndpointURI() {
         Configuration config = ConfigurationFactory.getConfiguration();
@@ -97,6 +99,10 @@ final class MetaslurpService implements SinkService {
 
     @Override
     public void ingest(Entity entity) throws IOException {
+        if (isClosed.get()) {
+            throw new IllegalStateException("Instance is closed.");
+        }
+
         final URI uri = getURI(entity);
         final String json = toJSON(entity);
 
@@ -158,6 +164,9 @@ final class MetaslurpService implements SinkService {
                 break;
             case COLLECTION:
                 str = "Collection";
+                break;
+            case DATA_SET:
+                str = "DataSet";
                 break;
             default:
                 str  = "Item";

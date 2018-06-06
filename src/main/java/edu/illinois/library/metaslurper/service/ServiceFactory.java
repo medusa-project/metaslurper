@@ -11,6 +11,7 @@ public final class ServiceFactory {
             Collections.unmodifiableSet(
                     new HashSet<>(Arrays.asList(
                             new IDEALSService(),
+                            new IllinoisDataBankService(),
                             new MedusaBookTrackerService(),
                             new MedusaDLSService(),
                             new TestService())));

@@ -2,6 +2,10 @@
 # SOURCE SERVICES
 #######################################################################
 
+# Illinois Data Bank
+service.source.databank.key = databank
+service.source.databank.endpoint = https://databank.illinois.edu/
+
 # Medusa Book Tracker
 service.source.medusa_book_tracker.key = book
 service.source.medusa_book_tracker.endpoint = https://medusa.library.illinois.edu/book_tracker
