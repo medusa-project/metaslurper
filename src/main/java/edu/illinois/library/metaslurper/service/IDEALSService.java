@@ -14,8 +14,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -35,23 +33,9 @@ final class IDEALSService implements SourceService {
             return config.getString("service.source.ideals.key");
         }
 
-        /**
-         * @return String in the format {@literal {@link
-         *         #getServiceKey()}-[Base16 SHA-1 hash of
-         *         {@link #getSourceID()}]}
-         */
         public String getSinkID() {
-            final StringBuilder builder = new StringBuilder();
-            try {
-                MessageDigest md = MessageDigest.getInstance("SHA-1");
-                byte[] sha1 = md.digest(getSourceID().getBytes());
-                for (byte b : sha1) {
-                    builder.append(String.format("%02x", b));
-                }
-                return getServiceKey() + "-" + builder.toString();
-            } catch (NoSuchAlgorithmException e) {
-                throw new RuntimeException(e);
-            }
+            return getServiceKey() + "-" +
+                    getSourceID().replaceAll("[^A-Za-z\\d]", "_");
         }
 
         public abstract String getSourceID();

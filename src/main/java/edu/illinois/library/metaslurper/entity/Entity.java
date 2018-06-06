@@ -36,6 +36,9 @@ public interface Entity {
     String getServiceKey();
 
     /**
+     * N.B.: Some sink services may have problems with URI-illegal characters
+     * in the sink ID.
+     *
      * @return The instance's ID within the sink service.
      */
     String getSinkID();
