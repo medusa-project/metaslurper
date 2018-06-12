@@ -108,6 +108,7 @@ public final class Slurper {
         } catch (IOException | UncheckedIOException e) {
             LOGGER.error(e.getMessage(), e);
         } finally {
+            sink.close();
             pool.shutdown();
         }
 
