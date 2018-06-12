@@ -115,7 +115,7 @@ final class IllinoisDataBankService implements SourceService {
 
     private static final String NAME = "IllinoisDataBank";
 
-    private static final long REQUEST_TIMEOUT = 30;
+    private static final long REQUEST_TIMEOUT = 60; // IDB can be slow sometimes...
 
     private HttpClient client;
 
