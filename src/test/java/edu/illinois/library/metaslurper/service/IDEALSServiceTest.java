@@ -33,7 +33,7 @@ public class IDEALSServiceTest {
         // Check the entity's sink ID
         Configuration config = ConfigurationFactory.getConfiguration();
         String expectedPrefix = config.getString("service.source.ideals.key");
-        assertTrue(entity.getSinkID().matches(expectedPrefix + "-[a-f0-9-]+"));
+        assertTrue(entity.getSinkID().matches(expectedPrefix + "-[A-Za-z\\d_]+"));
 
         // Check its elements
         Set<Element> elements = entity.getElements();

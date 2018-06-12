@@ -17,7 +17,7 @@ public class MedusaBookTrackerServiceTest {
 
     @Test
     public void testNumEntities() throws Exception {
-        assertTrue(instance.numEntities() > 500000);
+        assertTrue(instance.numEntities() > 50000);
     }
 
     @Test
