@@ -7,6 +7,7 @@ import java.util.List;
 
 public class MockSinkService implements SinkService {
 
+    private int numEntitiesToIngest;
     private final List<Entity> ingestedEntities = new ArrayList<>();
 
     @Override
@@ -25,6 +26,11 @@ public class MockSinkService implements SinkService {
 
     public List<Entity> getIngestedEntities() {
         return ingestedEntities;
+    }
+
+    @Override
+    public void setNumEntitiesToIngest(int numEntitiesToIngest) {
+        this.numEntitiesToIngest = numEntitiesToIngest;
     }
 
 }

@@ -28,9 +28,11 @@ public class MetaslurpServiceTest {
     public void testIngestWithValidEntity() throws Exception {
         BasicEntity item = new BasicEntity();
         item.setSinkID("cats");
+        item.setSourceID("cats");
         item.setSourceURI("http://example.org/test");
         item.setServiceKey("test");
         item.getElements().add(new Element("title", "test"));
+        instance.setNumEntitiesToIngest(1);
         instance.ingest(item);
     }
 
@@ -38,6 +40,7 @@ public class MetaslurpServiceTest {
     public void testIngestWithInvalidEntity() throws Exception {
         BasicEntity item = new BasicEntity();
         item.setSinkID("cats");
+        instance.setNumEntitiesToIngest(1);
         instance.ingest(item);
     }
 

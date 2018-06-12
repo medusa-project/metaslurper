@@ -63,6 +63,8 @@ public final class Slurper {
             final CountDownLatch latch            = new CountDownLatch(numThreads);
             final ConcurrentIterator<Entity> iter = source.entities();
 
+            sink.setNumEntitiesToIngest(numEntities);
+
             for (int i = 0; i < numThreads; i++) {
                 pool.submit(() -> {
                     try {
