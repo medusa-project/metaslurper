@@ -13,7 +13,6 @@ service.source.medusa_book_tracker.endpoint = https://medusa.library.illinois.ed
 # DLS
 service.source.medusa_dls.key = dls
 service.source.medusa_dls.endpoint = https://digital.library.illinois.edu
-service.source.medusa_dls.batch_size = 100
 
 # IDEALS
 service.source.ideals.key = ideals

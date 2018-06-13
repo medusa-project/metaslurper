@@ -129,7 +129,7 @@ final class MedusaDLSService implements SourceService {
     /**
      * N.B.: 100 is the maximum the DLS allows.
      */
-    private static final int DEFAULT_BATCH_SIZE = 100;
+    private static final int BATCH_SIZE = 100;
 
     static final String ENTITY_ID_PREFIX = "dls-";
 
@@ -148,12 +148,6 @@ final class MedusaDLSService implements SourceService {
             new LinkedBlockingQueue<>();
 
     private int numItems = -1, numCollections = -1;
-
-    private static int getBatchSize() {
-        Configuration config = ConfigurationFactory.getConfiguration();
-        return config.getInt("service.source.medusa_dls.batch_size",
-                DEFAULT_BATCH_SIZE);
-    }
 
     private static String getEndpointURI() {
         Configuration config = ConfigurationFactory.getConfiguration();
@@ -293,8 +287,7 @@ final class MedusaDLSService implements SourceService {
 
     private void fetchAndQueueResults(final String endpointURI,
                                       final int numResults) throws IOException {
-        final int batchSize = getBatchSize();
-        final int numPages = (int) Math.ceil(numResults / (float) batchSize);
+        final int numPages = (int) Math.ceil(numResults / (float) BATCH_SIZE);
 
         for (int page = 0; page < numPages; page++) {
             if (isClosed.get()) {
@@ -302,9 +295,9 @@ final class MedusaDLSService implements SourceService {
                 return;
             }
             final String uri = String.format("%s?start=%d&limit=%d",
-                    endpointURI, page * batchSize, batchSize);
+                    endpointURI, page * BATCH_SIZE, BATCH_SIZE);
             LOGGER.debug("Fetching {} results (page {} of {}): {}",
-                    batchSize, page + 1, numPages, uri);
+                    BATCH_SIZE, page + 1, numPages, uri);
 
             try {
                 ContentResponse response = getClient().newRequest(uri)
