@@ -43,6 +43,11 @@ final class TestService implements SourceService {
     public void close() {}
 
     @Override
+    public String getKey() {
+        return "test";
+    }
+
+    @Override
     public String getName() {
         return "Test";
     }
@@ -70,7 +75,7 @@ final class TestService implements SourceService {
 
     @Override
     public String toString() {
-        return getName();
+        return getKey();
     }
 
 }

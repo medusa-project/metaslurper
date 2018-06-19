@@ -34,36 +34,32 @@ public final class ServiceFactory {
     /**
      * @return Set of all known sink services.
      */
-    public static synchronized  Set<SinkService> allSinkServices() {
+    public static synchronized Set<SinkService> allSinkServices() {
         return (sinkServices != null) ? sinkServices : DEFAULT_SINK_SERVICES;
     }
 
     /**
-     * @param name {@link SourceService#getName() Service name}.
-     * @return     Service with the given name or {@literal null}.
+     * @param key {@link SourceService#getKey() Service key}.
+     * @return    Service with the given key, or {@literal null}.
      */
-    public static SourceService getSourceService(String name) {
-        name = name.toLowerCase();
-        for (SourceService service : allSourceServices()) {
-            if (service.getName().toLowerCase().equals(name)) {
-                return service;
-            }
-        }
-        return null;
+    public static SourceService getSourceService(String key) {
+        final String lowerKey = key.toLowerCase();
+        return allSourceServices().stream()
+                .filter(s -> s.getKey() != null && s.getKey().toLowerCase().equals(lowerKey))
+                .findAny()
+                .orElse(null);
     }
 
     /**
-     * @param name {@link SinkService#getName() Service name}.
-     * @return     Service with the given name or {@literal null}.
+     * @param key {@link SinkService#getKey() Service key}.
+     * @return    Service with the given key, or {@literal null}.
      */
-    public static SinkService getSinkService(String name) {
-        name = name.toLowerCase();
-        for (SinkService service : allSinkServices()) {
-            if (service.getName().toLowerCase().equals(name)) {
-                return service;
-            }
-        }
-        return null;
+    public static SinkService getSinkService(String key) {
+        final String lowerKey = key.toLowerCase();
+        return allSinkServices().stream()
+                .filter(s -> s.getKey() != null && s.getKey().toLowerCase().equals(lowerKey))
+                .findAny()
+                .orElse(null);
     }
 
     /**

@@ -1,10 +1,9 @@
 package edu.illinois.library.metaslurper.service;
 
-import edu.illinois.library.metaslurper.config.ConfigurationFactory;
+import edu.illinois.library.metaslurper.config.Configuration;
 import edu.illinois.library.metaslurper.entity.Element;
 import edu.illinois.library.metaslurper.entity.Entity;
 import edu.illinois.library.metaslurper.entity.Variant;
-import org.apache.commons.configuration2.Configuration;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -69,8 +68,7 @@ final class IllinoisDataBankService implements SourceService {
 
         @Override
         public String getServiceKey() {
-            Configuration config = ConfigurationFactory.getConfiguration();
-            return config.getString("service.source.databank.key");
+            return getKeyFromConfiguration();
         }
 
         @Override
@@ -113,7 +111,7 @@ final class IllinoisDataBankService implements SourceService {
     private static final Logger LOGGER =
             LoggerFactory.getLogger(IllinoisDataBankService.class);
 
-    private static final String NAME = "IllinoisDataBank";
+    private static final String NAME = "Illinois Data Bank";
 
     private static final long REQUEST_TIMEOUT = 60; // IDB can be slow sometimes...
 
@@ -127,10 +125,15 @@ final class IllinoisDataBankService implements SourceService {
     private final Queue<String> dataSetURIs = new ConcurrentLinkedQueue<>();
 
     private static String getEndpointURI() {
-        Configuration config = ConfigurationFactory.getConfiguration();
-        String endpoint = config.getString("service.source.databank.endpoint");
+        Configuration config = Configuration.getInstance();
+        String endpoint = config.getString("SERVICE_SOURCE_IDB_ENDPOINT");
         return (endpoint.endsWith("/")) ?
                 endpoint.substring(0, endpoint.length() - 1) : endpoint;
+    }
+
+    private static String getKeyFromConfiguration() {
+        Configuration config = Configuration.getInstance();
+        return config.getString("SERVICE_SOURCE_IDB_KEY");
     }
 
     @Override
@@ -150,6 +153,11 @@ final class IllinoisDataBankService implements SourceService {
         if (isClosed.get()) {
             throw new IllegalStateException("Instance is closed");
         }
+    }
+
+    @Override
+    public String getKey() {
+        return getKeyFromConfiguration();
     }
 
     @Override

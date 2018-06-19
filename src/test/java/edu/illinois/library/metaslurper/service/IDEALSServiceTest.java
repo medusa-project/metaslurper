@@ -1,9 +1,8 @@
 package edu.illinois.library.metaslurper.service;
 
-import edu.illinois.library.metaslurper.config.ConfigurationFactory;
+import edu.illinois.library.metaslurper.config.Configuration;
 import edu.illinois.library.metaslurper.entity.Element;
 import edu.illinois.library.metaslurper.entity.Entity;
-import org.apache.commons.configuration2.Configuration;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -31,8 +30,8 @@ public class IDEALSServiceTest {
         Entity entity = it.next();
 
         // Check the entity's sink ID
-        Configuration config = ConfigurationFactory.getConfiguration();
-        String expectedPrefix = config.getString("service.source.ideals.key");
+        Configuration config = Configuration.getInstance();
+        String expectedPrefix = config.getString("SERVICE_SOURCE_IDEALS_KEY");
         assertTrue(entity.getSinkID().matches(expectedPrefix + "-[A-Za-z\\d_]+"));
 
         // Check its elements

@@ -6,6 +6,11 @@ package edu.illinois.library.metaslurper.service;
 public interface Service extends AutoCloseable {
 
     /**
+     * @return The service key.
+     */
+    String getKey();
+
+    /**
      * @return The service name.
      */
     String getName();

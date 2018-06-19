@@ -1,0 +1,18 @@
+# https://docs.aws.amazon.com/cli/latest/reference/ecs/run-task.html
+
+ECS_CLUSTER=metaslurper-dev
+ECS_TASK_DEFINITION=metaslurper:5
+ECS_SUBNET=subnet-xxxxxxxx
+ECS_SECURITY_GROUP=sg-xxxxxxxx
+
+if [ -z "$1" ] || [ -z "$2" ];
+  then
+    echo "Source and sink service keys are required."
+    exit
+fi
+
+aws ecs run-task --launch-type FARGATE \
+    --cluster $ECS_CLUSTER \
+    --task-definition $ECS_TASK_DEFINITION
+    --network-configuration "awsvpcConfiguration={subnets=[$ECS_SUBNET],securityGroups=[$ECS_SECURITY_GROUP],assignPublicIp=ENABLED}" \
+    --overrides '{ "containerOverrides": [ { "name": "metaslurper", "command": [ "java", "-jar", "metaslurper.jar", "-source", "'$1'", "-sink", "'$2'", "-threads", "2" ] } ] }' \

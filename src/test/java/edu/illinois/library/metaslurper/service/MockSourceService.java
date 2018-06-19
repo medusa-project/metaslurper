@@ -12,6 +12,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class MockSourceService implements SourceService {
 
     @Override
+    public String getKey() {
+        return MockSourceService.class.getSimpleName().toLowerCase();
+    }
+
+    @Override
     public String getName() {
         return MockSourceService.class.getSimpleName();
     }

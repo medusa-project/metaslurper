@@ -1,10 +1,9 @@
 package edu.illinois.library.metaslurper.service;
 
-import edu.illinois.library.metaslurper.config.ConfigurationFactory;
+import edu.illinois.library.metaslurper.config.Configuration;
 import edu.illinois.library.metaslurper.entity.Element;
 import edu.illinois.library.metaslurper.entity.Entity;
 import edu.illinois.library.metaslurper.entity.Variant;
-import org.apache.commons.configuration2.Configuration;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -47,8 +46,8 @@ final class MetaslurpService implements SinkService {
     private int numEntities;
 
     private static URI getEndpointURI() {
-        Configuration config = ConfigurationFactory.getConfiguration();
-        String endpoint = config.getString("service.sink.metaslurp.endpoint");
+        Configuration config = Configuration.getInstance();
+        String endpoint = config.getString("SERVICE_SINK_METASLURP_ENDPOINT");
         try {
             return new URI(endpoint);
         } catch (URISyntaxException e) {
@@ -57,13 +56,13 @@ final class MetaslurpService implements SinkService {
     }
 
     private static String getUsername() {
-        Configuration config = ConfigurationFactory.getConfiguration();
-        return config.getString("service.sink.metaslurp.username");
+        Configuration config = Configuration.getInstance();
+        return config.getString("SERVICE_SINK_METASLURP_USERNAME");
     }
 
     private static String getSecret() {
-        Configuration config = ConfigurationFactory.getConfiguration();
-        return config.getString("service.sink.metaslurp.secret");
+        Configuration config = Configuration.getInstance();
+        return config.getString("SERVICE_SINK_METASLURP_SECRET");
     }
 
     private static URI getURI(Entity entity) {
@@ -97,6 +96,12 @@ final class MetaslurpService implements SinkService {
                 LOGGER.error("close(): " + e.getMessage());
             }
         }
+    }
+
+    @Override
+    public String getKey() {
+        Configuration config = Configuration.getInstance();
+        return config.getString("SERVICE_SINK_METASLURP_KEY");
     }
 
     @Override

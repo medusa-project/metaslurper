@@ -1,0 +1,10 @@
+#!/bin/sh
+
+DOCKER_TAG=metaslurper:latest
+ECR_HOST=something.dkr.ecr.us-east-2.amazonaws.com
+REGION=us-east-2
+
+eval $(aws ecr get-login --no-include-email --region $REGION)
+docker build -t metaslurper .
+docker tag $DOCKER_TAG $ECR_HOST/$DOCKER_TAG
+docker push $ECR_HOST/$DOCKER_TAG

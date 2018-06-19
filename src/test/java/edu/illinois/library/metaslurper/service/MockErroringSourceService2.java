@@ -11,6 +11,11 @@ public class MockErroringSourceService2 extends MockSourceService
         implements SourceService {
 
     @Override
+    public String getKey() {
+        return MockErroringSourceService2.class.getSimpleName().toLowerCase();
+    }
+
+    @Override
     public String getName() {
         return MockErroringSourceService2.class.getSimpleName();
     }

@@ -3,5 +3,4 @@
 /*.iml
 /target
 
-# Application config file
-/metaslurper.conf
+/*.sh

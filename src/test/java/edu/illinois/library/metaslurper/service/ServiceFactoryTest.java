@@ -27,7 +27,7 @@ public class ServiceFactoryTest {
 
     @Test
     public void testGetSinkServiceWithValidName() {
-        assertTrue(ServiceFactory.getSinkService(new MetaslurpService().getName())
+        assertTrue(ServiceFactory.getSinkService(new MetaslurpService().getKey())
                 instanceof MetaslurpService);
     }
 
@@ -38,7 +38,7 @@ public class ServiceFactoryTest {
 
     @Test
     public void testGetSourceServiceWithValidName() {
-        assertTrue(ServiceFactory.getSourceService(new MedusaDLSService().getName())
+        assertTrue(ServiceFactory.getSourceService(new MedusaDLSService().getKey())
                 instanceof MedusaDLSService);
     }
 

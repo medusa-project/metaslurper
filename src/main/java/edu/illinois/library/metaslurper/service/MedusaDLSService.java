@@ -1,11 +1,10 @@
 package edu.illinois.library.metaslurper.service;
 
 import edu.illinois.library.metaslurper.async.ThreadPool;
-import edu.illinois.library.metaslurper.config.ConfigurationFactory;
+import edu.illinois.library.metaslurper.config.Configuration;
 import edu.illinois.library.metaslurper.entity.Element;
 import edu.illinois.library.metaslurper.entity.Entity;
 import edu.illinois.library.metaslurper.entity.Variant;
-import org.apache.commons.configuration2.Configuration;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -79,8 +78,7 @@ final class MedusaDLSService implements SourceService {
 
         @Override
         public String getServiceKey() {
-            Configuration config = ConfigurationFactory.getConfiguration();
-            return config.getString("service.source.medusa_dls.key");
+            return getKeyFromConfiguration();
         }
 
         @Override
@@ -133,7 +131,7 @@ final class MedusaDLSService implements SourceService {
 
     static final String ENTITY_ID_PREFIX = "dls-";
 
-    private static final String NAME = "DLS";
+    private static final String NAME = "Illinois Digital Library";
 
     private static final long REQUEST_TIMEOUT = 30;
 
@@ -150,8 +148,8 @@ final class MedusaDLSService implements SourceService {
     private int numItems = -1, numCollections = -1;
 
     private static String getEndpointURI() {
-        Configuration config = ConfigurationFactory.getConfiguration();
-        String endpoint = config.getString("service.source.medusa_dls.endpoint");
+        Configuration config = Configuration.getInstance();
+        String endpoint = config.getString("SERVICE_SOURCE_DLS_ENDPOINT");
         return (endpoint.endsWith("/")) ?
                 endpoint.substring(0, endpoint.length() - 1) : endpoint;
     }
@@ -162,6 +160,11 @@ final class MedusaDLSService implements SourceService {
 
     private static String getItemsURI() {
         return getEndpointURI() + "/items";
+    }
+
+    private static String getKeyFromConfiguration() {
+        Configuration config = Configuration.getInstance();
+        return config.getString("SERVICE_SOURCE_DLS_KEY");
     }
 
     @Override
@@ -175,6 +178,11 @@ final class MedusaDLSService implements SourceService {
                 LOGGER.error("close(): " + e.getMessage());
             }
         }
+    }
+
+    @Override
+    public String getKey() {
+        return getKeyFromConfiguration();
     }
 
     @Override

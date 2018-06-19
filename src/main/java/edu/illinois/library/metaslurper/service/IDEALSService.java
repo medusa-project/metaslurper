@@ -1,13 +1,12 @@
 package edu.illinois.library.metaslurper.service;
 
-import edu.illinois.library.metaslurper.config.ConfigurationFactory;
+import edu.illinois.library.metaslurper.config.Configuration;
 import edu.illinois.library.metaslurper.entity.Element;
 import edu.illinois.library.metaslurper.entity.Entity;
 import edu.illinois.library.metaslurper.entity.Variant;
 import edu.illinois.library.metaslurper.service.oai_pmh.Harvester;
 import edu.illinois.library.metaslurper.service.oai_pmh.PMHRecord;
 import edu.illinois.library.metaslurper.service.oai_pmh.PMHSet;
-import org.apache.commons.configuration2.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,8 +28,7 @@ final class IDEALSService implements SourceService {
         }
 
         public String getServiceKey() {
-            Configuration config = ConfigurationFactory.getConfiguration();
-            return config.getString("service.source.ideals.key");
+            return getKeyFromConfiguration();
         }
 
         public String getSinkID() {
@@ -162,9 +160,14 @@ final class IDEALSService implements SourceService {
     private final Harvester harvester = new Harvester();
     private int numEntities = -1;
 
+    private static String getKeyFromConfiguration() {
+        Configuration config = Configuration.getInstance();
+        return config.getString("SERVICE_SOURCE_IDEALS_KEY");
+    }
+
     IDEALSService() {
-        Configuration config = ConfigurationFactory.getConfiguration();
-        String endpointURI = config.getString("service.source.ideals.endpoint");
+        Configuration config = Configuration.getInstance();
+        String endpointURI = config.getString("SERVICE_SOURCE_IDEALS_ENDPOINT");
         harvester.setEndpointURI(endpointURI);
         harvester.setMetadataPrefix("dim");
     }
@@ -172,6 +175,11 @@ final class IDEALSService implements SourceService {
     @Override
     public void close() {
         harvester.close();
+    }
+
+    @Override
+    public String getKey() {
+        return getKeyFromConfiguration();
     }
 
     @Override

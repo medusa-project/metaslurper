@@ -11,6 +11,11 @@ public class MockSinkService implements SinkService {
     private final List<Entity> ingestedEntities = new ArrayList<>();
 
     @Override
+    public String getKey() {
+        return MockSinkService.class.getSimpleName().toLowerCase();
+    }
+
+    @Override
     public String getName() {
         return MockSinkService.class.getSimpleName();
     }

@@ -91,10 +91,7 @@ public final class Application {
                 // output...
                 Thread.sleep(1);
                 HelpFormatter formatter = new HelpFormatter();
-                formatter.printHelp("java -jar <jarfile> -D" +
-                                ConfigurationFactory.CONFIG_VM_ARGUMENT +
-                                "=<config file>",
-                        getOptions());
+                formatter.printHelp("java -jar <jarfile>", getOptions());
                 System.exit(-1);
             } catch (InterruptedException ignore) {}
         }
@@ -121,17 +118,17 @@ public final class Application {
     private static void printSourceServices() {
         String allSources = ServiceFactory.allSourceServices()
                 .stream()
-                .map(SourceService::getName)
-                .collect(Collectors.joining(", "));
-        System.err.println("Available source services: " + allSources);
+                .map(s -> s.getName() + " (" + s.getKey() + ")")
+                .collect(Collectors.joining("\n"));
+        System.err.println("Available source services: " + allSources + "\n");
     }
 
     private static void printSinkServices() {
         String allSources = ServiceFactory.allSinkServices()
                 .stream()
-                .map(SinkService::getName)
-                .collect(Collectors.joining(", "));
-        System.err.println("Available sink services: " + allSources);
+                .map(s -> s.getName() + " (" + s.getKey() + ")")
+                .collect(Collectors.joining("\n"));
+        System.err.println("Available sink services: " + allSources + "\n");
     }
 
 }

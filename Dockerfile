@@ -1,11 +1,14 @@
-FROM openjdk:8u131-jdk-alpine
+#
+# N.B.: An application JAR file must be built before the image can be
+# created. See the README.
+#
+
+FROM openjdk:8u171-jdk-alpine
 
 WORKDIR .
 
-ADD ./target/metaslurper-1.0-SNAPSHOT.jar .
-ADD ./metaslurper.conf .
+COPY ./target/metaslurper-1.0-SNAPSHOT.jar ./metaslurper.jar
 
-CMD ["java", "-Xmx128m", \
-    "-Dedu.illinois.library.metaslurper.config=metaslurper.conf", \
-    "-jar", "metaslurper-1.0-SNAPSHOT.jar", \
-    "-source", "all", "-sink", "metaslurp", "-threads", "2"]
+# This will need to be overridden at runtime.
+CMD ["java", "-jar", "metaslurper.jar", \
+    "-source", "test", "-sink", "metaslurp", "-threads", "2"]

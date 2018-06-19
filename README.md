@@ -6,11 +6,11 @@ uploads it to a sink service. It supports efficient multi-threaded streaming of
 large numbers of entities from any number of source services, and support for
 new services is straightforward to implement.
 
-Metaslurper passes along whatever key-value entity metadata the source services
-make available to the sink service without modifying it. The sink service
-decides what to do with these disparate elements: which ones to keep, how to
-map them, etc. This decouples the difficult task of metadata mapping from the
-harvester, and enables it to run with minimal configuration.
+Metaslurper generally passes along whatever key-value entity metadata the
+source services make available to the sink service without modifying it. The
+sink service decides what to do with these disparate elements: which ones to
+keep, how to map them, etc. This enables the harvester to run with minimal
+configuration, and in conjunction with pretty much any mapping process.
 
 Metaslurper is designed to work in conjunction with the
 [Metaslurp](https://github.com/medusa-project/metaslurp) sink service, but sink
@@ -18,32 +18,63 @@ services are modular, too.
 
 # Requirements
 
-The only requirement is JDK 8+.
+The only requirement is JDK 8+. CPU and memory requirements are minimal.
 
 # Build
 
-`mvn clean package`
+`mvn clean package -DskipTests`
+
+# Configure
+
+Configuration is sourced from the environment. The following variables are
+available:
+
+* Source services
+    * Illinois Data Bank
+      * `SERVICE_SOURCE_IDB_KEY`
+      * `SERVICE_SOURCE_IDB_ENDPOINT`
+    * Illinois Digital Library
+      * `SERVICE_SOURCE_DLS_KEY`
+      * `SERVICE_SOURCE_DLS_ENDPOINT`
+    * IDEALS
+      * `SERVICE_SOURCE_IDEALS_KEY`
+      * `SERVICE_SOURCE_IDEALS_ENDPOINT`
+    * Medusa Book Tracker
+      * `SERVICE_SOURCE_BOOK_TRACKER_KEY`
+      * `SERVICE_SOURCE_BOOK_TRACKER_ENDPOINT`
+* Sink services
+    * Metaslurp
+      * `SERVICE_SINK_METASLURP_KEY`
+      * `SERVICE_SINK_METASLURP_ENDPOINT`
+      * `SERVICE_SINK_METASLURP_USERNAME`
+      * `SERVICE_SINK_METASLURP_SECRET`
 
 # Run
 
-1. Copy `metaslurper.conf.sample` to `metaslurper.conf` and edit as necessary.
-2. Invoke:
+## On the command line
+
 ```
-java -Dedu.illinois.library.metaslurper.config=metaslurper.conf \
-    -jar metaslurper-VERSION.jar \
-    -Xmx128m -source all -sink metaslurp -threads 2
+java -jar target/metaslurper-VERSION.jar \
+    -source test -sink $SERVICE_SINK_METASLURP_KEY -threads 2
 ```
 
-Change `-source all` to a service name to limit the slurping to a specific
-service. Using a bogus name will print a list of available service names.
+`test` is a built-in test source service that will "harvest" some fake content.
+Change it to a random string to print a list of available service keys.
 
-# Adding a source service
+## In Docker
+
+1. `cp docker-run.sh.sample docker-run.sh` and edit as necessary
+2. `docker-run.sh <source service key> <sink service key>`
+
+# Adding services
+
+## Adding a source service
 
 1. Add a class that implements `e.i.l.m.service.SourceService`
 2. Add it to the return value of
    `e.i.l.m.service.ServiceFactory.allSourceServices()`
 
-# Adding a sink service
+## Adding a sink service
 
 1. Add a class that implements `e.i.l.m.service.SinkService`
 2. Add it to the return value of
@@ -51,14 +82,25 @@ service. Using a bogus name will print a list of available service names.
 
 # Service implementation notes
 
-* The application configuration is available via
-  `ConfigurationFactory.getConfiguration()`.
-* A logger is available via `LoggerFactory.getLogger(ClassName.class)`.
-* Implementations can use any other dependency in the JDK or the POM.
+* A logger is available via `LoggerFactory.getLogger(Class)`.
+* Configuration should be obtained from
+  `e.i.l.m.config.Configuration.getInstance()` rather than `System.getenv()`.
 
-# Controlling what information gets harvested
+# AWS ECS notes
 
-1. Modify the `e.i.l.m.entity.Entity` interface.
-2. Modify all of its implementations.
-3. Modify all `e.i.l.m.service.SinkService` implementations to understand the
-   changes.
+Metaslurper can run in AWS ECS. The general procedure for deploying is:
+
+1. Create an ECR repository, an ECS Fargate cluster, and an ECS task definition
+    1. The task definition must define all of the environment variables in
+       the "Configuration" section (above)
+2. Install the `aws` command-line tool
+3. `cp ecs-push.sh.sample ecs-push.sh` and edit as necessary
+4. `ecs-push.sh`
+
+At this point the container is available and tasks are ready to run. One way to
+run them is with the `aws` command-line tool, for which a convenient wrapper
+script has been written:
+
+`ecs-run-task.sh <source service key> <sink service key>`
+
+But they can also be invoked via the AWS web UI or API.
