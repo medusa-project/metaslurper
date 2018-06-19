@@ -36,7 +36,7 @@ class SetIterator<T> extends AbstractIterator<T>
         String uri;
         if (resumptionToken != null && !resumptionToken.isEmpty()) {
             uri = String.format("%s?verb=ListSets&resumptionToken=%s",
-                    endpointURI, URLEncoder.encode(resumptionToken, "UTF-8"));
+                    endpointURI, resumptionToken);
         } else {
             uri = String.format("%s?verb=ListSets", endpointURI);
         }
