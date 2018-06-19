@@ -36,7 +36,7 @@ class RecordIterator<T> extends AbstractIterator<T>
     String fetchBatch(String resumptionToken,
                       Queue<T> batch) throws IOException {
         String uri;
-        if (resumptionToken != null) {
+        if (resumptionToken != null && !resumptionToken.isEmpty()) {
             uri = String.format("%s?verb=ListRecords&resumptionToken=%s",
                     endpointURI, URLEncoder.encode(resumptionToken, "UTF-8"));
         } else {
