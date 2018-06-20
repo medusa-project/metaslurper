@@ -19,12 +19,6 @@
             <artifactId>commons-cli</artifactId>
             <version>1.4</version>
         </dependency>
-        <!-- Commons Configuration needs this -->
-        <dependency>
-            <groupId>commons-beanutils</groupId>
-            <artifactId>commons-beanutils</artifactId>
-            <version>1.9.3</version>
-        </dependency>
         <!-- Application HTTP client -->
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
