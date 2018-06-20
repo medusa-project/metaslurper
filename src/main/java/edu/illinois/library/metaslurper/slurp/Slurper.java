@@ -6,13 +6,11 @@ import edu.illinois.library.metaslurper.service.ConcurrentIterator;
 import edu.illinois.library.metaslurper.service.EndOfIterationException;
 import edu.illinois.library.metaslurper.service.SinkService;
 import edu.illinois.library.metaslurper.service.SourceService;
-import edu.illinois.library.metaslurper.service.ServiceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -22,74 +20,99 @@ public final class Slurper {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Slurper.class);
 
+    /**
+     * Update the sink status after any multiple of this many entities are
+     * ingested.
+     */
+    private static final short STATUS_UPDATE_INCREMENT = 25;
+
     private static String percent(int numerator, int denominator) {
         if (denominator > 0) {
-            return String.format("%.2f%%", (numerator / (float) denominator) * 100);
+            return String.format("%.2f%%",
+                    (numerator / (double) denominator) * 100);
         }
         return "?%";
     }
 
     /**
-     * Slurps all services.
-     *
-     * @param sink Service to slurp into.
+     * @param source Service to slurp.
+     * @param sink   Service to slurp into.
      */
-    public SlurpResult slurpAll(SinkService sink) {
-        final SlurpResult result = new SlurpResult(0, 0, Duration.ZERO);
-
-        for (SourceService service : ServiceFactory.allSourceServices()) {
-            result.add(slurp(service, sink));
-            service.close();
-        }
-        return result;
+    public void slurp(final SourceService source, final SinkService sink) {
+        slurp(source, sink, new Status());
     }
 
     /**
-     * Slurps a single service.
-     *
      * @param source Service to slurp.
-     * @param sink Service to slurp into.
+     * @param sink   Service to slurp into.
+     * @param status Object for status tracking.
      */
-    public SlurpResult slurp(SourceService source,
-                             SinkService sink) {
-        final long start                 = System.currentTimeMillis();
-        final AtomicInteger numSucceeded = new AtomicInteger();
-        final AtomicInteger numFailed    = new AtomicInteger();
-        final int numThreads             = Application.getNumThreads();
-        final ExecutorService pool       = Executors.newFixedThreadPool(numThreads);
+    void slurp(final SourceService source,
+               final SinkService sink,
+               final Status status) {
+        final int numThreads       = Application.getNumThreads();
+        final CountDownLatch latch = new CountDownLatch(numThreads);
+        final ExecutorService pool = Executors.newFixedThreadPool(numThreads);
         try {
             final int numEntities                 = source.numEntities();
             final AtomicInteger index             = new AtomicInteger();
-            final CountDownLatch latch            = new CountDownLatch(numThreads);
             final ConcurrentIterator<Entity> iter = source.entities();
 
+            status.setLifecycle(Lifecycle.RUNNING);
             sink.setNumEntitiesToIngest(numEntities);
 
             for (int i = 0; i < numThreads; i++) {
                 pool.submit(() -> {
                     try {
-                        while (true) {
+                        while (true) { // will break on EndOfIterationException
+                            final int currentIndex = index.getAndIncrement();
+                            try {
+                                if (currentIndex % STATUS_UPDATE_INCREMENT == 0
+                                        && currentIndex + 1 < numEntities) {
+                                    sink.updateStatus(status);
+                                }
+                            } catch (IOException e) {
+                                LOGGER.error("Failed to update harvest status: {}",
+                                        e.getMessage(), e);
+                            }
+
                             try {
                                 final Entity entity = iter.next();
                                 if (entity != null) {
                                     sink.ingest(entity);
-                                    numSucceeded.incrementAndGet();
+                                    status.incrementAndGetNumSucceeded();
 
                                     LOGGER.debug("Slurped {} {} from {} into {} [{}/{}] [{}]",
                                             entity.getVariant().name().toLowerCase(),
                                             entity, source, sink,
-                                            index.get() + 1, numEntities,
-                                            percent(index.get() + 1, numEntities));
+                                            currentIndex + 1, numEntities,
+                                            percent(currentIndex + 1, numEntities));
                                 } else {
-                                    numFailed.incrementAndGet();
+                                    status.incrementAndGetNumFailed();
                                 }
                             } catch (EndOfIterationException e) {
-                                return;
+                                status.setLifecycle(Lifecycle.SUCCEEDED);
+                                // If iteration has ended prematurely (based on
+                                // numEntities), increment the failure count
+                                // to make up the difference.
+                                int delta = numEntities + 1 - index.get();
+                                if (delta > 0) {
+                                    status.addAndGetNumFailed(delta);
+                                }
+                                break;
+                            } catch (HarvestClosedException e) {
+                                int delta = numEntities + 1 - index.get();
+                                if (delta > 0) {
+                                    status.addAndGetNumFailed(delta);
+                                }
+                                status.setLifecycle(Lifecycle.ABORTED);
+                                LOGGER.info("Harvest closed: {}", e.getMessage());
+                                break;
                             } catch (Exception e) {
-                                LOGGER.error("slurp(): {}", e.getMessage(), e);
-                                numFailed.incrementAndGet();
+                                LOGGER.error("Failed to ingest into sink: {}",
+                                        e.getMessage(), e);
+                                status.incrementAndGetNumFailed();
                             }
-                            index.incrementAndGet();
                         }
                     } finally {
                         latch.countDown();
@@ -106,16 +129,18 @@ public final class Slurper {
                 LOGGER.info(e.getMessage(), e);
             }
         } catch (IOException | UncheckedIOException e) {
+            status.setLifecycle(Lifecycle.FAILED);
             LOGGER.error(e.getMessage(), e);
         } finally {
-            sink.close();
-            pool.shutdown();
+            try {
+                sink.updateStatus(status);
+            } catch (IOException e) {
+                LOGGER.error("Failed to update final harvest status: {}",
+                        e.getMessage(), e);
+            } finally {
+                pool.shutdown();
+            }
         }
-
-        final long end = System.currentTimeMillis();
-
-        return new SlurpResult(numSucceeded.get(), numFailed.get(),
-                Duration.ofMillis(end - start));
     }
 
 }

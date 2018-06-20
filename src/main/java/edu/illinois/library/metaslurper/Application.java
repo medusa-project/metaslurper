@@ -3,7 +3,6 @@ package edu.illinois.library.metaslurper;
 import edu.illinois.library.metaslurper.service.SinkService;
 import edu.illinois.library.metaslurper.service.SourceService;
 import edu.illinois.library.metaslurper.service.ServiceFactory;
-import edu.illinois.library.metaslurper.slurp.SlurpResult;
 import edu.illinois.library.metaslurper.slurp.Slurper;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -19,9 +18,9 @@ import java.util.stream.Collectors;
 public final class Application {
 
     private enum Argument {
-        SOURCE_SERVICE("s", "source", true, "Source service name"),
-        SINK_SERVICE("k", "sink", true, "Sink service name"),
-        THREADS("t", "threads", false, "Number of threads");
+        SOURCE_SERVICE("s", "source", true, "Source service key"),
+        SINK_SERVICE("k", "sink", true, "Sink service key"),
+        THREADS("t", "threads", false, "Number of harvesting threads");
 
         private String shortArg, longArg, description;
         private boolean isRequired;
@@ -50,30 +49,28 @@ public final class Application {
             numThreads = cmd.hasOption(Argument.THREADS.longArg) ?
                     Integer.parseInt(cmd.getOptionValue(Argument.THREADS.longArg)) :
                     numThreads;
+            numThreads = Math.max(numThreads, 1);
             String sourceStr = cmd.getOptionValue(Argument.SOURCE_SERVICE.longArg);
             String sinkStr = cmd.getOptionValue(Argument.SINK_SERVICE.longArg);
 
             final SinkService sink = ServiceFactory.getSinkService(sinkStr);
             if (sink != null) {
                 final Slurper slurper = new Slurper();
-                SlurpResult result = null;
-
                 SourceService source = ServiceFactory.getSourceService(sourceStr);
                 if (source != null) {
                     try {
-                        result = slurper.slurp(source, sink);
+                        slurper.slurp(source, sink);
                     } finally {
                         source.close();
                     }
                 } else {
-                    System.err.println("Unrecognized service: " + sourceStr);
+                    System.err.println("Unrecognized source service key: " + sourceStr);
                     printSourceServices();
                     System.exit(-1);
                 }
-
-                System.out.println(result);
+                sink.close();
             } else {
-                System.err.println("Unrecognized service: " + sinkStr);
+                System.err.println("Unrecognized sink service key: " + sinkStr);
                 printSinkServices();
                 System.exit(-1);
             }
@@ -81,7 +78,7 @@ public final class Application {
             System.err.println(e.getMessage());
             try {
                 // Sometimes the above output gets interleaved into the help
-                // output...
+                // output... (?)
                 Thread.sleep(1);
                 HelpFormatter formatter = new HelpFormatter();
                 formatter.printHelp("java -jar <jarfile>", getOptions());

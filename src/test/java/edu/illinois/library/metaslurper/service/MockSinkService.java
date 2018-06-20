@@ -1,6 +1,7 @@
 package edu.illinois.library.metaslurper.service;
 
 import edu.illinois.library.metaslurper.entity.Entity;
+import edu.illinois.library.metaslurper.slurp.Status;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,6 +37,10 @@ public class MockSinkService implements SinkService {
     @Override
     public void setNumEntitiesToIngest(int numEntitiesToIngest) {
         this.numEntitiesToIngest = numEntitiesToIngest;
+    }
+
+    @Override
+    public void updateStatus(Status stats) {
     }
 
 }
