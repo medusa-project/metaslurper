@@ -1,4 +1,4 @@
-package edu.illinois.library.metaslurper.slurp;
+package edu.illinois.library.metaslurper.harvest;
 
 import edu.illinois.library.metaslurper.Application;
 import edu.illinois.library.metaslurper.entity.Entity;
@@ -35,16 +35,16 @@ public final class Slurper {
     }
 
     /**
-     * @param source Service to slurp.
-     * @param sink   Service to slurp into.
+     * @param source Service to harvest.
+     * @param sink   Service to harvest into.
      */
     public void slurp(final SourceService source, final SinkService sink) {
         slurp(source, sink, new Status());
     }
 
     /**
-     * @param source Service to slurp.
-     * @param sink   Service to slurp into.
+     * @param source Service to harvest.
+     * @param sink   Service to harvest into.
      * @param status Object for status tracking.
      */
     void slurp(final SourceService source,

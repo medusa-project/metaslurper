@@ -1,7 +1,7 @@
 package edu.illinois.library.metaslurper.service;
 
 import edu.illinois.library.metaslurper.entity.Entity;
-import edu.illinois.library.metaslurper.slurp.Status;
+import edu.illinois.library.metaslurper.harvest.Status;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,6 +1,6 @@
 package edu.illinois.library.metaslurper.service;
 
-import edu.illinois.library.metaslurper.slurp.Status;
+import edu.illinois.library.metaslurper.harvest.Status;
 import org.json.JSONObject;
 
 import java.util.concurrent.atomic.AtomicInteger;

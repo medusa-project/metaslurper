@@ -1,4 +1,4 @@
-package edu.illinois.library.metaslurper.slurp;
+package edu.illinois.library.metaslurper.harvest;
 
 import edu.illinois.library.metaslurper.service.MockAbortingSourceService;
 import edu.illinois.library.metaslurper.service.MockErroringSourceService1;

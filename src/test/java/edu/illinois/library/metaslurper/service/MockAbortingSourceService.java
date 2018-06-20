@@ -1,7 +1,7 @@
 package edu.illinois.library.metaslurper.service;
 
 import edu.illinois.library.metaslurper.entity.Entity;
-import edu.illinois.library.metaslurper.slurp.HarvestClosedException;
+import edu.illinois.library.metaslurper.harvest.HarvestClosedException;
 
 public class MockAbortingSourceService extends MockSourceService
         implements SourceService {

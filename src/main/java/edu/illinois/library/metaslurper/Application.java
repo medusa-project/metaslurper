@@ -3,7 +3,7 @@ package edu.illinois.library.metaslurper;
 import edu.illinois.library.metaslurper.service.SinkService;
 import edu.illinois.library.metaslurper.service.SourceService;
 import edu.illinois.library.metaslurper.service.ServiceFactory;
-import edu.illinois.library.metaslurper.slurp.Slurper;
+import edu.illinois.library.metaslurper.harvest.Slurper;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;

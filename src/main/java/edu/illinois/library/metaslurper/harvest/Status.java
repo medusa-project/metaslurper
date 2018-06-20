@@ -1,4 +1,4 @@
-package edu.illinois.library.metaslurper.slurp;
+package edu.illinois.library.metaslurper.harvest;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
