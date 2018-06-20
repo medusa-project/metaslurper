@@ -1,4 +1,13 @@
-# https://docs.aws.amazon.com/cli/latest/reference/ecs/run-task.html
+#!/bin/sh
+#
+# Script for launching an ECS task using the aws command-line tool.
+#
+# Note that the aws tool is only one way of launching tasks, and probably not
+# the best way in many situations. Other ways include the human-friendly AWS
+# web UI and the machine-friendly ECS API.
+#
+# See: https://docs.aws.amazon.com/cli/latest/reference/ecs/run-task.html
+#
 
 ECS_CLUSTER=metaslurper-dev
 ECS_TASK_DEFINITION=metaslurper:5

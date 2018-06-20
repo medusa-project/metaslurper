@@ -18,7 +18,8 @@ services are modular, too.
 
 # Requirements
 
-The only requirement is JDK 8+. CPU and memory requirements are minimal.
+The only requirements are JDK 8+ and Maven 3. CPU and memory requirements are
+minimal.
 
 # Build
 
