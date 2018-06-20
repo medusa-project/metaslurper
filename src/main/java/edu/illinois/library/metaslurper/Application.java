@@ -59,7 +59,7 @@ public final class Application {
                 SourceService source = ServiceFactory.getSourceService(sourceStr);
                 if (source != null) {
                     try {
-                        harvester.slurp(source, sink);
+                        harvester.harvest(source, sink);
                     } finally {
                         source.close();
                     }

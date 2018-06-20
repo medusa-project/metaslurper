@@ -38,8 +38,8 @@ public final class Harvester {
      * @param source Service to harvest.
      * @param sink   Service to harvest into.
      */
-    public void slurp(final SourceService source, final SinkService sink) {
-        slurp(source, sink, new Status());
+    public void harvest(final SourceService source, final SinkService sink) {
+        harvest(source, sink, new Status());
     }
 
     /**
@@ -47,9 +47,9 @@ public final class Harvester {
      * @param sink   Service to harvest into.
      * @param status Object for status tracking.
      */
-    void slurp(final SourceService source,
-               final SinkService sink,
-               final Status status) {
+    void harvest(final SourceService source,
+                 final SinkService sink,
+                 final Status status) {
         final int numThreads       = Application.getNumThreads();
         final CountDownLatch latch = new CountDownLatch(numThreads);
         final ExecutorService pool = Executors.newFixedThreadPool(numThreads);
