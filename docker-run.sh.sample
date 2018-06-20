@@ -6,6 +6,8 @@ if [ -z "$1" ] || [ -z "$2" ];
     exit
 fi
 
+mvn clean package -DskipTests
+
 docker build -t metaslurper .
 
 docker run \
