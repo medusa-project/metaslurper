@@ -6,7 +6,7 @@ import java.util.Set;
 /**
  * Ready-made bean-style {@link Entity} implementation.
  */
-public class BasicEntity implements Entity {
+public class GenericEntity implements Entity {
 
     private String mediaType, sourceID, sinkID, serviceKey, accessImageURI,
             sourceURI;

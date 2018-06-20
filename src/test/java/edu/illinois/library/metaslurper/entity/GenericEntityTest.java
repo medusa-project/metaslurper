@@ -5,13 +5,13 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-public class BasicEntityTest {
+public class GenericEntityTest {
 
-    private BasicEntity instance;
+    private GenericEntity instance;
 
     @Before
     public void setUp() {
-        instance = new BasicEntity();
+        instance = new GenericEntity();
         instance.setSinkID("id");
         instance.setServiceKey("key");
     }

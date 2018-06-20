@@ -1,6 +1,6 @@
 package edu.illinois.library.metaslurper.service;
 
-import edu.illinois.library.metaslurper.entity.BasicEntity;
+import edu.illinois.library.metaslurper.entity.GenericEntity;
 import edu.illinois.library.metaslurper.entity.Element;
 import edu.illinois.library.metaslurper.entity.Entity;
 import edu.illinois.library.metaslurper.entity.Variant;
@@ -19,7 +19,7 @@ final class TestService implements SourceService {
 
     static {
         // add an item
-        BasicEntity e = new BasicEntity();
+        GenericEntity e = new GenericEntity();
         e.setSourceID("1");
         e.setServiceKey(KEY);
         e.setSourceURI("http://example.net/" + e.getSourceID());
@@ -29,7 +29,7 @@ final class TestService implements SourceService {
         ENTITIES.add(e);
 
         // add a collection
-        e = new BasicEntity();
+        e = new GenericEntity();
         e.setSourceID("2");
         e.setServiceKey(KEY);
         e.setSourceURI("http://example.net/" + e.getSourceID());

@@ -1,6 +1,6 @@
 package edu.illinois.library.metaslurper.service;
 
-import edu.illinois.library.metaslurper.entity.BasicEntity;
+import edu.illinois.library.metaslurper.entity.GenericEntity;
 import edu.illinois.library.metaslurper.entity.Entity;
 
 import java.io.IOException;
@@ -30,7 +30,7 @@ public class MockUnreliableSourceService extends MockSourceService
     public ConcurrentIterator<Entity> entities() throws IOException {
         List<Entity> entities = new ArrayList<>();
         for (int i = 0; i < numEntities(); i++) {
-            BasicEntity item = new BasicEntity();
+            GenericEntity item = new GenericEntity();
             item.setSinkID("ID " + (i + 1));
             entities.add(item);
         }

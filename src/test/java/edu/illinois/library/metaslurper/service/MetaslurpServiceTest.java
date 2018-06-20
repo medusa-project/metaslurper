@@ -1,6 +1,6 @@
 package edu.illinois.library.metaslurper.service;
 
-import edu.illinois.library.metaslurper.entity.BasicEntity;
+import edu.illinois.library.metaslurper.entity.GenericEntity;
 import edu.illinois.library.metaslurper.entity.Element;
 import org.junit.After;
 import org.junit.Before;
@@ -26,7 +26,7 @@ public class MetaslurpServiceTest {
 
     @Test
     public void testIngestWithValidEntity() throws Exception {
-        BasicEntity item = new BasicEntity();
+        GenericEntity item = new GenericEntity();
         item.setSinkID("cats");
         item.setSourceID("cats");
         item.setSourceURI("http://example.org/test");
@@ -38,7 +38,7 @@ public class MetaslurpServiceTest {
 
     @Test(expected = IOException.class)
     public void testIngestWithInvalidEntity() throws Exception {
-        BasicEntity item = new BasicEntity();
+        GenericEntity item = new GenericEntity();
         item.setSinkID("cats");
         instance.setNumEntitiesToIngest(1);
         instance.ingest(item);
