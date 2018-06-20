@@ -1,12 +1,12 @@
 package edu.illinois.library.metaslurper.service;
 
-import edu.illinois.library.metaslurper.async.ThreadPool;
 import edu.illinois.library.metaslurper.config.Configuration;
 import edu.illinois.library.metaslurper.entity.Element;
 import edu.illinois.library.metaslurper.entity.Entity;
 import edu.illinois.library.metaslurper.entity.Variant;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -15,12 +15,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.HashSet;
+import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -31,29 +30,18 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 final class MedusaDLSService implements SourceService {
 
-    /**
-     * N.B.: DLS item and collection JSON representations are more-or-less the
-     * same.
-     */
-    private static class DLSEntity implements Entity {
+    private static abstract class DLSEntity {
 
-        private JSONObject rootObject;
+        JSONObject rootObject;
 
         private DLSEntity(JSONObject rootObject) {
             this.rootObject = rootObject;
         }
 
-        @Override
         public String getAccessImageURI() {
-            final String key = "effective_representative_image_uri";
-            try {
-                return rootObject.has(key) ? rootObject.getString(key) : null;
-            } catch (JSONException e) {
-                return null;
-            }
+            return null;
         }
 
-        @Override
         public Set<Element> getElements() {
             final String key = "elements";
             final Set<Element> elements = new HashSet<>();
@@ -71,52 +59,121 @@ final class MedusaDLSService implements SourceService {
             return elements;
         }
 
-        @Override
         public String getMediaType() {
             return null;
         }
 
-        @Override
         public String getServiceKey() {
             return getKeyFromConfiguration();
         }
 
-        @Override
         public String getSinkID() {
             final String key = "id";
             return rootObject.has(key) ?
                     ENTITY_ID_PREFIX + rootObject.getString(key) : null;
         }
 
-        @Override
         public String getSourceID() {
             final String key = "id";
             return rootObject.has(key) ? rootObject.getString(key) : null;
         }
 
-        @Override
         public String getSourceURI() {
             final String key = "public_uri";
             return rootObject.has(key) ? rootObject.getString(key) : null;
         }
 
-        @Override
-        public Variant getVariant() {
-            final String key = "class";
-            if (rootObject.has(key)) {
-                switch (rootObject.getString(key)) {
-                    case "Collection":
-                        return Variant.COLLECTION;
-                    default:
-                        return Variant.ITEM;
-                }
-            }
-            return Variant.UNKNOWN;
+        public String toString() {
+            return getSourceID() + " / " + getSinkID();
+        }
+
+    }
+
+    private static class DLSCollection extends DLSEntity implements Entity {
+
+        private DLSCollection(JSONObject rootObject) {
+            super(rootObject);
         }
 
         @Override
-        public String toString() {
-            return getSourceID() + " / " + getSinkID();
+        public Variant getVariant() {
+            return Variant.COLLECTION;
+        }
+
+    }
+
+    private static class DLSItem extends DLSEntity implements Entity {
+
+        private DLSItem(JSONObject rootObject) {
+            super(rootObject);
+        }
+
+        @Override
+        public String getAccessImageURI() {
+            final String key = "effective_representative_image_uri";
+            try {
+                return rootObject.has(key) ? rootObject.getString(key) : null;
+            } catch (JSONException e) {
+                return null;
+            }
+        }
+
+        @Override
+        public Variant getVariant() {
+            return Variant.ITEM;
+        }
+
+    }
+
+    private static class DLSAgent extends DLSEntity implements Entity {
+
+        private String sourceURI;
+
+        private DLSAgent(JSONObject rootObject, String sourceURI) {
+            super(rootObject);
+            this.sourceURI = sourceURI;
+        }
+
+        @Override
+        public Set<Element> getElements() {
+            final Set<Element> elements = new HashSet<>();
+            if (rootObject.has("name")) {
+                // name
+                String value = rootObject.getString("name");
+                if (value != null && !value.isEmpty()) {
+                    elements.add(new Element("name", value));
+                }
+
+                // description
+                value = rootObject.getString("description");
+                if (value != null && !value.isEmpty()) {
+                    elements.add(new Element("description", value));
+                }
+            }
+            return elements;
+        }
+
+        @Override
+        public String getSinkID() {
+            final String key = "id";
+            return rootObject.has(key) ?
+                    String.format("%sentity-%d",
+                            ENTITY_ID_PREFIX, rootObject.getInt(key)) : null;
+        }
+
+        public String getSourceID() {
+            final String key = "id";
+            return rootObject.has(key) ? "" + rootObject.getInt(key) : null;
+        }
+
+        @Override
+        public String getSourceURI() {
+            return sourceURI;
+        }
+
+        @Override
+        public Variant getVariant() {
+            return Variant.ENTITY;
         }
 
     }
@@ -125,7 +182,7 @@ final class MedusaDLSService implements SourceService {
             LoggerFactory.getLogger(MedusaDLSService.class);
 
     /**
-     * N.B.: 100 is the maximum the DLS allows.
+     * N.B.: 100 is the minimum and maximum the DLS allows.
      */
     private static final int BATCH_SIZE = 100;
 
@@ -139,14 +196,11 @@ final class MedusaDLSService implements SourceService {
 
     private final AtomicBoolean isClosed = new AtomicBoolean();
 
+    private int numEntities = -1;
+
     /**
-     * Queue of item and collection URIs.
+     * @return Base URI of the service.
      */
-    private final BlockingQueue<String> resultsQueue =
-            new LinkedBlockingQueue<>();
-
-    private int numItems = -1, numCollections = -1;
-
     private static String getEndpointURI() {
         Configuration config = Configuration.getInstance();
         String endpoint = config.getString("SERVICE_SOURCE_DLS_ENDPOINT");
@@ -154,12 +208,12 @@ final class MedusaDLSService implements SourceService {
                 endpoint.substring(0, endpoint.length() - 1) : endpoint;
     }
 
-    private static String getCollectionsURI() {
-        return getEndpointURI() + "/collections";
-    }
-
-    private static String getItemsURI() {
-        return getEndpointURI() + "/items";
+    /**
+     * Contains a paginated list of all available entities: items, collections,
+     * and agents.
+     */
+    private static String getSearchURI() {
+        return getEndpointURI() + "/search";
     }
 
     private static String getKeyFromConfiguration() {
@@ -205,131 +259,96 @@ final class MedusaDLSService implements SourceService {
 
     @Override
     public int numEntities() throws IOException {
-        return numCollections() + numItems();
-    }
-
-    private int numCollections() throws IOException {
-        if (numCollections < 0) {
-            numCollections = fetchNumEntities(getCollectionsURI());
-        }
-        return numCollections;
-    }
-
-    private int numItems() throws IOException {
-        if (numItems < 0) {
-            numItems = fetchNumEntities(getItemsURI());
-        }
-        return numItems;
-    }
-
-    /**
-     * Fetches the item count into {@link #numItems}.
-     */
-    private int fetchNumEntities(String endpoint) throws IOException {
-        try {
-            ContentResponse response = getClient()
-                    .newRequest(endpoint)
-                    .header("Accept", "application/json")
-                    .timeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
-                    .send();
-            String body = response.getContentAsString();
-            JSONObject jobj = new JSONObject(body);
-            return jobj.getInt("numResults");
-        } catch (ExecutionException | InterruptedException |
-                TimeoutException e) {
-            throw new IOException(e);
-        }
-    }
-
-    /**
-     * Provides a stream of entities. A producer thread fetches results list
-     * pages, parses them, and feeds the entity URIs they contain into a queue.
-     * Entity representations are fetched on-demand as the client consumes the
-     * stream.
-     */
-    @Override
-    public ConcurrentIterator<Entity> entities() throws IOException {
-        final AtomicBoolean shouldAbort = new AtomicBoolean();
-        final int numItems = numItems();
-        final int numCollections = numCollections();
-
-        LOGGER.debug("{} collections and {} items to fetch",
-                numCollections, numItems);
-
-        // Start a separate thread to load results page-by-page into a queue.
-        ThreadPool.getInstance().submit(() -> {
+        if (numEntities < 0) {
             try {
-                fetchAndQueueResults(getCollectionsURI(), numCollections);
-                fetchAndQueueResults(getItemsURI(), numItems);
-            } catch (IOException e) {
-                shouldAbort.set(true);
-                throw new UncheckedIOException(e);
-            }
-        });
-
-        // Return an iterator that consumes the queue.
-        return new ConcurrentIterator<Entity>() {
-            private final AtomicInteger index = new AtomicInteger();
-
-            @Override
-            public Entity next() throws Exception {
-                if (shouldAbort.get()) {
-                    throw new Exception("Aborting prematurely. " +
-                            "Something probably went wrong in a results response.");
-                }
-                try {
-                    if (index.getAndIncrement() < numItems + numCollections) {
-                        String uri = resultsQueue.take();
-                        return fetchEntity(uri);
-                    } else {
-                        throw new EndOfIterationException();
-                    }
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                } catch (InterruptedException e) {
-                    throw new UncheckedIOException(new IOException(e));
-                }
-            }
-        };
-    }
-
-    private void fetchAndQueueResults(final String endpointURI,
-                                      final int numResults) throws IOException {
-        final int numPages = (int) Math.ceil(numResults / (float) BATCH_SIZE);
-
-        for (int page = 0; page < numPages; page++) {
-            if (isClosed.get()) {
-                LOGGER.debug("fetchAndQueueResults(): stopping");
-                return;
-            }
-            final String uri = String.format("%s?start=%d&limit=%d",
-                    endpointURI, page * BATCH_SIZE, BATCH_SIZE);
-            LOGGER.debug("Fetching {} results (page {} of {}): {}",
-                    BATCH_SIZE, page + 1, numPages, uri);
-
-            try {
-                ContentResponse response = getClient().newRequest(uri)
+                ContentResponse response = getClient()
+                        .newRequest(getSearchURI())
                         .header("Accept", "application/json")
                         .timeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
                         .send();
-                if (response.getStatus() == 200) {
-                    String body = response.getContentAsString();
-                    JSONObject jobj = new JSONObject(body);
-                    JSONArray jarr = jobj.getJSONArray("results");
-                    for (int i = 0; i < jarr.length(); i++) {
-                        String juri = jarr.getJSONObject(i).getString("uri");
-                        resultsQueue.add(juri);
-                    }
-                } else {
-                    throw new IOException("Got HTTP " + response.getStatus() +
-                            " for " + uri);
-                }
+                String body = response.getContentAsString();
+                JSONObject jobj = new JSONObject(body);
+                numEntities = jobj.getInt("numResults");
             } catch (ExecutionException | InterruptedException |
                     TimeoutException e) {
                 throw new IOException(e);
             }
         }
-        LOGGER.debug("Fetched {} results", numResults);
+        return numEntities;
+    }
+
+    /**
+     * Provides an iterator of all entities in the service. Results pages and
+     * entity representations are fetched on-demand during iteration.
+     */
+    @Override
+    public ConcurrentIterator<Entity> entities() {
+        // Queue of entity URIs.
+        final Queue<String> batch = new ConcurrentLinkedQueue<>();
+        final AtomicInteger batchIndex = new AtomicInteger();
+
+        // Return an iterator that consumes the queue.
+        return new ConcurrentIterator<Entity>() {
+            @Override
+            public Entity next() throws Exception {
+                // If the queue is empty, fetch the next batch.
+                synchronized (this) {
+                    if (batch.peek() == null) {
+                        fetchBatch(batch, batchIndex.getAndIncrement());
+                    }
+                }
+
+                if (batch.peek() == null) {
+                    throw new EndOfIterationException();
+                }
+
+                return fetchEntity(batch.remove());
+            }
+        };
+    }
+
+    /**
+     * @param batch      Queue of entity URIs.
+     * @param batchIndex Zero-based batch index.
+     */
+    private void fetchBatch(final Queue<String> batch,
+                            final int batchIndex) throws IOException {
+        if (isClosed.get()) {
+            LOGGER.debug("fetchBatch(): stopping");
+            return;
+        }
+
+        final int numResults = numEntities();
+        final int numBatches = (int) Math.ceil(numResults / (double) BATCH_SIZE);
+        final int offset = batchIndex * BATCH_SIZE;
+
+        final String uri = String.format("%s?start=%d&limit=%d",
+                getSearchURI(), offset, BATCH_SIZE);
+        LOGGER.debug("Fetching batch {} of {}: {}",
+                batchIndex + 1, numBatches, uri);
+
+        try {
+            ContentResponse response = getClient().newRequest(uri)
+                    .header("Accept", "application/json")
+                    .timeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
+                    .send();
+            if (response.getStatus() == 200) {
+                String body = response.getContentAsString();
+                JSONObject jobj = new JSONObject(body);
+                JSONArray jarr = jobj.getJSONArray("results");
+                for (int i = 0; i < jarr.length(); i++) {
+                    batch.add(jarr.getJSONObject(i).getString("uri"));
+                }
+            } else {
+                throw new IOException("Got HTTP " + response.getStatus() +
+                        " for " + uri);
+            }
+        } catch (ExecutionException | InterruptedException |
+                TimeoutException e) {
+            throw new IOException(e);
+        }
+
+        LOGGER.debug("Fetched {} results", batch.size());
     }
 
     private Entity fetchEntity(String uri) throws IOException {
@@ -341,12 +360,24 @@ final class MedusaDLSService implements SourceService {
                     .send();
             if ("application/json".equals(response.getMediaType())) {
                 switch (response.getStatus()) {
-                    case 200:
+                    case HttpStatus.OK_200:
                         String body = response.getContentAsString();
-                        return new DLSEntity(new JSONObject(body));
+                        JSONObject jobj = new JSONObject(body);
+                        String variant = jobj.getString("class");
+                        switch (variant) {
+                            case "Agent":
+                                return new DLSAgent(jobj, uri);
+                            case "Collection":
+                                return new DLSCollection(jobj);
+                            case "Item":
+                                return new DLSItem(jobj);
+                            default:
+                                throw new IllegalArgumentException(
+                                        "Unrecognized variant: " + variant);
+                        }
                     default:
                         body = response.getContentAsString();
-                        JSONObject jobj = new JSONObject(body);
+                        jobj = new JSONObject(body);
                         String message = jobj.getString("error");
 
                         throw new IOException("Got HTTP " + response.getStatus() +
@@ -356,7 +387,8 @@ final class MedusaDLSService implements SourceService {
                 throw new IOException("Unsupported response Content-Type: " +
                         response.getMediaType());
             }
-        } catch (ExecutionException | InterruptedException | TimeoutException e) {
+        } catch (ExecutionException | InterruptedException |
+                TimeoutException e) {
             throw new IOException(e);
         }
     }
