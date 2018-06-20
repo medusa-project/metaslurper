@@ -3,7 +3,7 @@ package edu.illinois.library.metaslurper;
 import edu.illinois.library.metaslurper.service.SinkService;
 import edu.illinois.library.metaslurper.service.SourceService;
 import edu.illinois.library.metaslurper.service.ServiceFactory;
-import edu.illinois.library.metaslurper.harvest.Slurper;
+import edu.illinois.library.metaslurper.harvest.Harvester;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -55,11 +55,11 @@ public final class Application {
 
             final SinkService sink = ServiceFactory.getSinkService(sinkStr);
             if (sink != null) {
-                final Slurper slurper = new Slurper();
+                final Harvester harvester = new Harvester();
                 SourceService source = ServiceFactory.getSourceService(sourceStr);
                 if (source != null) {
                     try {
-                        slurper.slurp(source, sink);
+                        harvester.slurp(source, sink);
                     } finally {
                         source.close();
                     }

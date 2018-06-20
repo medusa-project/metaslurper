@@ -16,9 +16,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public final class Slurper {
+public final class Harvester {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(Slurper.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(Harvester.class);
 
     /**
      * Update the sink status after any multiple of this many entities are

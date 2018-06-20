@@ -13,13 +13,13 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-public class SlurperTest {
+public class HarvesterTest {
 
-    private Slurper instance;
+    private Harvester instance;
 
     @Before
     public void setUp() {
-        instance = new Slurper();
+        instance = new Harvester();
     }
 
     @Test
