@@ -8,6 +8,8 @@ import java.io.IOException;
  * Encapsulates a remote source of content. Instances will connect to some
  * resource, typically a web server, and assemble and normalize content from
  * it.
+ *
+ * @author Alex Dolski UIUC
  */
 public interface SourceService extends Service {
 
@@ -32,12 +34,12 @@ public interface SourceService extends Service {
      *
      * <p>They should also try to be resilient and recover from errors.</p>
      *
-     * <p>If {@link #numEntities()} returns a non-negative value, the number of
-     * entities iterated (whether or not they are {@literal null}) should be
-     * equal to that.</p>
-     *
-     * @return Iterator of entities.
+     * @return Iterator of all entities to be harvested, which may be {@link
+     *         edu.illinois.library.metaslurper.entity.ConcreteEntity}s for
+     *         existing entities, or {@link
+     *         edu.illinois.library.metaslurper.entity.PlaceholderEntity}s for
+     *         missing ones&mdash;never {@literal null}.
      */
-    ConcurrentIterator<Entity> entities() throws IOException;
+    ConcurrentIterator<? extends Entity> entities() throws IOException;
 
 }

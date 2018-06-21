@@ -1,7 +1,9 @@
 package edu.illinois.library.metaslurper.harvest;
 
 import edu.illinois.library.metaslurper.Application;
+import edu.illinois.library.metaslurper.entity.ConcreteEntity;
 import edu.illinois.library.metaslurper.entity.Entity;
+import edu.illinois.library.metaslurper.entity.PlaceholderEntity;
 import edu.illinois.library.metaslurper.service.ConcurrentIterator;
 import edu.illinois.library.metaslurper.service.EndOfIterationException;
 import edu.illinois.library.metaslurper.service.SinkService;
@@ -11,14 +13,20 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
+/**
+ * @author Alex Dolski UIUC
+ */
 public final class Harvester {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(Harvester.class);
+    private static final Logger LOGGER =
+            LoggerFactory.getLogger(Harvester.class);
 
     /**
      * Update the sink status after any multiple of this many entities are
@@ -54,9 +62,9 @@ public final class Harvester {
         final CountDownLatch latch = new CountDownLatch(numThreads);
         final ExecutorService pool = Executors.newFixedThreadPool(numThreads);
         try {
-            final int numEntities                 = source.numEntities();
-            final AtomicInteger index             = new AtomicInteger();
-            final ConcurrentIterator<Entity> iter = source.entities();
+            final int numEntities     = source.numEntities();
+            final AtomicInteger index = new AtomicInteger();
+            final ConcurrentIterator<? extends Entity> iter = source.entities();
 
             status.setLifecycle(Lifecycle.RUNNING);
             sink.setNumEntitiesToIngest(numEntities);
@@ -64,8 +72,12 @@ public final class Harvester {
             for (int i = 0; i < numThreads; i++) {
                 pool.submit(() -> {
                     try {
-                        while (true) { // will break on EndOfIterationException
+                        // Will break on EndOfIterationException or
+                        // HarvestClosedException.
+                        while (true) {
                             final int currentIndex = index.getAndIncrement();
+
+                            // Update the harvest status, if necessary.
                             try {
                                 if (currentIndex % STATUS_UPDATE_INCREMENT == 0
                                         && currentIndex + 1 < numEntities) {
@@ -77,41 +89,60 @@ public final class Harvester {
                             }
 
                             try {
-                                final Entity entity = iter.next();
-                                if (entity != null) {
-                                    sink.ingest(entity);
-                                    status.incrementAndGetNumSucceeded();
+                                // Pull an Entity from the source service.
+                                Entity entity = iter.next();
 
-                                    LOGGER.debug("Slurped {} {} from {} into {} [{}/{}] [{}]",
-                                            entity.getVariant().name().toLowerCase(),
-                                            entity, source, sink,
-                                            currentIndex + 1, numEntities,
-                                            percent(currentIndex + 1, numEntities));
+                                // Push it into the sink service.
+                                if (entity instanceof ConcreteEntity) {
+                                    ConcreteEntity concEntity = (ConcreteEntity) entity;
+                                    try {
+                                        sink.ingest(concEntity);
+                                        status.incrementAndGetNumSucceeded();
+
+                                        LOGGER.debug("Harvested {} {} from {} into {} [{}/{}] [{}]",
+                                                concEntity.getVariant().name().toLowerCase(),
+                                                concEntity, source, sink,
+                                                currentIndex + 1, numEntities,
+                                                percent(currentIndex + 1, numEntities));
+                                    } catch (IOException e) {
+                                        reportSinkFailure(status, concEntity, e);
+                                    }
                                 } else {
-                                    status.incrementAndGetNumFailed();
+                                    reportSourceFailure(status,
+                                            (PlaceholderEntity) entity);
                                 }
                             } catch (EndOfIterationException e) {
-                                status.setLifecycle(Lifecycle.SUCCEEDED);
-                                // If iteration has ended prematurely (based on
-                                // numEntities), increment the failure count
-                                // to make up the difference.
-                                int delta = numEntities + 1 - index.get();
+                                // If iteration has ended prematurely,
+                                // increment the failure count to make up the
+                                // difference.
+                                final int delta = numEntities + 1 - index.get();
                                 if (delta > 0) {
                                     status.addAndGetNumFailed(delta);
+                                    status.getMessages().add("Added " + delta +
+                                            " to the failure count due to a " +
+                                            "discrepancy between the number " +
+                                            "of items reported present in " +
+                                            "the service (" + numEntities +
+                                            ") and the number found (" +
+                                            (index.get() + 1) + ").");
                                 }
+                                status.setLifecycle(Lifecycle.SUCCEEDED);
                                 break;
                             } catch (HarvestClosedException e) {
-                                int delta = numEntities + 1 - index.get();
+                                // Set the failure count to the number of
+                                // items remaining.
+                                final int delta = numEntities + 1 - index.get();
                                 if (delta > 0) {
                                     status.addAndGetNumFailed(delta);
+                                    status.getMessages().add("Harvest " +
+                                            "aborted with " + delta +
+                                            "items left.");
                                 }
                                 status.setLifecycle(Lifecycle.ABORTED);
                                 LOGGER.info("Harvest closed: {}", e.getMessage());
                                 break;
                             } catch (Exception e) {
-                                LOGGER.error("Failed to ingest into sink: {}",
-                                        e.getMessage(), e);
-                                status.incrementAndGetNumFailed();
+                                reportSourceFailure(status, e);
                             }
                         }
                     } finally {
@@ -120,7 +151,7 @@ public final class Harvester {
                 });
             }
 
-            LOGGER.info("Slurping {} entities from {} into {} using {} threads",
+            LOGGER.info("Harvesting {} entities from {} into {} using {} threads",
                     numEntities, source, sink, numThreads);
 
             try {
@@ -141,6 +172,65 @@ public final class Harvester {
                 pool.shutdown();
             }
         }
+    }
+
+    /**
+     * Reports a failure to acquire an {@link Entity} from a {@link
+     * SourceService}.
+     */
+    private static void reportSourceFailure(Status status, Throwable t) {
+        LOGGER.error("Failed to retrieve from source: {}", t.getMessage(), t);
+
+        String message = String.format("**** SOURCE FAILURE:\n" +
+                        "    Exception: %s\n" +
+                        "    Message: %s\n" +
+                        "    Stack Trace: %s\n",
+                t.getClass().getSimpleName(),
+                t.getMessage(),
+                Arrays.stream(t.getStackTrace())
+                        .map(StackTraceElement::toString)
+                        .collect(Collectors.joining("\n")));
+        status.getMessages().add(message);
+        status.incrementAndGetNumFailed();
+    }
+
+    /**
+     * Reports a failure to acquire a {@link ConcreteEntity} from a {@link
+     * SourceService}.
+     */
+    private static void reportSourceFailure(Status status,
+                                            PlaceholderEntity entity) {
+        String message = String.format("**** SOURCE FAILURE:\n" +
+                        "    URI: %s\n" +
+                        "    Source ID: %s\n",
+                entity.getSourceURI(),
+                entity.getSourceID());
+        status.getMessages().add(message);
+        status.incrementAndGetNumFailed();
+    }
+
+    /**
+     * Reports a failure to ingest a {@link ConcreteEntity} into a {@link
+     * SinkService}.
+     */
+    private static void reportSinkFailure(Status status,
+                                          ConcreteEntity entity,
+                                          Throwable t) {
+        LOGGER.error("Failed to ingest into sink: {}", t.getMessage(), t);
+
+        String message = String.format("**** SINK FAILURE:\n" +
+                        "    URI: %s\n" +
+                        "    Source ID: %s\n" +
+                        "    Exception: %s\n" +
+                        "    Stack Trace: %s\n",
+                entity.getSourceURI(),
+                entity.getSourceID(),
+                t.getMessage(),
+                Arrays.stream(t.getStackTrace())
+                        .map(StackTraceElement::toString)
+                        .collect(Collectors.joining("\n")));
+        status.getMessages().add(message);
+        status.incrementAndGetNumFailed();
     }
 
 }

@@ -4,9 +4,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Ready-made bean-style {@link Entity} implementation.
+ * Ready-made bean-style implementation.
  */
-public class GenericEntity implements Entity {
+public class GenericEntity implements ConcreteEntity {
 
     private String mediaType, sourceID, sinkID, serviceKey, accessImageURI,
             sourceURI;

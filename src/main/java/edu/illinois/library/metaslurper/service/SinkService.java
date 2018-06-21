@@ -1,6 +1,6 @@
 package edu.illinois.library.metaslurper.service;
 
-import edu.illinois.library.metaslurper.entity.Entity;
+import edu.illinois.library.metaslurper.entity.ConcreteEntity;
 import edu.illinois.library.metaslurper.harvest.HarvestClosedException;
 import edu.illinois.library.metaslurper.harvest.Status;
 
@@ -12,7 +12,7 @@ import java.io.IOException;
 public interface SinkService extends Service {
 
     /**
-     * Called before the first call to {@link #ingest(Entity)}.
+     * Called before the first call to {@link #ingest}.
      */
     void setNumEntitiesToIngest(int numEntitiesToIngest);
 
@@ -23,7 +23,7 @@ public interface SinkService extends Service {
      *                                more attempts should be made.
      * @throws IOException            if there was some other error.
      */
-    void ingest(Entity entity) throws IOException;
+    void ingest(ConcreteEntity entity) throws IOException;
 
     /**
      * Sends a status update to the service.

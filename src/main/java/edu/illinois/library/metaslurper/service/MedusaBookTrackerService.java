@@ -1,6 +1,7 @@
 package edu.illinois.library.metaslurper.service;
 
 import edu.illinois.library.metaslurper.config.Configuration;
+import edu.illinois.library.metaslurper.entity.ConcreteEntity;
 import edu.illinois.library.metaslurper.entity.Element;
 import edu.illinois.library.metaslurper.entity.Entity;
 import edu.illinois.library.metaslurper.entity.Variant;
@@ -28,7 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 final class MedusaBookTrackerService implements SourceService {
 
-    private static class BookTrackerEntity implements Entity {
+    private static class BookTrackerEntity implements ConcreteEntity {
 
         /**
          * JSON keys that will be expressed as {@link #getElements() elements}.
@@ -42,11 +43,6 @@ final class MedusaBookTrackerService implements SourceService {
 
         private BookTrackerEntity(JSONObject rootObject) {
             this.rootObject = rootObject;
-        }
-
-        @Override
-        public String getAccessImageURI() {
-            return null;
         }
 
         @Override
@@ -72,11 +68,6 @@ final class MedusaBookTrackerService implements SourceService {
                 }
             }
             return elements;
-        }
-
-        @Override
-        public String getMediaType() {
-            return null;
         }
 
         @Override
@@ -202,7 +193,7 @@ final class MedusaBookTrackerService implements SourceService {
     }
 
     @Override
-    public ConcurrentIterator<Entity> entities() {
+    public ConcurrentIterator<? extends Entity> entities() {
         final Queue<Entity> batch = new ConcurrentLinkedQueue<>();
         final AtomicInteger pageNumber = new AtomicInteger(1);
 

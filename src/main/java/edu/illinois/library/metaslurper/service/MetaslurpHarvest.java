@@ -1,6 +1,7 @@
 package edu.illinois.library.metaslurper.service;
 
 import edu.illinois.library.metaslurper.harvest.Status;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -65,6 +66,11 @@ final class MetaslurpHarvest {
         jobj.put("num_items", numEntities.get());
         jobj.put("num_succeeded", status.getNumSucceeded());
         jobj.put("num_failed", status.getNumFailed());
+        JSONArray jmessages = new JSONArray();
+        for (String message : status.getMessages()) {
+            jmessages.put(message);
+        }
+        jobj.put("messages", jmessages);
         return jobj.toString();
     }
 

@@ -22,7 +22,7 @@ public class MedusaBookTrackerServiceTest {
 
     @Test
     public void testEntities() throws Exception {
-        ConcurrentIterator<Entity> it = instance.entities();
+        ConcurrentIterator<? extends Entity> it = instance.entities();
 
         for (int i = 0; i < 102; i++) {
             Entity entity = it.next();

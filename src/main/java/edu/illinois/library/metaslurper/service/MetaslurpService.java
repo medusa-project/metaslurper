@@ -1,6 +1,7 @@
 package edu.illinois.library.metaslurper.service;
 
 import edu.illinois.library.metaslurper.config.Configuration;
+import edu.illinois.library.metaslurper.entity.ConcreteEntity;
 import edu.illinois.library.metaslurper.entity.Element;
 import edu.illinois.library.metaslurper.entity.Entity;
 import edu.illinois.library.metaslurper.entity.Variant;
@@ -112,7 +113,7 @@ final class MetaslurpService implements SinkService {
     }
 
     @Override
-    public void ingest(Entity entity) throws IOException {
+    public void ingest(ConcreteEntity entity) throws IOException {
         if (isClosed.get()) {
             throw new IllegalStateException("Instance is closed.");
         } else if (numEntities == 0) {
@@ -219,7 +220,7 @@ final class MetaslurpService implements SinkService {
         }
     }
 
-    private String toJSON(Entity entity) {
+    private String toJSON(ConcreteEntity entity) {
         JSONObject jobj = new JSONObject();
         // harvest key
         jobj.put("harvest_key", harvest.getKey());

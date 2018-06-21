@@ -22,7 +22,7 @@ public class IllinoisDataBankServiceTest {
 
     @Test
     public void testEntities() throws Exception {
-        ConcurrentIterator<Entity> it = instance.entities();
+        ConcurrentIterator<? extends Entity> it = instance.entities();
 
         final int count = instance.numEntities();
 

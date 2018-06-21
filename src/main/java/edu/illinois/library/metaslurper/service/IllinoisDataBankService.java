@@ -1,6 +1,7 @@
 package edu.illinois.library.metaslurper.service;
 
 import edu.illinois.library.metaslurper.config.Configuration;
+import edu.illinois.library.metaslurper.entity.ConcreteEntity;
 import edu.illinois.library.metaslurper.entity.Element;
 import edu.illinois.library.metaslurper.entity.Entity;
 import edu.illinois.library.metaslurper.entity.Variant;
@@ -31,7 +32,7 @@ final class IllinoisDataBankService implements SourceService {
      * Data set backed by a JSON object from a {@literal /datasets/:id}
      * representation.
      */
-    private static class DataSet implements Entity {
+    private static class DataSet implements ConcreteEntity {
 
         private JSONObject rootObject;
 
@@ -189,7 +190,7 @@ final class IllinoisDataBankService implements SourceService {
     }
 
     @Override
-    public synchronized ConcurrentIterator<Entity> entities()
+    public synchronized ConcurrentIterator<? extends Entity> entities()
             throws IOException {
         checkClosed();
 

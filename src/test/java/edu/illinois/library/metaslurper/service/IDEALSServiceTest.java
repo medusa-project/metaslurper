@@ -1,6 +1,7 @@
 package edu.illinois.library.metaslurper.service;
 
 import edu.illinois.library.metaslurper.config.Configuration;
+import edu.illinois.library.metaslurper.entity.ConcreteEntity;
 import edu.illinois.library.metaslurper.entity.Element;
 import edu.illinois.library.metaslurper.entity.Entity;
 import org.junit.Before;
@@ -26,8 +27,8 @@ public class IDEALSServiceTest {
 
     @Test
     public void testEntities() throws Exception {
-        ConcurrentIterator<Entity> it = instance.entities();
-        Entity entity = it.next();
+        ConcurrentIterator<? extends Entity> it = instance.entities();
+        ConcreteEntity entity = (ConcreteEntity) it.next();
 
         // Check the entity's sink ID
         Configuration config = Configuration.getInstance();

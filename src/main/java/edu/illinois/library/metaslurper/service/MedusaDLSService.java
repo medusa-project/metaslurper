@@ -1,6 +1,7 @@
 package edu.illinois.library.metaslurper.service;
 
 import edu.illinois.library.metaslurper.config.Configuration;
+import edu.illinois.library.metaslurper.entity.ConcreteEntity;
 import edu.illinois.library.metaslurper.entity.Element;
 import edu.illinois.library.metaslurper.entity.Entity;
 import edu.illinois.library.metaslurper.entity.Variant;
@@ -89,7 +90,8 @@ final class MedusaDLSService implements SourceService {
 
     }
 
-    private static class DLSCollection extends DLSEntity implements Entity {
+    private static class DLSCollection extends DLSEntity
+            implements ConcreteEntity {
 
         private DLSCollection(JSONObject rootObject) {
             super(rootObject);
@@ -102,7 +104,7 @@ final class MedusaDLSService implements SourceService {
 
     }
 
-    private static class DLSItem extends DLSEntity implements Entity {
+    private static class DLSItem extends DLSEntity implements ConcreteEntity {
 
         private DLSItem(JSONObject rootObject) {
             super(rootObject);
@@ -125,7 +127,7 @@ final class MedusaDLSService implements SourceService {
 
     }
 
-    private static class DLSAgent extends DLSEntity implements Entity {
+    private static class DLSAgent extends DLSEntity implements ConcreteEntity {
 
         private String sourceURI;
 
@@ -282,7 +284,7 @@ final class MedusaDLSService implements SourceService {
      * entity representations are fetched on-demand during iteration.
      */
     @Override
-    public ConcurrentIterator<Entity> entities() {
+    public ConcurrentIterator<? extends Entity> entities() {
         // Queue of entity URIs.
         final Queue<String> batch = new ConcurrentLinkedQueue<>();
         final AtomicInteger batchIndex = new AtomicInteger();

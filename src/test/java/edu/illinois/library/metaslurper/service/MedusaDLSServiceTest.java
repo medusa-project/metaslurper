@@ -28,7 +28,7 @@ public class MedusaDLSServiceTest {
 
     @Test
     public void testEntities() throws Exception {
-        ConcurrentIterator<Entity> it = instance.entities();
+        ConcurrentIterator<? extends Entity> it = instance.entities();
 
         Entity entity = it.next();
         assertTrue(entity.getSinkID().startsWith(MedusaDLSService.ENTITY_ID_PREFIX));

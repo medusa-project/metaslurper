@@ -1,6 +1,7 @@
 package edu.illinois.library.metaslurper.service;
 
 import edu.illinois.library.metaslurper.config.Configuration;
+import edu.illinois.library.metaslurper.entity.ConcreteEntity;
 import edu.illinois.library.metaslurper.entity.Element;
 import edu.illinois.library.metaslurper.entity.Entity;
 import edu.illinois.library.metaslurper.entity.Variant;
@@ -23,10 +24,6 @@ final class IDEALSService implements SourceService {
 
     private static abstract class IDEALSEntity {
 
-        public String getAccessImageURI() {
-            return null;
-        }
-
         public String getServiceKey() {
             return getKeyFromConfiguration();
         }
@@ -46,7 +43,7 @@ final class IDEALSService implements SourceService {
     }
 
     private static final class IDEALSRecord extends IDEALSEntity
-            implements Entity {
+            implements ConcreteEntity {
 
         private PMHRecord pmhRecord;
 
@@ -105,7 +102,7 @@ final class IDEALSService implements SourceService {
     }
 
     private static final class IDEALSSet extends IDEALSEntity
-            implements Entity {
+            implements ConcreteEntity {
 
         private PMHSet pmhSet;
 
@@ -188,7 +185,7 @@ final class IDEALSService implements SourceService {
     }
 
     @Override
-    public ConcurrentIterator<Entity> entities() throws IOException {
+    public ConcurrentIterator<? extends Entity> entities() throws IOException {
         final ConcurrentIterator<PMHRecord> records =
                 harvester.records(new DIMElementTransformer());
         final ConcurrentIterator<PMHSet> sets = harvester.sets();
