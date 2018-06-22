@@ -108,6 +108,13 @@ final class MedusaBookTrackerService implements SourceService {
 
     private static final String NAME = "Medusa Book Tracker";
 
+    /**
+     * Allowed query keys: in[] (in), ni[] (not in)
+     * Allowed query values: "gb" (Google Books), "ia" (Internet Archive),
+     * "ht" (HathiTrust)
+     */
+    private static final String QUERY_FILTER = "ni[]=gb";
+
     private static final long REQUEST_TIMEOUT = 30;
 
     private HttpClient client;
@@ -175,10 +182,7 @@ final class MedusaBookTrackerService implements SourceService {
     private void fetchNumEntities() throws IOException {
         try {
             ContentResponse response = getClient()
-                    // allowed query keys: in[] (in), ni[] (not in)
-                    // allowed query values: "gb" (Google Books),
-                    // "ia" (Internet Archive), "ht" (HathiTrust)
-                    .newRequest(getEndpointURI() + "/items?ni[]=gb")
+                    .newRequest(getEndpointURI() + "/items?" + QUERY_FILTER)
                     .header("Accept", "application/json")
                     .timeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
                     .send();
@@ -227,10 +231,10 @@ final class MedusaBookTrackerService implements SourceService {
         final int numResults = numEntities();
         final int numPages = (int) Math.ceil(numResults / (float) windowSize);
 
-        final String uri = String.format("%s/items?page=%d",
+        final String uri = String.format("%s/items?page=%d&" + QUERY_FILTER,
                 getEndpointURI(), pageNumber);
         LOGGER.debug("Fetching {} results (page {} of {}): {}",
-                windowSize, pageNumber + 1, numPages, uri);
+                windowSize, pageNumber, numPages, uri);
 
         try {
             ContentResponse response = getClient().newRequest(uri)
