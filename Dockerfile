@@ -1,9 +1,9 @@
 #
-# N.B.: An application JAR file must be built before the image can be
-# created. See the README.
+# N.B.: An application JAR file must be built before the image can be created.
+# See the README.
 #
 
-FROM openjdk:8u171-jdk-alpine
+FROM openjdk:10.0.1-10-jdk
 
 WORKDIR .
 
