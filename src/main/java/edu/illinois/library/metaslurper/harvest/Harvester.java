@@ -115,7 +115,7 @@ public final class Harvester {
                                 // If iteration has ended prematurely,
                                 // increment the failure count to make up the
                                 // difference.
-                                final int delta = numEntities + 1 - index.get();
+                                final int delta = numEntities - currentIndex + 1;
                                 if (delta > 0) {
                                     status.addAndGetNumFailed(delta);
                                     status.getMessages().add("Added " + delta +
@@ -124,7 +124,8 @@ public final class Harvester {
                                             "of items reported present in " +
                                             "the service (" + numEntities +
                                             ") and the number found (" +
-                                            (index.get() + 1) + ").");
+                                            status.getNumSucceeded() +
+                                            status.getNumFailed() + ").");
                                 }
                                 status.setLifecycle(Lifecycle.SUCCEEDED);
                                 break;
