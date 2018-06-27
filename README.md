@@ -95,8 +95,8 @@ Metaslurper can run in AWS ECS. The general procedure for deploying is:
     1. The task definition must define all of the environment variables in
        the "Configuration" section (above)
 2. Install the `aws` command-line tool
-3. `cp ecs-push.sh.sample ecs-push.sh` and edit as necessary
-4. `ecs-push.sh`
+3. `cp ecr-push.sh.sample ecr-push.sh` and edit as necessary
+4. `ecr-push.sh`
 
 At this point the container is available and tasks are ready to run. One way to
 run them is with the `aws` command-line tool, for which a convenient wrapper
