@@ -49,6 +49,8 @@ available:
       * `SERVICE_SINK_METASLURP_ENDPOINT`
       * `SERVICE_SINK_METASLURP_USERNAME`
       * `SERVICE_SINK_METASLURP_SECRET`
+      * `SERVICE_SINK_METASLURP_HARVEST_KEY` (optional; if not set, a new
+        harvest will be created)
 
 # Run
 

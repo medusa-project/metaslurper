@@ -125,7 +125,13 @@ final class MetaslurpService implements SinkService {
 
         synchronized (this) {
             if (harvest == null) {
-                createHarvest(entity.getServiceKey());
+                final String harvestKey =
+                        System.getenv("SERVICE_SINK_METASLURP_HARVEST_KEY");
+                if (harvestKey != null && !harvestKey.isEmpty()) {
+                    harvest = new MetaslurpHarvest(harvestKey, numEntities);
+                } else {
+                    createHarvest(entity.getServiceKey());
+                }
             }
         }
 
