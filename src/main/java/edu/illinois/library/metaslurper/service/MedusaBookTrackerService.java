@@ -35,9 +35,10 @@ final class MedusaBookTrackerService implements SourceService {
          * JSON keys that will be expressed as {@link #getElements() elements}.
          */
         private static final String[] ELEMENTS = {
-                "author", "bib_id", "created_at", "date", "hathitrust_url",
-                "internet_archive_identifier", "internet_archive_url",
-                "obj_id", "oclc_number", "title", "updated_at" };
+                "author", "bib_id", "catalog_url", "created_at", "date",
+                "hathitrust_url", "internet_archive_identifier",
+                "internet_archive_url", "obj_id", "oclc_number", "title",
+                "updated_at" };
 
         private JSONObject rootObject;
 
