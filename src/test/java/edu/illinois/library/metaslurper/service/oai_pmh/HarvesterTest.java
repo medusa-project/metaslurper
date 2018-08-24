@@ -2,11 +2,14 @@ package edu.illinois.library.metaslurper.service.oai_pmh;
 
 import edu.illinois.library.metaslurper.entity.Element;
 import edu.illinois.library.metaslurper.service.ConcurrentIterator;
+import edu.illinois.library.metaslurper.service.EndOfIterationException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.w3c.dom.Node;
+
+import java.time.Instant;
 
 import static org.junit.Assert.*;
 
@@ -43,6 +46,16 @@ public class HarvesterTest {
     }
 
     @Test
+    public void testNumRecordsWithDateRange() throws Exception {
+        // 2017-03-05T00:00:00Z
+        instance.setFrom(Instant.ofEpochSecond(1488672000));
+        // 2017-05-05T00:00:00Z
+        instance.setUntil(Instant.ofEpochSecond(1493942400));
+
+        assertEquals(127, instance.numRecords());
+    }
+
+    @Test
     public void testNumSets() throws Exception {
         assertTrue(instance.numSets() > 120);
     }
@@ -59,6 +72,28 @@ public class HarvesterTest {
             assertNotNull(record.getSetSpec());
             assertFalse(record.getElements().isEmpty());
         }
+    }
+
+    @Test
+    public void testRecordsWithDateRange() throws Exception {
+        // 2017-03-05T00:00:00Z
+        instance.setFrom(Instant.ofEpochSecond(1488672000));
+        // 2017-03-20T00:00:00Z
+        instance.setUntil(Instant.ofEpochSecond(1489536000));
+
+        ConcurrentIterator<PMHRecord> it = instance.records();
+
+        int count = 0;
+        while (true) {
+            try {
+                it.next();
+                count++;
+            } catch (EndOfIterationException e) {
+                break;
+            }
+        }
+
+        assertEquals(13, count);
     }
 
     @Test

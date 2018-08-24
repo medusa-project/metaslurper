@@ -2,6 +2,7 @@ package edu.illinois.library.metaslurper.service.oai_pmh;
 
 import edu.illinois.library.metaslurper.entity.Element;
 import edu.illinois.library.metaslurper.service.ConcurrentIterator;
+import edu.illinois.library.metaslurper.service.EndOfIterationException;
 import org.eclipse.jetty.client.HttpClient;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -13,28 +14,56 @@ import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 import java.io.IOException;
-import java.net.URLEncoder;
+import java.time.Instant;
 import java.util.Queue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 class RecordIterator<T> extends AbstractIterator<T>
         implements ConcurrentIterator<T> {
 
-    private String endpointURI, metadataPrefix;
+    private final AtomicInteger index = new AtomicInteger();
+    private String endpointURI, resumptionToken, metadataPrefix;
+    private Instant from, until;
 
     RecordIterator(HttpClient client,
                    String endpointURI,
                    String metadataPrefix,
+                   Instant from,
+                   Instant until,
                    int numRecords,
                    ElementTransformer tx) {
         super(client, tx);
         this.endpointURI = endpointURI;
         this.metadataPrefix = metadataPrefix;
+        this.from = from;
+        this.until = until;
         numEntities.set(numRecords);
     }
 
     @Override
-    String fetchBatch(String resumptionToken,
-                      Queue<T> batch) throws IOException {
+    public T next() throws EndOfIterationException, IOException {
+        if (numEntities.get() >= 0 &&
+                index.incrementAndGet() >= numEntities.get()) {
+            throw new EndOfIterationException();
+        }
+
+        // If the queue is empty, fetch the next batch.
+        synchronized (this) {
+            if (batch.peek() == null) {
+                resumptionToken = fetchBatch(resumptionToken, batch);
+            }
+        }
+
+        return batch.remove();
+    }
+
+    /**
+     * @param resumptionToken Current resumption token.
+     * @param batch           Queue to add results to.
+     * @return                Next resumption token.
+     */
+    private String fetchBatch(String resumptionToken,
+                              Queue<T> batch) throws IOException {
         String uri;
         if (resumptionToken != null && !resumptionToken.isEmpty()) {
             uri = String.format("%s?verb=ListRecords&resumptionToken=%s",
@@ -42,6 +71,12 @@ class RecordIterator<T> extends AbstractIterator<T>
         } else {
             uri = String.format("%s?verb=ListRecords&metadataPrefix=%s",
                     endpointURI, metadataPrefix);
+            if (from != null) {
+                uri += "&from=" + from;
+            }
+            if (until != null) {
+                uri += "&until=" + until;
+            }
         }
 
         final Document doc = fetchDocument(uri);

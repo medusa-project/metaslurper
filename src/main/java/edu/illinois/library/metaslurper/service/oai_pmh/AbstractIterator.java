@@ -1,6 +1,5 @@
 package edu.illinois.library.metaslurper.service.oai_pmh;
 
-import edu.illinois.library.metaslurper.service.EndOfIterationException;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
@@ -30,23 +29,11 @@ abstract class AbstractIterator<T> {
     ElementTransformer elementTransformer;
 
     private HttpClient client;
-    private final AtomicInteger index = new AtomicInteger();
-    private String resumptionToken;
 
     AbstractIterator(HttpClient client, ElementTransformer tx) {
         this.client = client;
         this.elementTransformer = tx;
     }
-
-    /**
-     * @param resumptionToken Current resumption token. Will be {@literal
-     *                        null} at the beginning of the harvest.
-     * @param batch           Queue to put harvested results into.
-     * @return                Next resumption token. Will be {@literal
-     *                        null} at the end of the harvest.
-     */
-    abstract String fetchBatch(String resumptionToken,
-                               Queue<T> batch) throws IOException;
 
     Document fetchDocument(String uri) throws IOException {
         InputStreamResponseListener responseListener =
@@ -81,21 +68,6 @@ abstract class AbstractIterator<T> {
         } catch (Exception e) {
             throw new IOException(e);
         }
-    }
-
-    public T next() throws EndOfIterationException, IOException {
-        if (numEntities.get() >= 0 && index.incrementAndGet() >= numEntities.get()) {
-            throw new EndOfIterationException();
-        }
-
-        // If the queue is empty, fetch the next batch.
-        synchronized (this) {
-            if (batch.peek() == null) {
-                resumptionToken = fetchBatch(resumptionToken, batch);
-            }
-        }
-
-        return batch.remove();
     }
 
 }

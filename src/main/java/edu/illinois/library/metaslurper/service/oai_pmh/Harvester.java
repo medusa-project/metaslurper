@@ -17,6 +17,7 @@ import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathFactory;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -56,6 +57,8 @@ public final class Harvester implements AutoCloseable {
     private String endpointURI;
     private String metadataPrefix = DEFAULT_METADATA_PREFIX;
 
+    private Instant from, until;
+
     private synchronized HttpClient getClient() {
         if (client == null) {
             client = new HttpClient(new SslContextFactory());
@@ -86,6 +89,12 @@ public final class Harvester implements AutoCloseable {
     public int numRecords() throws IOException {
         String uri = String.format("%s?verb=ListIdentifiers&metadataPrefix=%s",
                 endpointURI, metadataPrefix);
+        if (from != null) {
+            uri += "&from=" + from;
+        }
+        if (until != null) {
+            uri += "&until=" + until;
+        }
         return fetchCountFromListResponse(uri, "header");
     }
 
@@ -156,7 +165,15 @@ public final class Harvester implements AutoCloseable {
         }
 
         return new RecordIterator<>(getClient(), endpointURI, metadataPrefix,
-                numRecords(), tx);
+                from, until, numRecords(), tx);
+    }
+
+    public void setFrom(Instant from) {
+        this.from = from;
+    }
+
+    public void setUntil(Instant until) {
+        this.until = until;
     }
 
     public ConcurrentIterator<PMHSet> sets() throws IOException {
