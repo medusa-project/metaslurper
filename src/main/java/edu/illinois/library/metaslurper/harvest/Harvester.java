@@ -115,7 +115,7 @@ public final class Harvester {
                                 // If iteration has ended prematurely,
                                 // increment the failure count to make up the
                                 // difference.
-                                final int delta = numEntities - currentIndex + 1;
+                                final int delta = numEntities - currentIndex;
                                 if (delta > 0) {
                                     status.addAndGetNumFailed(delta);
                                     status.getMessages().add("Added " + delta +
