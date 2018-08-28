@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Queue;
 import java.util.Set;
@@ -124,6 +125,8 @@ final class MedusaBookTrackerService implements SourceService {
 
     private int numEntities = -1, windowSize = -1;
 
+    private Instant lastModified;
+
     private static String getEndpointURI() {
         Configuration config = Configuration.getInstance();
         String endpoint = config.getString("SERVICE_SOURCE_BOOK_TRACKER_ENDPOINT");
@@ -182,8 +185,13 @@ final class MedusaBookTrackerService implements SourceService {
 
     private void fetchNumEntities() throws IOException {
         try {
+            String uri = getEndpointURI() + "/items?" + QUERY_FILTER;
+            if (lastModified != null) {
+                uri += "&last_modified_after=" + lastModified.getEpochSecond();
+            }
+
             ContentResponse response = getClient()
-                    .newRequest(getEndpointURI() + "/items?" + QUERY_FILTER)
+                    .newRequest(uri)
                     .header("Accept", "application/json")
                     .timeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
                     .send();
@@ -232,8 +240,11 @@ final class MedusaBookTrackerService implements SourceService {
         final int numResults = numEntities();
         final int numPages = (int) Math.ceil(numResults / (float) windowSize);
 
-        final String uri = String.format("%s/items?page=%d&" + QUERY_FILTER,
-                getEndpointURI(), pageNumber);
+        String uri = String.format("%s/items?page=%d&%s",
+                getEndpointURI(), pageNumber, QUERY_FILTER);
+        if (lastModified != null) {
+            uri += "&last_modified_after=" + lastModified.getEpochSecond();
+        }
         LOGGER.debug("Fetching {} results (page {} of {}): {}",
                 windowSize, pageNumber, numPages, uri);
 
@@ -262,6 +273,13 @@ final class MedusaBookTrackerService implements SourceService {
         }
 
         LOGGER.debug("Fetched {} results", batch.size());
+    }
+
+    @Override
+    public void setLastModified(Instant lastModified)
+            throws UnsupportedOperationException {
+        this.lastModified = lastModified;
+        this.numEntities = -1;
     }
 
     @Override

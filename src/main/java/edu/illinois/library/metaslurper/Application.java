@@ -12,15 +12,17 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
 public final class Application {
 
     private enum Argument {
+        INCREMENTAL("i", "incremental", false, "Last-modified epoch second"),
         SOURCE_SERVICE("s", "source", true, "Source service key"),
         SINK_SERVICE("k", "sink", true, "Sink service key"),
-        THREADS("t", "threads", false, "Number of harvesting threads");
+        THREADS("t", "threads", false, "Number of harvesting threads (default = 1)");
 
         private String shortArg, longArg, description;
         private boolean isRequired;
@@ -53,32 +55,34 @@ public final class Application {
             String sourceStr = cmd.getOptionValue(Argument.SOURCE_SERVICE.longArg);
             String sinkStr = cmd.getOptionValue(Argument.SINK_SERVICE.longArg);
 
-            final SinkService sink = ServiceFactory.getSinkService(sinkStr);
-            if (sink != null) {
-                final Harvester harvester = new Harvester();
-                SourceService source = ServiceFactory.getSourceService(sourceStr);
-                if (source != null) {
-                    try {
-                        harvester.harvest(source, sink);
-                    } finally {
-                        source.close();
+            try (SinkService sink = ServiceFactory.getSinkService(sinkStr)) {
+                if (sink != null) {
+                    try (SourceService source = ServiceFactory.getSourceService(sourceStr)) {
+                        if (source != null) {
+                            if (cmd.hasOption(Argument.INCREMENTAL.longArg)) {
+                                long second = Long.parseLong(
+                                        cmd.getOptionValue(Argument.INCREMENTAL.longArg));
+                                Instant lastModified = Instant.ofEpochSecond(second);
+                                source.setLastModified(lastModified);
+                            }
+                            new Harvester().harvest(source, sink);
+                        } else {
+                            System.err.println("Unrecognized source service key: " + sourceStr);
+                            printSourceServices();
+                            System.exit(-1);
+                        }
                     }
                 } else {
-                    System.err.println("Unrecognized source service key: " + sourceStr);
-                    printSourceServices();
+                    System.err.println("Unrecognized sink service key: " + sinkStr);
+                    printSinkServices();
                     System.exit(-1);
                 }
-                sink.close();
-            } else {
-                System.err.println("Unrecognized sink service key: " + sinkStr);
-                printSinkServices();
-                System.exit(-1);
             }
         } catch (ParseException e) {
             System.err.println(e.getMessage());
             try {
                 // Sometimes the above output gets interleaved into the help
-                // output... (?)
+                // output...
                 Thread.sleep(1);
                 HelpFormatter formatter = new HelpFormatter();
                 formatter.printHelp("java -jar <jarfile>", getOptions());

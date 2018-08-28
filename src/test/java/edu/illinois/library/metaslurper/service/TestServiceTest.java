@@ -1,6 +1,7 @@
 package edu.illinois.library.metaslurper.service;
 
 import edu.illinois.library.metaslurper.entity.Entity;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -8,44 +9,46 @@ import java.time.Instant;
 
 import static org.junit.Assert.*;
 
-public class MedusaBookTrackerServiceTest {
+public class TestServiceTest {
 
-    private MedusaBookTrackerService instance;
+    private TestService instance;
 
     @Before
     public void setUp() {
-        instance = new MedusaBookTrackerService();
+        instance = new TestService();
+    }
+
+    @After
+    public void tearDown() {
+        instance.close();
     }
 
     @Test
-    public void testNumEntities() throws Exception {
-        assertTrue(instance.numEntities() > 50000);
+    public void testNumEntities() {
+        assertEquals(2, instance.numEntities());
     }
 
     @Test
-    public void testNumEntitiesIncremental() throws Exception {
-        int totalCount = instance.numEntities();
-
+    public void testNumEntitiesIncremental() {
         instance.setLastModified(Instant.ofEpochSecond(1533913634));
-        assertTrue(instance.numEntities() < totalCount);
+        assertEquals(1, instance.numEntities());
     }
 
     @Test
     public void testEntities() throws Exception {
         ConcurrentIterator<? extends Entity> it = instance.entities();
 
-        for (int i = 0; i < 102; i++) {
-            Entity entity = it.next();
-            assertFalse(entity.getSinkID().isEmpty());
-        }
+        Entity entity = it.next();
+        assertNotNull(entity);
     }
 
     @Test
     public void testEntitiesIncremental() throws Exception {
         instance.setLastModified(Instant.ofEpochSecond(1533913634));
-
         ConcurrentIterator<? extends Entity> it = instance.entities();
-        assertNotNull(it.next());
+
+        Entity entity = it.next();
+        assertNotNull(entity);
     }
 
 }

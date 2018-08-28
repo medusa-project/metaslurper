@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Queue;
 import java.util.Set;
@@ -271,6 +272,12 @@ final class IllinoisDataBankService implements SourceService {
                 TimeoutException e) {
             throw new IOException(e);
         }
+    }
+
+    @Override
+    public void setLastModified(Instant lastModified) {
+        // This service doesn't support incremental harvesting, but that's OK
+        // since it contains so little content.
     }
 
     @Override

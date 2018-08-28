@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.Instant;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -205,6 +206,12 @@ final class IDEALSService implements SourceService {
             numEntities = harvester.numRecords() + harvester.numSets();
         }
         return numEntities;
+    }
+
+    @Override
+    public void setLastModified(Instant lastModified) {
+        harvester.setFrom(lastModified);
+        numEntities = -1;
     }
 
     @Override

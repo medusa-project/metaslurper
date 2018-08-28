@@ -4,6 +4,7 @@ import edu.illinois.library.metaslurper.entity.GenericEntity;
 import edu.illinois.library.metaslurper.entity.Entity;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -53,6 +54,12 @@ public class MockSourceService implements SourceService {
                 }
             }
         };
+    }
+
+    @Override
+    public void setLastModified(Instant lastModified)
+            throws UnsupportedOperationException {
+        throw new UnsupportedOperationException();
     }
 
 }

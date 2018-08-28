@@ -56,12 +56,23 @@ available:
 
 ## On the command line
 
+Invoke with no arguments to print a list of available arguments:
+
 ```
-java -jar target/metaslurper-VERSION.jar \
-    -source test -sink $SERVICE_SINK_METASLURP_KEY -threads 2
+java -jar target/metaslurper-VERSION.jar
 ```
 
-`test` is a built-in test source service that will "harvest" some fake content.
+Example invocation:
+
+```
+java -jar target/metaslurper-VERSION.jar \
+    -source test \
+    -sink $SERVICE_SINK_METASLURP_KEY \
+    -threads 2 \
+    -incremental 1535380169
+```
+
+`test` is a built-in test source service that will harvest some fake content.
 Change it to a random string to print a list of available service keys.
 
 ## In Docker

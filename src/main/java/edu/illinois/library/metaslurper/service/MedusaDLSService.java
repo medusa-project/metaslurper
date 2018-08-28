@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Queue;
 import java.util.Set;
@@ -200,6 +201,8 @@ final class MedusaDLSService implements SourceService {
 
     private int numEntities = -1;
 
+    private Instant lastModified;
+
     /**
      * @return Base URI of the service.
      */
@@ -262,9 +265,15 @@ final class MedusaDLSService implements SourceService {
     @Override
     public int numEntities() throws IOException {
         if (numEntities < 0) {
+            String uri = getSearchURI();
+
+            if (lastModified != null) {
+                uri += "?last_modified_after=" + lastModified.getEpochSecond();
+            }
+
             try {
                 ContentResponse response = getClient()
-                        .newRequest(getSearchURI())
+                        .newRequest(uri)
                         .header("Accept", "application/json")
                         .timeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
                         .send();
@@ -324,8 +333,11 @@ final class MedusaDLSService implements SourceService {
         final int numBatches = (int) Math.ceil(numResults / (double) BATCH_SIZE);
         final int offset = batchIndex * BATCH_SIZE;
 
-        final String uri = String.format("%s?start=%d&limit=%d",
+        String uri = String.format("%s?start=%d&limit=%d",
                 getSearchURI(), offset, BATCH_SIZE);
+        if (lastModified != null) {
+            uri += "&last_modified_after=" + lastModified.getEpochSecond();
+        }
         LOGGER.debug("Fetching batch {} of {}: {}",
                 batchIndex + 1, numBatches, uri);
 
@@ -393,6 +405,13 @@ final class MedusaDLSService implements SourceService {
                 TimeoutException e) {
             throw new IOException(e);
         }
+    }
+
+    @Override
+    public void setLastModified(Instant lastModified)
+            throws UnsupportedOperationException {
+        this.lastModified = lastModified;
+        this.numEntities = -1;
     }
 
     @Override

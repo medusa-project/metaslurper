@@ -5,9 +5,10 @@ import edu.illinois.library.metaslurper.entity.Element;
 import edu.illinois.library.metaslurper.entity.Entity;
 import edu.illinois.library.metaslurper.entity.Variant;
 
+import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Fake service that supplies some fake content.
@@ -16,6 +17,8 @@ final class TestService implements SourceService {
 
     private static final List<Entity> ENTITIES = new ArrayList<>();
     private static final String KEY = "test";
+
+    private Instant lastModified;
 
     static {
         // add an item
@@ -54,23 +57,30 @@ final class TestService implements SourceService {
 
     @Override
     public ConcurrentIterator<Entity> entities() {
-        final Iterator<Entity> it = ENTITIES.iterator();
+        final int count = numEntities();
+        final AtomicInteger index = new AtomicInteger(0);
 
-        return new ConcurrentIterator<Entity>() {
-            @Override
-            public synchronized Entity next() throws Exception {
-                if (it.hasNext()) {
-                    return it.next();
-                } else {
-                    throw new EndOfIterationException();
-                }
+        return () -> {
+            final int i = index.getAndIncrement();
+            if (i < count) {
+                return ENTITIES.get(i);
+            } else {
+                throw new EndOfIterationException();
             }
         };
     }
 
     @Override
     public int numEntities() throws UnsupportedOperationException {
-        return ENTITIES.size();
+        // If lastModified is set, we'll say half of the entities were last
+        // modified after it.
+        return (lastModified != null) ?
+                Math.round(ENTITIES.size() / 2f) : ENTITIES.size();
+    }
+
+    @Override
+    public void setLastModified(Instant lastModified) {
+        this.lastModified = lastModified;
     }
 
     @Override

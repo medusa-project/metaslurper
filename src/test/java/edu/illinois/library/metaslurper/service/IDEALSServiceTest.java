@@ -7,6 +7,7 @@ import edu.illinois.library.metaslurper.entity.Entity;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.time.Instant;
 import java.util.Set;
 
 import static org.junit.Assert.*;
@@ -26,6 +27,14 @@ public class IDEALSServiceTest {
     }
 
     @Test
+    public void testNumEntitiesIncremental() throws Exception {
+        int totalCount = instance.numEntities();
+
+        instance.setLastModified(Instant.ofEpochSecond(1533913634));
+        assertTrue(instance.numEntities() < totalCount);
+    }
+
+    @Test
     public void testEntities() throws Exception {
         ConcurrentIterator<? extends Entity> it = instance.entities();
         ConcreteEntity entity = (ConcreteEntity) it.next();
@@ -38,6 +47,18 @@ public class IDEALSServiceTest {
         // Check its elements
         Set<Element> elements = entity.getElements();
         assertTrue(elements.size() > 0);
+    }
+
+    @Test
+    public void testEntitiesIncremental() throws Exception {
+        instance.setLastModified(Instant.ofEpochSecond(1533913634));
+
+        ConcurrentIterator<? extends Entity> it = instance.entities();
+        ConcreteEntity entity = (ConcreteEntity) it.next();
+
+        Configuration config = Configuration.getInstance();
+        String expectedPrefix = config.getString("SERVICE_SOURCE_IDEALS_KEY");
+        assertTrue(entity.getSinkID().matches(expectedPrefix + "-[A-Za-z\\d_]+"));
     }
 
 }

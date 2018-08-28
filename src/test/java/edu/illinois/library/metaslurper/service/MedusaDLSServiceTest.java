@@ -5,6 +5,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.time.Instant;
+
 import static org.junit.Assert.*;
 
 public class MedusaDLSServiceTest {
@@ -27,7 +29,24 @@ public class MedusaDLSServiceTest {
     }
 
     @Test
+    public void testNumEntitiesIncremental() throws Exception {
+        int totalCount = instance.numEntities();
+
+        instance.setLastModified(Instant.ofEpochSecond(1533913634));
+        assertTrue(instance.numEntities() < totalCount);
+    }
+
+    @Test
     public void testEntities() throws Exception {
+        ConcurrentIterator<? extends Entity> it = instance.entities();
+
+        Entity entity = it.next();
+        assertTrue(entity.getSinkID().startsWith(MedusaDLSService.ENTITY_ID_PREFIX));
+    }
+
+    @Test
+    public void testEntitiesIncremental() throws Exception {
+        instance.setLastModified(Instant.ofEpochSecond(1533913634));
         ConcurrentIterator<? extends Entity> it = instance.entities();
 
         Entity entity = it.next();
