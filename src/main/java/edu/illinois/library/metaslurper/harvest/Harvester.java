@@ -124,8 +124,8 @@ public final class Harvester {
                                             "of items reported present in " +
                                             "the service (" + numEntities +
                                             ") and the number found (" +
-                                            status.getNumSucceeded() +
-                                            status.getNumFailed() + ").");
+                                            (status.getNumSucceeded() +
+                                            status.getNumFailed()) + ").");
                                 }
                                 status.setLifecycle(Lifecycle.SUCCEEDED);
                                 break;
