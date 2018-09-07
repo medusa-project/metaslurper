@@ -17,8 +17,9 @@ public final class ServiceFactory {
                             new TestSourceService())));
     private static Set<SinkService> DEFAULT_SINK_SERVICES =
             Collections.unmodifiableSet(
-                    new HashSet<>(Collections.singletonList(
-                            new MetaslurpService())));
+                    new HashSet<>(Arrays.asList(
+                            new MetaslurpService(),
+                            new TestSinkService())));
 
     private static Set<SourceService> sourceServices;
     private static Set<SinkService> sinkServices;
@@ -43,9 +44,10 @@ public final class ServiceFactory {
      * @return    Service with the given key, or {@literal null}.
      */
     public static SourceService getSourceService(String key) {
-        final String lowerKey = key.toLowerCase();
-        return allSourceServices().stream()
-                .filter(s -> s.getKey() != null && s.getKey().toLowerCase().equals(lowerKey))
+        return allSourceServices()
+                .stream()
+                .filter(s -> s.getKey() != null)
+                .filter(s -> s.getKey().equalsIgnoreCase(key))
                 .findAny()
                 .orElse(null);
     }
@@ -55,9 +57,10 @@ public final class ServiceFactory {
      * @return    Service with the given key, or {@literal null}.
      */
     public static SinkService getSinkService(String key) {
-        final String lowerKey = key.toLowerCase();
-        return allSinkServices().stream()
-                .filter(s -> s.getKey() != null && s.getKey().toLowerCase().equals(lowerKey))
+        return allSinkServices()
+                .stream()
+                .filter(s -> s.getKey() != null)
+                .filter(s -> s.getKey().equalsIgnoreCase(key))
                 .findAny()
                 .orElse(null);
     }
