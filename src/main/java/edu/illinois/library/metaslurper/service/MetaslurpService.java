@@ -268,6 +268,8 @@ final class MetaslurpService implements SinkService {
                 return "Collection";
             case DATA_SET:
                 return "DataSet";
+            case NEWSPAPER_PAGE:
+                return "NewspaperPage";
             default:
                 return "Item";
         }
