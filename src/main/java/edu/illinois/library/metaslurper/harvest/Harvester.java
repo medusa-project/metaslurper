@@ -62,7 +62,13 @@ public final class Harvester {
         final CountDownLatch latch = new CountDownLatch(numThreads);
         final ExecutorService pool = Executors.newFixedThreadPool(numThreads);
         try {
-            final int numEntities     = source.numEntities();
+            int tmp;
+            try {
+                tmp = source.numEntities();
+            } catch (UnsupportedOperationException e) {
+                tmp = 0;
+            }
+            final int numEntities = tmp;
             final AtomicInteger index = new AtomicInteger();
             final ConcurrentIterator<? extends Entity> iter = source.entities();
 

@@ -4,11 +4,13 @@ import edu.illinois.library.metaslurper.service.MockAbortingSourceService;
 import edu.illinois.library.metaslurper.service.MockErroringSinkService;
 import edu.illinois.library.metaslurper.service.MockErroringSourceService1;
 import edu.illinois.library.metaslurper.service.MockErroringSourceService2;
+import edu.illinois.library.metaslurper.service.MockNonCountingSourceService;
 import edu.illinois.library.metaslurper.service.MockOvercountingSourceService;
 import edu.illinois.library.metaslurper.service.MockSinkService;
 import edu.illinois.library.metaslurper.service.MockSourceService;
 import edu.illinois.library.metaslurper.service.MockUndercountingSourceService;
 import edu.illinois.library.metaslurper.service.MockUnreliableSourceService;
+import edu.illinois.library.metaslurper.service.SourceService;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -103,6 +105,19 @@ public class HarvesterTest {
             instance.harvest(source, sink, status);
         }
         assertEquals(Lifecycle.FAILED, status.getLifecycle());
+    }
+
+    @Test
+    public void testHarvestWithSourceNumItemsMethodThrowingUnsupportedOperationException() {
+        Status status = new Status();
+        try (SourceService source = new MockNonCountingSourceService();
+             MockSinkService sink = new MockSinkService()) {
+            instance.harvest(source, sink, status);
+        }
+        assertEquals(2, status.getNumSucceeded());
+        assertEquals(0, status.getNumFailed());
+        assertEquals(0, status.getMessages().size());
+        assertEquals(Lifecycle.SUCCEEDED, status.getLifecycle());
     }
 
     @Test
