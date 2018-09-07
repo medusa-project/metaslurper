@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Fake service that supplies some fake content.
  */
-final class TestService implements SourceService {
+final class TestSourceService implements SourceService {
 
     private static final List<Entity> ENTITIES = new ArrayList<>();
     private static final String KEY = "test";

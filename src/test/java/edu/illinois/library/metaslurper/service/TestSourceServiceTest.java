@@ -9,13 +9,13 @@ import java.time.Instant;
 
 import static org.junit.Assert.*;
 
-public class TestServiceTest {
+public class TestSourceServiceTest {
 
-    private TestService instance;
+    private TestSourceService instance;
 
     @Before
     public void setUp() {
-        instance = new TestService();
+        instance = new TestSourceService();
     }
 
     @After

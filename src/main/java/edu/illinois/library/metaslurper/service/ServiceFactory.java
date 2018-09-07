@@ -14,7 +14,7 @@ public final class ServiceFactory {
                             new IllinoisDataBankService(),
                             new MedusaBookTrackerService(),
                             new MedusaDLSService(),
-                            new TestService())));
+                            new TestSourceService())));
     private static Set<SinkService> DEFAULT_SINK_SERVICES =
             Collections.unmodifiableSet(
                     new HashSet<>(Collections.singletonList(
