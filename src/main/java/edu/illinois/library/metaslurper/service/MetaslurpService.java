@@ -202,6 +202,9 @@ final class MetaslurpService implements SinkService {
 
     @Override
     public void updateStatus(final Status status) throws IOException {
+        if (harvest == null) {
+            return;
+        }
         harvest.setStatus(status);
         final URI uri = getEndpointURI().resolve(harvest.getPath());
         final String json = harvest.toJSON();
