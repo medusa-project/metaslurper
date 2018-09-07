@@ -8,6 +8,7 @@ import edu.illinois.library.metaslurper.service.ConcurrentIterator;
 import edu.illinois.library.metaslurper.service.EndOfIterationException;
 import edu.illinois.library.metaslurper.service.SinkService;
 import edu.illinois.library.metaslurper.service.SourceService;
+import edu.illinois.library.metaslurper.util.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,14 +34,6 @@ public final class Harvester {
      * ingested.
      */
     private static final short STATUS_UPDATE_INCREMENT = 25;
-
-    private static String percent(int numerator, int denominator) {
-        if (denominator > 0) {
-            return String.format("%.2f%%",
-                    (numerator / (double) denominator) * 100);
-        }
-        return "?%";
-    }
 
     /**
      * @param source Service to harvest.
@@ -109,7 +102,7 @@ public final class Harvester {
                                                 concEntity.getVariant().name().toLowerCase(),
                                                 concEntity, source, sink,
                                                 currentIndex + 1, numEntities,
-                                                percent(currentIndex + 1, numEntities));
+                                                NumberUtils.percent(currentIndex + 1, numEntities));
                                     } catch (IOException e) {
                                         reportSinkFailure(status, concEntity, e);
                                     }
