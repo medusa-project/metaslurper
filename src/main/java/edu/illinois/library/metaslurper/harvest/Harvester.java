@@ -78,8 +78,7 @@ public final class Harvester {
 
                             // Update the harvest status, if necessary.
                             try {
-                                if (currentIndex % STATUS_UPDATE_INCREMENT == 0
-                                        && currentIndex + 1 < numEntities) {
+                                if (currentIndex % STATUS_UPDATE_INCREMENT == 0) {
                                     sink.updateStatus(status);
                                 }
                             } catch (IOException e) {
