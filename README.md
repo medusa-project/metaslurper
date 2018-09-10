@@ -21,6 +21,8 @@ services are modular, too.
 The only requirements are JDK 8+ and Maven 3. CPU and memory requirements are
 minimal.
 
+Docker is required for deployment to AWS ECR.
+
 # Build
 
 `mvn clean package -DskipTests`
@@ -37,6 +39,9 @@ available:
     * Illinois Digital Library
       * `SERVICE_SOURCE_DLS_KEY`
       * `SERVICE_SOURCE_DLS_ENDPOINT`
+    * Illinois Digital Newspaper Collection
+      * `SERVICE_SOURCE_IDNC_KEY`
+      * `SERVICE_SOURCE_IDNC_ENDPOINT`
     * IDEALS
       * `SERVICE_SOURCE_IDEALS_KEY`
       * `SERVICE_SOURCE_IDEALS_ENDPOINT`
@@ -87,6 +92,12 @@ Change it to a random string to print a list of available service keys.
 1. Add a class that implements `e.i.l.m.service.SourceService`
 2. Add it to the return value of
    `e.i.l.m.service.ServiceFactory.allSourceServices()`
+
+Probably the service will require a couple of new configuration keys. In AWS,
+these will need to be added as environment variables to the ECS task
+definition. If using Metaslurp as a sink, the value of its
+`METASLURPER_ECS_TASK_DEFINITION` environment variable must then be changed to
+this new version.
 
 ## Adding a sink service
 
