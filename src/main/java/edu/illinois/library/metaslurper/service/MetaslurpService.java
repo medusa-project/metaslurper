@@ -116,11 +116,6 @@ final class MetaslurpService implements SinkService {
     public void ingest(ConcreteEntity entity) throws IOException {
         if (isClosed.get()) {
             throw new IllegalStateException("Instance is closed.");
-        } else if (numEntities == 0) {
-            throw new IllegalStateException(
-                    "No entities to ingest. This may be a " +
-                            SinkService.class.getSimpleName() +
-                            " contract violation.");
         }
 
         synchronized (this) {
