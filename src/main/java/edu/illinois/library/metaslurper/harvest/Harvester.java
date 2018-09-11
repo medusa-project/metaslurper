@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -181,9 +182,11 @@ public final class Harvester {
         LOGGER.error("Failed to retrieve from source: {}", t.getMessage(), t);
 
         String message = String.format("**** SOURCE FAILURE:\n" +
+                        "    Time: %s\n" +
                         "    Exception: %s\n" +
                         "    Message: %s\n" +
                         "    Stack Trace: %s\n",
+                Instant.now(),
                 t.getClass().getSimpleName(),
                 t.getMessage(),
                 Arrays.stream(t.getStackTrace())
@@ -200,8 +203,10 @@ public final class Harvester {
     private static void reportSourceFailure(Status status,
                                             PlaceholderEntity entity) {
         String message = String.format("**** SOURCE FAILURE:\n" +
+                        "    Time: %s\n" +
                         "    URI: %s\n" +
                         "    Source ID: %s\n",
+                Instant.now(),
                 entity.getSourceURI(),
                 entity.getSourceID());
         status.getMessages().add(message);
@@ -218,10 +223,12 @@ public final class Harvester {
         LOGGER.error("Failed to ingest into sink: {}", t.getMessage(), t);
 
         String message = String.format("**** SINK FAILURE:\n" +
+                        "    Time: %s\n" +
                         "    URI: %s\n" +
                         "    Source ID: %s\n" +
                         "    Exception: %s\n" +
                         "    Stack Trace: %s\n",
+                Instant.now(),
                 entity.getSourceURI(),
                 entity.getSourceID(),
                 t.getMessage(),
