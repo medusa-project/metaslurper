@@ -29,8 +29,8 @@ Docker is required for deployment to AWS ECR.
 
 # Configure
 
-Configuration is sourced from the environment. The following variables are
-available:
+Service configuration is sourced from the environment. The following variables
+are available:
 
 * Source services
     * Illinois Data Bank
@@ -39,7 +39,7 @@ available:
     * Illinois Digital Library
       * `SERVICE_SOURCE_DLS_KEY`
       * `SERVICE_SOURCE_DLS_ENDPOINT`
-    * Illinois Digital Newspaper Collection
+    * Illinois Digital Newspaper Collections
       * `SERVICE_SOURCE_IDNC_KEY`
       * `SERVICE_SOURCE_IDNC_ENDPOINT`
     * IDEALS
@@ -73,6 +73,7 @@ Example invocation:
 java -jar target/metaslurper-VERSION.jar \
     -source test \
     -sink $SERVICE_SINK_METASLURP_KEY \
+    -log_level info \
     -threads 2 \
     -incremental 1535380169
 ```

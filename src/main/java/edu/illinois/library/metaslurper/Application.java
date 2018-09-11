@@ -11,6 +11,8 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
 
 import java.time.Instant;
 import java.util.Arrays;
@@ -20,6 +22,7 @@ public final class Application {
 
     private enum Argument {
         INCREMENTAL("i", "incremental", false, "Last-modified epoch second"),
+        LOG_LEVEL("v", "log_level", false, "Log level: error, warn, info, debug (default), trace"),
         SOURCE_SERVICE("s", "source", true, "Source service key"),
         SINK_SERVICE("k", "sink", true, "Sink service key"),
         THREADS("t", "threads", false, "Number of harvesting threads (default = 1)");
@@ -47,6 +50,26 @@ public final class Application {
         try {
             CommandLineParser parser = new DefaultParser();
             CommandLine cmd = parser.parse(getOptions(), args);
+
+            if (cmd.hasOption(Argument.LOG_LEVEL.longArg)) {
+                String level = cmd.getOptionValue(Argument.LOG_LEVEL.longArg).toLowerCase();
+                switch (level) {
+                    case "error":
+                        Configurator.setRootLevel(Level.ERROR);
+                        break;
+                    case "warn":
+                        Configurator.setRootLevel(Level.WARN);
+                        break;
+                    case "info":
+                        Configurator.setRootLevel(Level.INFO);
+                        break;
+                    case "trace":
+                        Configurator.setRootLevel(Level.TRACE);
+                        break;
+                    default: // debug, already set in log4j2.xml
+                        break;
+                }
+            }
 
             numThreads = cmd.hasOption(Argument.THREADS.longArg) ?
                     Integer.parseInt(cmd.getOptionValue(Argument.THREADS.longArg)) :
