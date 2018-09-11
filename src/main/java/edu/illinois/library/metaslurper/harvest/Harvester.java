@@ -103,6 +103,8 @@ public final class Harvester {
                                                 concEntity, source, sink,
                                                 currentIndex + 1, numEntities,
                                                 NumberUtils.percent(currentIndex + 1, numEntities));
+                                    } catch (HarvestClosedException e) {
+                                        throw e;
                                     } catch (IOException e) {
                                         reportSinkFailure(status, concEntity, e);
                                     }
