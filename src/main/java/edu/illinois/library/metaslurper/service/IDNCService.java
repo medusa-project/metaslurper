@@ -460,8 +460,8 @@ final class IDNCService implements SourceService {
     }
 
     private ConcurrentIterator<? extends Entity> incrementalEntities() {
-        // TODO: write this
-        return null;
+        // TODO: support incremental harvests
+        return new PageIterator();
     }
 
     @Override
