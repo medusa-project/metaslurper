@@ -199,11 +199,15 @@ final class IDNCService implements SourceService {
                 }
             }
 
-            if (pageBatch.peek() == null || isClosed.get()) {
-                throw new EndOfIterationException();
+            if (isClosed.get()) {
+                throw new Exception("Service is closed.");
             }
 
-            return fetchPage(pageBatch.remove());
+            try {
+                return fetchPage(pageBatch.remove());
+            } catch (NoSuchElementException e) {
+                throw new EndOfIterationException();
+            }
         }
 
         /**
@@ -214,10 +218,6 @@ final class IDNCService implements SourceService {
                 if (docBatch.peek() == null) {
                     fetchDocumentBatch();
                 }
-            }
-
-            if (docBatch.peek() == null) {
-                return;
             }
 
             try {
@@ -264,7 +264,7 @@ final class IDNCService implements SourceService {
                             " for " + uri);
                 }
             } catch (NoSuchElementException e) {
-                // done
+                // Document queue is empty, so we are done.
             } catch (ExecutionException | InterruptedException |
                     TimeoutException | ParserConfigurationException |
                     SAXException | XPathExpressionException e) {

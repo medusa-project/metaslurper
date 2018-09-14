@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.HashSet;
+import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -309,11 +310,11 @@ final class MedusaDLSService implements SourceService {
                     }
                 }
 
-                if (batch.peek() == null) {
+                try {
+                    return fetchEntity(batch.remove());
+                } catch (NoSuchElementException e) {
                     throw new EndOfIterationException();
                 }
-
-                return fetchEntity(batch.remove());
             }
         };
     }
