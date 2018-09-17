@@ -110,12 +110,7 @@ final class MedusaBookTrackerService implements SourceService {
 
     private static final String NAME = "Medusa Book Tracker";
 
-    /**
-     * Allowed query keys: in[] (in), ni[] (not in)
-     * Allowed query values: "gb" (Google Books), "ia" (Internet Archive),
-     * "ht" (HathiTrust)
-     */
-    private static final String QUERY_FILTER = "ni[]=gb";
+    private static final String QUERY_FILTER = "harvest=true";
 
     private static final long REQUEST_TIMEOUT = 30;
 
