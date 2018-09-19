@@ -39,7 +39,8 @@ final class MedusaBookTrackerService implements SourceService {
                 "author", "bib_id", "catalog_url", "created_at", "date",
                 "hathitrust_rights", "hathitrust_url",
                 "internet_archive_identifier", "internet_archive_url",
-                "obj_id", "oclc_number", "title", "updated_at" };
+                "language", "obj_id", "oclc_number", "subjects", "title",
+                "updated_at" };
 
         private JSONObject rootObject;
 
@@ -53,19 +54,29 @@ final class MedusaBookTrackerService implements SourceService {
 
             for (String key : ELEMENTS) {
                 if (rootObject.has(key)) {
-                    String value = rootObject.get(key).toString().trim();
-
-                    // If the object contains a `volume` key, append it to the
-                    // title.
-                    if ("title".equals(key) && rootObject.has("volume")) {
-                        String volume = rootObject.get("volume").toString().trim();
-                        if (!volume.isEmpty() && !"null".equals(volume)) {
-                            value += " " + volume;
+                    if (rootObject.get(key) instanceof JSONArray) {
+                        JSONArray array = rootObject.getJSONArray(key);
+                        for (int i = 0; i < array.length(); i++) {
+                            String value = array.get(i).toString();
+                            if (!value.isEmpty() && !"null".equals(value)) {
+                                elements.add(new Element(key, value));
+                            }
                         }
-                    }
+                    } else {
+                        String value = rootObject.get(key).toString();
 
-                    if (!value.isEmpty() && !"null".equals(value)) {
-                        elements.add(new Element(key, value));
+                        // If the object contains a non-null `volume` key,
+                        // append it to the title.
+                        if ("title".equals(key)) {
+                            String volume = rootObject.get("volume").toString();
+                            if (!volume.isEmpty() && !"null".equals(volume)) {
+                                value += " " + volume;
+                            }
+                        }
+
+                        if (!value.isEmpty() && !"null".equals(value)) {
+                            elements.add(new Element(key, value));
+                        }
                     }
                 }
             }
