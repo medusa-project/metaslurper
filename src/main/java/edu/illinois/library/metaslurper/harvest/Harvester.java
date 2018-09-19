@@ -138,7 +138,7 @@ public final class Harvester {
                                     status.addAndGetNumFailed(delta);
                                     status.getMessages().add("Harvest " +
                                             "aborted with " + delta +
-                                            "items left.");
+                                            " items left.");
                                 }
                                 status.setLifecycle(Lifecycle.ABORTED);
                                 LOGGER.info("Harvest closed: {}", e.getMessage());
