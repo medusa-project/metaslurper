@@ -57,18 +57,18 @@ final class MedusaBookTrackerService implements SourceService {
                     if (rootObject.get(key) instanceof JSONArray) {
                         JSONArray array = rootObject.getJSONArray(key);
                         for (int i = 0; i < array.length(); i++) {
-                            String value = array.get(i).toString();
+                            String value = array.get(i).toString().trim();
                             if (!value.isEmpty() && !"null".equals(value)) {
                                 elements.add(new Element(key, value));
                             }
                         }
                     } else {
-                        String value = rootObject.get(key).toString();
+                        String value = rootObject.get(key).toString().trim();
 
                         // If the object contains a non-null `volume` key,
                         // append it to the title.
                         if ("title".equals(key)) {
-                            String volume = rootObject.get("volume").toString();
+                            String volume = rootObject.get("volume").toString().trim();
                             if (!volume.isEmpty() && !"null".equals(volume)) {
                                 value += " " + volume;
                             }
