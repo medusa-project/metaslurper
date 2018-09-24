@@ -21,7 +21,7 @@ services are modular, too.
 The only requirements are JDK 8+ and Maven 3. CPU and memory requirements are
 minimal.
 
-Docker is required for deployment to AWS ECR.
+Docker is required for deployment to AWS ECR. See "AWS ECS Notes" below.
 
 # Build
 
@@ -42,6 +42,7 @@ are available:
     * Illinois Digital Newspaper Collections
       * `SERVICE_SOURCE_IDNC_KEY`
       * `SERVICE_SOURCE_IDNC_ENDPOINT`
+      * `SERVICE_SOURCE_IDNC_HARVEST_SCRIPT_URI`
     * IDEALS
       * `SERVICE_SOURCE_IDEALS_KEY`
       * `SERVICE_SOURCE_IDEALS_ENDPOINT`
@@ -116,12 +117,15 @@ this new version.
 
 Metaslurper can run in AWS ECS. The general procedure for deploying is:
 
-1. Create an ECR repository, an ECS Fargate cluster, and an ECS task definition
+1. Install Docker
+2. Create an ECR repository, an ECS Fargate cluster, and an ECS task definition
     1. The task definition must define all of the environment variables in
        the "Configuration" section (above)
-2. Install the `aws` command-line tool
-3. `cp ecr-push.sh.sample ecr-push.sh` and edit as necessary
-4. `ecr-push.sh`
+    2. The task definition also must specify a read-write filesystem (for
+       `/tmp` usage)
+3. Install the `aws` command-line tool
+4. `cp ecr-push.sh.sample ecr-push.sh` and edit as necessary
+5. `ecr-push.sh`
 
 At this point the container is available and tasks are ready to run. One way to
 run them is with the `aws` command-line tool, for which a convenient wrapper
