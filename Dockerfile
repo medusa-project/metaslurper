@@ -3,7 +3,7 @@
 # See the README.
 #
 
-FROM openjdk:10.0.1-10-jdk
+FROM openjdk:10
 
 WORKDIR .
 
