@@ -22,9 +22,13 @@ class MedusaDLSItem extends MedusaDLSEntity implements ConcreteEntity {
         if (allImages.has("full")) {
             JSONObject fullImages = allImages.getJSONObject("full");
             fullImages.keySet().forEach(key -> {
-                int size = Integer.parseInt(key);
                 String uri = fullImages.getString(key);
-                images.add(new Image(uri, size, Image.Crop.FULL));
+                if ("full".equals(key)) {
+                    // TODO: deal with this
+                } else {
+                    int size = Integer.parseInt(key);
+                    images.add(new Image(uri, size, Image.Crop.FULL));
+                }
             });
         }
         if (allImages.has("square")) {
