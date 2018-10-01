@@ -2,7 +2,6 @@ package edu.illinois.library.metaslurper.service;
 
 import edu.illinois.library.metaslurper.config.Configuration;
 import edu.illinois.library.metaslurper.entity.ConcreteEntity;
-import edu.illinois.library.metaslurper.entity.Element;
 import edu.illinois.library.metaslurper.entity.Entity;
 import edu.illinois.library.metaslurper.entity.Variant;
 import edu.illinois.library.metaslurper.harvest.HarvestClosedException;
@@ -240,16 +239,26 @@ final class MetaslurpService implements SinkService {
         jobj.put("service_key", entity.getServiceKey());
         // source URI
         jobj.put("source_uri", entity.getSourceURI());
-        // access image URI
-        jobj.put("access_image_uri", entity.getAccessImageURI());
+
+        // access images
+        JSONArray jimages = new JSONArray();
+        entity.getAccessImages().forEach(image -> {
+            JSONObject jimage = new JSONObject();
+            jimage.put("size", image.getSize());
+            jimage.put("crop", image.getCrop().name().toLowerCase());
+            jimage.put("uri", image.getURI());
+            jimages.put(jimage);
+        });
+        jobj.put("access_images", jimages);
+
         // elements
         JSONArray jelements = new JSONArray();
-        for (Element element : entity.getElements()) {
+        entity.getElements().forEach(element -> {
             JSONObject jelement = new JSONObject();
             jelement.put("name", element.getName());
             jelement.put("value", element.getValue());
             jelements.put(jelement);
-        }
+        });
         jobj.put("elements", jelements);
 
         return jobj.toString();

@@ -1,10 +1,7 @@
 package edu.illinois.library.metaslurper.service;
 
 import edu.illinois.library.metaslurper.config.Configuration;
-import edu.illinois.library.metaslurper.entity.ConcreteEntity;
-import edu.illinois.library.metaslurper.entity.Element;
 import edu.illinois.library.metaslurper.entity.Entity;
-import edu.illinois.library.metaslurper.entity.Variant;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Response;
@@ -14,34 +11,22 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.jsoup.Jsoup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.Document;
-import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpression;
-import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
-import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.NoSuchElementException;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -102,127 +87,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Alex Dolski UIUC
  */
 final class IDNCService implements SourceService {
-
-    private static final class IDNCEntity implements ConcreteEntity {
-
-        private Document doc;
-
-        /**
-         * @param xml <a href="https://www.veridiansoftware.com/knowledge-base/veridian-xml-api-documentation/#getpagecontent">
-         *            GetPageContent</a> representation.
-         */
-        private static IDNCEntity fromXML(String xml) throws IOException,
-                ParserConfigurationException, SAXException {
-            try (Reader reader = new StringReader(xml)) {
-                DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-                DocumentBuilder builder = factory.newDocumentBuilder();
-                Document doc = builder.parse(new InputSource(reader));
-                return new IDNCEntity(doc);
-            }
-        }
-
-        /**
-         * @param doc <a href="https://www.veridiansoftware.com/knowledge-base/veridian-xml-api-documentation/#getpagecontent">
-         *            GetPageContent</a> representation.
-         */
-        private IDNCEntity(Document doc) {
-            this.doc = doc;
-        }
-
-        @Override
-        public String getAccessImageURI() {
-            // This is a full-sized image, likely several thousand pixels on a
-            // side. GIF, JPEG, and PNG are available.
-            // N.B.: width= and height= arguments are also available. The full
-            // dimensions are encoded in sub-elements of the /Page/PageMetadata
-            // element.
-            return String.format("%s/cgi-bin/imageserver.pl?oid=%s&color=all&ext=jpg",
-                    getEndpointURI(), getSourceID());
-        }
-
-        @Override
-        public Set<Element> getElements() {
-            final Set<Element> elements = new HashSet<>();
-
-            String date = string("//DocumentMetadata/DocumentDate");
-            if (!date.isEmpty()) {
-                elements.add(new Element("date", date));
-            }
-
-            String fullText = string("//PageTextHTML");
-            if (!fullText.isEmpty()) {
-                fullText = Jsoup.parse(fullText).text(); // strip tags
-                elements.add(new Element("fullText", fullText));
-            }
-
-            String pubTitle = string("//PublicationMetadata/PublicationTitle");
-            if (!pubTitle.isEmpty()) {
-                elements.add(new Element("publicationTitle", pubTitle));
-            }
-
-            String title = string("//PageMetadata/PageTitle");
-            if (!title.isEmpty()) {
-                elements.add(new Element("title", pubTitle + ", " + date + " - " + title));
-            }
-
-            String prevID = string("//PagePrevPageID");
-            if (!prevID.isEmpty()) {
-                elements.add(new Element("previousPageID", prevID));
-            }
-
-            String nextID = string("//PageNextPageID");
-            if (!nextID.isEmpty()) {
-                elements.add(new Element("nextPageID", nextID));
-            }
-            return elements;
-        }
-
-        @Override
-        public String getServiceKey() {
-            return getKeyFromConfiguration();
-        }
-
-        @Override
-        public String getSinkID() {
-            return ENTITY_ID_PREFIX + getSourceID().replace(".", "_");
-        }
-
-        @Override
-        public String getSourceID() {
-            return string("//PageMetadata/PageID");
-        }
-
-        @Override
-        public String getSourceURI() {
-            return getEndpointURI() + string("//PageViewURL");
-        }
-
-        @Override
-        public Variant getVariant() {
-            return Variant.NEWSPAPER_PAGE;
-        }
-
-        @Override
-        public String toString() {
-            return getSourceID();
-        }
-
-        private String string(final String xpathQuery) {
-            try {
-                XPathFactory factory = XPathFactory.newInstance();
-                XPath xpath = factory.newXPath();
-                XPathExpression expr = xpath.compile(xpathQuery);
-                String result = (String) expr.evaluate(doc, XPathConstants.STRING);
-                if (result != null) {
-                    return result;
-                }
-            } catch (XPathExpressionException e) {
-                LOGGER.error(e.getMessage());
-            }
-            return "";
-        }
-
-    }
 
     private final class PageIterator implements ConcurrentIterator<Entity> {
 
@@ -352,6 +216,8 @@ final class IDNCService implements SourceService {
      */
     private String harvestResultsURI;
 
+    private Path harvestResultsFile;
+
     private synchronized HttpClient getClient() {
         if (client == null) {
             client = new HttpClient();
@@ -368,14 +234,14 @@ final class IDNCService implements SourceService {
     /**
      * @return Base URI of the service.
      */
-    private static String getEndpointURI() {
+    static String getEndpointURI() {
         Configuration config = Configuration.getInstance();
         String endpoint = config.getString("SERVICE_SOURCE_IDNC_ENDPOINT");
         return (endpoint.endsWith("/")) ?
                 endpoint.substring(0, endpoint.length() - 1) : endpoint;
     }
 
-    private static String getKeyFromConfiguration() {
+    static String getKeyFromConfiguration() {
         Configuration config = Configuration.getInstance();
         return config.getString("SERVICE_SOURCE_IDNC_KEY");
     }
@@ -393,7 +259,15 @@ final class IDNCService implements SourceService {
             try {
                 client.stop();
             } catch (Exception e) {
-                LOGGER.error("close(): " + e.getMessage());
+                LOGGER.error("close(): {}", e.getMessage());
+            }
+        }
+
+        if (harvestResultsFile != null) {
+            try {
+                Files.deleteIfExists(harvestResultsFile);
+            } catch (IOException e) {
+                LOGGER.error("close(): {}", e.getMessage());
             }
         }
     }
@@ -585,40 +459,42 @@ final class IDNCService implements SourceService {
      */
     private Path fetchHarvestResults(String harvestResultsURI)
             throws IOException {
-        Path tempFile = Files.createTempFile(
-                IDNCService.class.getSimpleName() + "-", ".tmp");
-        Files.delete(tempFile);
+        if (harvestResultsFile == null) {
+            harvestResultsFile = Files.createTempFile(
+                    IDNCService.class.getSimpleName() + "-", ".tmp");
+            Files.delete(harvestResultsFile);
 
-        LOGGER.debug("Downloading results from {} to {}",
-                harvestResultsURI, tempFile);
+            LOGGER.debug("Downloading results from {} to {}",
+                    harvestResultsURI, harvestResultsFile);
 
-        final InputStreamResponseListener responseListener =
-                new InputStreamResponseListener();
+            final InputStreamResponseListener responseListener =
+                    new InputStreamResponseListener();
 
-        try {
-            getClient()
-                    .newRequest(harvestResultsURI)
-                    .timeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
-                    .send(responseListener);
+            try {
+                getClient()
+                        .newRequest(harvestResultsURI)
+                        .timeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
+                        .send(responseListener);
 
-            // Wait for the response headers to arrive.
-            Response response = responseListener.get(
-                    REQUEST_TIMEOUT, TimeUnit.SECONDS);
+                // Wait for the response headers to arrive.
+                Response response = responseListener.get(
+                        REQUEST_TIMEOUT, TimeUnit.SECONDS);
 
-            if (response.getStatus() == HttpStatus.OK_200) {
-                try (InputStream is =
-                             new BufferedInputStream(responseListener.getInputStream())) {
-                    Files.copy(is, tempFile);
+                if (response.getStatus() == HttpStatus.OK_200) {
+                    try (InputStream is =
+                                 new BufferedInputStream(responseListener.getInputStream())) {
+                        Files.copy(is, harvestResultsFile);
+                    }
+                } else {
+                    throw new IOException("Got HTTP " + response.getStatus() +
+                            " for " + harvestResultsURI);
                 }
-            } else {
-                throw new IOException("Got HTTP " + response.getStatus() +
-                        " for " + harvestResultsURI);
+            } catch (ExecutionException | InterruptedException |
+                    TimeoutException e) {
+                throw new IOException(e);
             }
-        } catch (ExecutionException | InterruptedException |
-                TimeoutException e) {
-            throw new IOException(e);
         }
-        return tempFile;
+        return harvestResultsFile;
     }
 
     @Override

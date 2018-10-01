@@ -1,26 +1,20 @@
 package edu.illinois.library.metaslurper.service;
 
 import edu.illinois.library.metaslurper.config.Configuration;
-import edu.illinois.library.metaslurper.entity.ConcreteEntity;
-import edu.illinois.library.metaslurper.entity.Element;
 import edu.illinois.library.metaslurper.entity.Entity;
-import edu.illinois.library.metaslurper.entity.Variant;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.util.HashSet;
 import java.util.NoSuchElementException;
 import java.util.Queue;
-import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -32,155 +26,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Alex Dolski UIUC
  */
 final class MedusaDLSService implements SourceService {
-
-    private static abstract class DLSEntity {
-
-        JSONObject rootObject;
-
-        private DLSEntity(JSONObject rootObject) {
-            this.rootObject = rootObject;
-        }
-
-        public String getAccessImageURI() {
-            return null;
-        }
-
-        public Set<Element> getElements() {
-            final String key = "elements";
-            final Set<Element> elements = new HashSet<>();
-            if (rootObject.has(key)) {
-                final JSONArray jelements = rootObject.getJSONArray(key);
-
-                for (int i = 0; i < jelements.length(); i++) {
-                    JSONObject jelement = jelements.getJSONObject(i);
-                    String name = jelement.getString("name");
-                    String value = jelement.getString("value");
-                    Element element = new Element(name, value);
-                    elements.add(element);
-                }
-            }
-            return elements;
-        }
-
-        public String getMediaType() {
-            return null;
-        }
-
-        public String getServiceKey() {
-            return getKeyFromConfiguration();
-        }
-
-        public String getSinkID() {
-            final String key = "id";
-            return rootObject.has(key) ?
-                    ENTITY_ID_PREFIX + rootObject.getString(key) : null;
-        }
-
-        public String getSourceID() {
-            final String key = "id";
-            return rootObject.has(key) ? rootObject.getString(key) : null;
-        }
-
-        public String getSourceURI() {
-            final String key = "public_uri";
-            return rootObject.has(key) ? rootObject.getString(key) : null;
-        }
-
-        public String toString() {
-            return getSourceID() + " / " + getSinkID();
-        }
-
-    }
-
-    private static class DLSCollection extends DLSEntity
-            implements ConcreteEntity {
-
-        private DLSCollection(JSONObject rootObject) {
-            super(rootObject);
-        }
-
-        @Override
-        public Variant getVariant() {
-            return Variant.COLLECTION;
-        }
-
-    }
-
-    private static class DLSItem extends DLSEntity implements ConcreteEntity {
-
-        private DLSItem(JSONObject rootObject) {
-            super(rootObject);
-        }
-
-        @Override
-        public String getAccessImageURI() {
-            final String key = "effective_representative_image_uri";
-            try {
-                return rootObject.has(key) ? rootObject.getString(key) : null;
-            } catch (JSONException e) {
-                return null;
-            }
-        }
-
-        @Override
-        public Variant getVariant() {
-            return Variant.ITEM;
-        }
-
-    }
-
-    private static class DLSAgent extends DLSEntity implements ConcreteEntity {
-
-        private String sourceURI;
-
-        private DLSAgent(JSONObject rootObject, String sourceURI) {
-            super(rootObject);
-            this.sourceURI = sourceURI;
-        }
-
-        @Override
-        public Set<Element> getElements() {
-            final Set<Element> elements = new HashSet<>();
-            if (rootObject.has("name")) {
-                // name
-                String value = rootObject.getString("name");
-                if (value != null && !value.isEmpty()) {
-                    elements.add(new Element("name", value));
-                }
-
-                // description
-                value = rootObject.getString("description");
-                if (value != null && !value.isEmpty()) {
-                    elements.add(new Element("description", value));
-                }
-            }
-            return elements;
-        }
-
-        @Override
-        public String getSinkID() {
-            final String key = "id";
-            return rootObject.has(key) ?
-                    String.format("%sentity-%d",
-                            ENTITY_ID_PREFIX, rootObject.getInt(key)) : null;
-        }
-
-        public String getSourceID() {
-            final String key = "id";
-            return rootObject.has(key) ? "" + rootObject.getInt(key) : null;
-        }
-
-        @Override
-        public String getSourceURI() {
-            return sourceURI;
-        }
-
-        @Override
-        public Variant getVariant() {
-            return Variant.ENTITY;
-        }
-
-    }
 
     private static final Logger LOGGER =
             LoggerFactory.getLogger(MedusaDLSService.class);
@@ -222,7 +67,7 @@ final class MedusaDLSService implements SourceService {
         return getEndpointURI() + "/search";
     }
 
-    private static String getKeyFromConfiguration() {
+    static String getKeyFromConfiguration() {
         Configuration config = Configuration.getInstance();
         return config.getString("SERVICE_SOURCE_DLS_KEY");
     }
@@ -300,7 +145,7 @@ final class MedusaDLSService implements SourceService {
         final AtomicInteger batchIndex = new AtomicInteger();
 
         // Return an iterator that consumes the queue.
-        return new ConcurrentIterator<Entity>() {
+        return new ConcurrentIterator<>() {
             @Override
             public Entity next() throws Exception {
                 // If the queue is empty, fetch the next batch.
@@ -381,11 +226,11 @@ final class MedusaDLSService implements SourceService {
                         String variant = jobj.getString("class");
                         switch (variant) {
                             case "Agent":
-                                return new DLSAgent(jobj, uri);
+                                return new MedusaDLSAgent(jobj, uri);
                             case "Collection":
-                                return new DLSCollection(jobj);
+                                return new MedusaDLSCollection(jobj);
                             case "Item":
-                                return new DLSItem(jobj);
+                                return new MedusaDLSItem(jobj);
                             default:
                                 throw new IllegalArgumentException(
                                         "Unrecognized variant: " + variant);

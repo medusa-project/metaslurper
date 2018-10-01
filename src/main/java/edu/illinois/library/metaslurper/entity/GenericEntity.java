@@ -8,15 +8,15 @@ import java.util.Set;
  */
 public class GenericEntity implements ConcreteEntity {
 
-    private String mediaType, sourceID, sinkID, serviceKey, accessImageURI,
-            sourceURI;
+    private String mediaType, sourceID, sinkID, serviceKey, sourceURI;
     private Variant variant = Variant.UNKNOWN;
 
+    private final Set<Image> accessImages = new HashSet<>();
     private final Set<Element> elements = new HashSet<>();
 
     @Override
-    public String getAccessImageURI() {
-        return accessImageURI;
+    public Set<Image> getAccessImages() {
+        return accessImages;
     }
 
     @Override
@@ -54,15 +54,8 @@ public class GenericEntity implements ConcreteEntity {
         return variant;
     }
 
-    /**
-     * @throws IllegalArgumentException if the argument is {@literal null} or
-     *         empty.
-     */
-    public void setAccessImageURI(String imageURI) {
-        if (imageURI == null || imageURI.isEmpty()) {
-            throw new IllegalArgumentException("Argument is null or empty");
-        }
-        this.accessImageURI = imageURI;
+    public void addAccessImage(Image image) {
+        this.accessImages.add(image);
     }
 
     public void setMediaType(String mediaType) {

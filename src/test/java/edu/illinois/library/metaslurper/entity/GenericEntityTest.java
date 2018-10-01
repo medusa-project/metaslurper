@@ -16,16 +16,13 @@ public class GenericEntityTest {
         instance.setServiceKey("key");
     }
 
-    /* setAccessImageURI() */
-
-    @Test(expected = IllegalArgumentException.class)
-    public void testSetAccessImageURIWithEmptyArgument() {
-        instance.setAccessImageURI("");
-    }
+    /* addAccessImage() */
 
     @Test
-    public void testSetAccessImageURIWithValidArgument() {
-        instance.setAccessImageURI("http://example.org/cats");
+    public void testAddAccessImageWithValidArgument() {
+        Image image = new Image("http://example.org/cats", 512, Image.Crop.FULL);
+        instance.addAccessImage(image);
+        assertTrue(instance.getAccessImages().contains(image));
     }
 
     /* setServiceKey() */
