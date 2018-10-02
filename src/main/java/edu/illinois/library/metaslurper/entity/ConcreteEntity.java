@@ -14,7 +14,7 @@ public interface ConcreteEntity extends Entity {
     /**
      * @see #getAccessImages()
      */
-    short MIN_ACCESS_IMAGE_POWER = 8;
+    short MIN_ACCESS_IMAGE_POWER = 7;
 
     /**
      * @see #getAccessImages()
