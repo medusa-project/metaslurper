@@ -72,47 +72,50 @@ final class IDNCEntity implements ConcreteEntity {
 
     @Override
     public Set<Image> getAccessImages() {
-        // Available endpoint arguments:
-        //
-        // oid=[identifier]
-        // color=[all|?]
-        // ext=[jpg|gif|png]
-        // crop=x,y,w,h
-        // width=w
-        // height=h
-        //
-        // Example: http://idnc.library.illinois.edu/cgi-bin/imageserver.pl?oid=TAG19220928.1.1&crop=&color=all&ext=jpg&width=200
-        final int fullWidth =
-                Integer.parseInt(string("//PageMetadata/PageImageWidth"));
-        final int fullHeight =
-                Integer.parseInt(string("//PageMetadata/PageImageHeight"));
-
         final Set<Image> images = new HashSet<>();
 
-        for (int pow = ConcreteEntity.MIN_ACCESS_IMAGE_POWER;
-             pow <= ConcreteEntity.MAX_ACCESS_IMAGE_POWER;
-             pow++) {
-            final int size = (int) Math.pow(2, pow);
-            if (size < fullWidth && size < fullHeight) {
-                // full crop
-                String uri = String.format(
-                        "%s/cgi-bin/imageserver.pl?oid=%s&color=all&ext=jpg&width=%d&height=%d",
-                        IDNCService.getEndpointURI(), getSourceID(),
-                        size, size);
-                images.add(new Image(uri, size, Image.Crop.FULL));
+        final String widthStr = string("//PageMetadata/PageImageWidth");
+        final String heightStr = string("//PageMetadata/PageImageHeight");
 
-                // square crop
-                int cropSize = (fullWidth > fullHeight) ? fullHeight : fullWidth;
-                int cropX = (int) Math.round((fullWidth - cropSize) / 2.0);
-                int cropY = (int) Math.round((fullHeight - cropSize) / 2.0);
-                uri = String.format(
-                        "%s/cgi-bin/imageserver.pl?oid=%s&color=all&ext=jpg&crop=%d,%d,%d,%d&width=%d&height=%d",
-                        IDNCService.getEndpointURI(), getSourceID(),
-                        cropX, cropY, cropSize, cropSize, size, size);
-                images.add(new Image(uri, size, Image.Crop.SQUARE));
+        if (!widthStr.isEmpty() && !heightStr.isEmpty()) {
+            final int fullWidth = Integer.parseInt(widthStr);
+            final int fullHeight = Integer.parseInt(heightStr);
+
+            for (int exp = ConcreteEntity.MIN_ACCESS_IMAGE_POWER;
+                 exp <= ConcreteEntity.MAX_ACCESS_IMAGE_POWER;
+                 exp++) {
+                final int size = (int) Math.pow(2, exp);
+
+                // Available endpoint arguments:
+                //
+                // oid=[identifier]
+                // color=[all|?]
+                // ext=[jpg|gif|png]
+                // crop=x,y,w,h
+                // width=w
+                // height=h
+                //
+                // Example: http://idnc.library.illinois.edu/cgi-bin/imageserver.pl?oid=TAG19220928.1.1&crop=&color=all&ext=jpg&width=200
+                if (size < fullWidth && size < fullHeight) {
+                    // full crop
+                    String uri = String.format(
+                            "%s/cgi-bin/imageserver.pl?oid=%s&color=all&ext=jpg&width=%d&height=%d",
+                            IDNCService.getEndpointURI(), getSourceID(),
+                            size, size);
+                    images.add(new Image(uri, size, Image.Crop.FULL));
+
+                    // square crop
+                    int cropSize = (fullWidth > fullHeight) ? fullHeight : fullWidth;
+                    int cropX = (int) Math.round((fullWidth - cropSize) / 2.0);
+                    int cropY = (int) Math.round((fullHeight - cropSize) / 2.0);
+                    uri = String.format(
+                            "%s/cgi-bin/imageserver.pl?oid=%s&color=all&ext=jpg&crop=%d,%d,%d,%d&width=%d&height=%d",
+                            IDNCService.getEndpointURI(), getSourceID(),
+                            cropX, cropY, cropSize, cropSize, size, size);
+                    images.add(new Image(uri, size, Image.Crop.SQUARE));
+                }
             }
         }
-
         return images;
     }
 
