@@ -97,7 +97,7 @@ final class IDEALSService implements SourceService {
 
         @Override
         public Variant getVariant() {
-            return Variant.ITEM;
+            return Variant.PAPER;
         }
 
     }

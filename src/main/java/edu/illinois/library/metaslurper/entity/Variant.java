@@ -2,6 +2,6 @@ package edu.illinois.library.metaslurper.entity;
 
 public enum Variant {
 
-    BOOK, COLLECTION, DATA_SET, ENTITY, ITEM, NEWSPAPER_PAGE, UNKNOWN
+    BOOK, COLLECTION, DATA_SET, ENTITY, ITEM, NEWSPAPER_PAGE, PAPER, UNKNOWN
 
 }
