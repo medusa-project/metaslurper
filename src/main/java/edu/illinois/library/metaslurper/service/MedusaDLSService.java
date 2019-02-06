@@ -63,8 +63,8 @@ final class MedusaDLSService implements SourceService {
      * Contains a paginated list of all available entities: items, collections,
      * and agents.
      */
-    private static String getSearchURI() {
-        return getEndpointURI() + "/search";
+    private static String getHarvestURI() {
+        return getEndpointURI() + "/harvest";
     }
 
     static String getKeyFromConfiguration() {
@@ -111,7 +111,7 @@ final class MedusaDLSService implements SourceService {
     @Override
     public int numEntities() throws IOException {
         if (numEntities < 0) {
-            String uri = getSearchURI();
+            String uri = getHarvestURI();
 
             if (lastModified != null) {
                 uri += "?last_modified_after=" + lastModified.getEpochSecond();
@@ -180,7 +180,7 @@ final class MedusaDLSService implements SourceService {
         final int offset = batchIndex * BATCH_SIZE;
 
         String uri = String.format("%s?start=%d&limit=%d",
-                getSearchURI(), offset, BATCH_SIZE);
+                getHarvestURI(), offset, BATCH_SIZE);
         if (lastModified != null) {
             uri += "&last_modified_after=" + lastModified.getEpochSecond();
         }
