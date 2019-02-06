@@ -2,17 +2,13 @@
 #
 # Script for launching an ECS task using the aws command-line tool.
 #
-# Note that the aws tool is only one way of launching tasks, and probably not
-# the best way in many situations. Other ways include the human-friendly AWS
-# web UI and the machine-friendly ECS API.
+# Note that this is just a demo tool. In production, tasks would be launched
+# by the web app using the ECS API.
 #
 # See: https://docs.aws.amazon.com/cli/latest/reference/ecs/run-task.html
 #
 
-ECS_CLUSTER=metaslurper-dev
-ECS_TASK_DEFINITION=metaslurper:5
-ECS_SUBNET=subnet-xxxxxxxx
-ECS_SECURITY_GROUP=sg-xxxxxxxx
+source docker/env.sh
 
 if [ -z "$1" ] || [ -z "$2" ];
   then
@@ -20,8 +16,11 @@ if [ -z "$1" ] || [ -z "$2" ];
     exit
 fi
 
-aws ecs run-task --launch-type FARGATE \
+aws ecs run-task \
+    --launch-type FARGATE \
+    --profile $AWS_PROFILE \
+    --region $AWS_REGION \
     --cluster $ECS_CLUSTER \
-    --task-definition $ECS_TASK_DEFINITION
+    --task-definition $ECS_TASK_DEFINITION \
     --network-configuration "awsvpcConfiguration={subnets=[$ECS_SUBNET],securityGroups=[$ECS_SECURITY_GROUP],assignPublicIp=ENABLED}" \
     --overrides '{ "containerOverrides": [ { "name": "metaslurper", "command": [ "java", "-jar", "metaslurper.jar", "-source", "'$1'", "-sink", "'$2'", "-threads", "2" ] } ] }' \

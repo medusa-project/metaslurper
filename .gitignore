@@ -4,3 +4,6 @@
 /target
 
 /*.sh
+
+# Docker stuff
+env.list
