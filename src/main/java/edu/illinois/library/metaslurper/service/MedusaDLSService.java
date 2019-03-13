@@ -23,6 +23,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
+ * N.B.: DLS collections are harvested from {@link
+ * MedusaCollectionRegistryService} rather than this one.
+ *
  * @author Alex Dolski UIUC
  */
 final class MedusaDLSService implements SourceService {
@@ -52,7 +55,7 @@ final class MedusaDLSService implements SourceService {
     /**
      * @return Base URI of the service.
      */
-    private static String getEndpointURI() {
+    static String getEndpointURI() {
         Configuration config = Configuration.getInstance();
         String endpoint = config.getString("SERVICE_SOURCE_DLS_ENDPOINT");
         return (endpoint.endsWith("/")) ?
@@ -227,8 +230,6 @@ final class MedusaDLSService implements SourceService {
                         switch (variant) {
                             case "Agent":
                                 return new MedusaDLSAgent(jobj, uri);
-                            case "Collection":
-                                return new MedusaDLSCollection(jobj);
                             case "Item":
                                 return new MedusaDLSItem(jobj);
                             default:
