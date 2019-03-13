@@ -3,7 +3,21 @@ package edu.illinois.library.metaslurper.entity;
 public final class Image {
 
     public enum Crop {
-        FULL, SQUARE
+        FULL("full"), SQUARE("square");
+
+        private String iiifToken;
+
+        Crop(String iiifToken) {
+            this.iiifToken = iiifToken;
+        }
+
+        /**
+         * @see <a href="https://iiif.io/api/image/2.1/#region">IIIF Image API
+         * 2.1</a>
+         */
+        public String toIIIFRegion() {
+            return iiifToken;
+        }
     }
 
     private Crop crop = Crop.FULL;
