@@ -14,12 +14,12 @@ public interface ConcreteEntity extends Entity {
     /**
      * @see #getAccessImages()
      */
-    short MIN_ACCESS_IMAGE_POWER = 7;
+    short MIN_ACCESS_IMAGE_POWER = 6;
 
     /**
      * @see #getAccessImages()
      */
-    short MAX_ACCESS_IMAGE_POWER = 11;
+    short MAX_ACCESS_IMAGE_POWER = 12;
 
     /**
      * <p>This default implementation returns an empty set. It should be
