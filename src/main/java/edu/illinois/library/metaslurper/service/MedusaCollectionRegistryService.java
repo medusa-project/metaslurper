@@ -149,17 +149,24 @@ final class MedusaCollectionRegistryService implements SourceService {
 
         final AtomicInteger index = new AtomicInteger();
 
-        return new ConcurrentIterator<Entity>() {
+        return new ConcurrentIterator<>() {
             @Override
-            public Entity next() throws Exception {
+            public synchronized Entity next() throws Exception {
                 synchronized (MedusaCollectionRegistryService.class) {
                     if (collectionURIs.isEmpty()) {
                         fetchCollectionsList();
                     }
                 }
                 try {
-                    final String uri = collectionURIs.get(index.getAndIncrement());
-                    return fetchCollection(uri);
+                    // Keep checking collections until a published one is found.
+                    while (index.get() < collectionURIs.size()) {
+                        String uri = collectionURIs.get(index.getAndIncrement());
+                        MedusaCollection col = fetchCollection(uri);
+                        if (col.isPublished()) {
+                            return col;
+                        }
+                    }
+                    throw new EndOfIterationException();
                 } catch (IndexOutOfBoundsException e) {
                     throw new EndOfIterationException();
                 }

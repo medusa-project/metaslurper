@@ -5,7 +5,6 @@ import edu.illinois.library.metaslurper.entity.Element;
 import edu.illinois.library.metaslurper.entity.Image;
 import edu.illinois.library.metaslurper.entity.Variant;
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.Arrays;
@@ -56,7 +55,6 @@ final class MedusaCollection implements ConcreteEntity {
         addStringIfExists(elements, "description_html");
         addStringIfExists(elements, "access_url");
         addStringIfExists(elements, "physical_collection_url");
-        addBooleanIfExists(elements, "publish");
         addStringIfExists(elements, "representative_image");
         addStringIfExists(elements, "representative_item");
         addStringIfExists(elements, "repository_title");
@@ -66,7 +64,10 @@ final class MedusaCollection implements ConcreteEntity {
         JSONArray arr = jobj.getJSONArray("resource_types");
         for (int i = 0; i < arr.length(); i++) {
             JSONObject jobj2 = arr.getJSONObject(i);
-            elements.add(new Element("resource_type", jobj2.getString("name")));
+            String value = jobj2.getString("name");
+            // Capitalize the first letter.
+            value = value.substring(0, 1).toUpperCase() + value.substring(1);
+            elements.add(new Element("resource_type", value));
         }
 
         // access systems
@@ -124,19 +125,8 @@ final class MedusaCollection implements ConcreteEntity {
             value = MedusaCollectionRegistryService.getEndpointURI() +
                     jparent.getString("path");
             elements.add(new Element("parent_collection", value));
-
         }
         return elements;
-    }
-
-    private void addBooleanIfExists(Set<Element> elements, String key) {
-        if (jobj.has(key)) {
-            try {
-                boolean value = jobj.getBoolean(key);
-                elements.add(new Element(key, Boolean.toString(value)));
-            } catch (JSONException ignore) {
-            }
-        }
     }
 
     private void addStringIfExists(Set<Element> elements, String key) {
@@ -163,13 +153,20 @@ final class MedusaCollection implements ConcreteEntity {
 
     @Override
     public String getSourceURI() {
-        return MedusaCollectionRegistryService.getEndpointURI() +
-                "/collections/" + jobj.getInt("id");
+        // Technically the source URI is
+        // https://medusa.library.illinois.edu/collections/:id, but we want to
+        // direct users to DLS instead.
+        return MedusaDLSService.getEndpointURI() + "/collections/" +
+                getSourceID();
     }
 
     @Override
     public Variant getVariant() {
         return Variant.COLLECTION;
+    }
+
+    boolean isPublished() {
+        return jobj.getBoolean("publish");
     }
 
     public String toString() {
