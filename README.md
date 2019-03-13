@@ -49,6 +49,12 @@ are available:
     * Medusa Book Tracker
       * `SERVICE_SOURCE_BOOK_TRACKER_KEY`
       * `SERVICE_SOURCE_BOOK_TRACKER_ENDPOINT`
+    * Medusa Collection Registry
+      * `SERVICE_SOURCE_MEDUSA_KEY`
+      * `SERVICE_SOURCE_MEDUSA_ENDPOINT`
+      * `SERVICE_SOURCE_MEDUSA_IIIF_ENDPOINT`
+      * `SERVICE_SOURCE_MEDUSA_USERNAME`
+      * `SERVICE_SOURCE_MEDUSA_SECRET`
 * Sink services
     * Metaslurp
       * `SERVICE_SINK_METASLURP_KEY`
