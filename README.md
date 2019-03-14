@@ -36,9 +36,13 @@ are available:
     * Illinois Data Bank
       * `SERVICE_SOURCE_IDB_KEY`
       * `SERVICE_SOURCE_IDB_ENDPOINT`
-    * Illinois Digital Library
+    * Illinois Digital Library/Medusa Collection Registry
       * `SERVICE_SOURCE_DLS_KEY`
       * `SERVICE_SOURCE_DLS_ENDPOINT`
+      * `SERVICE_SOURCE_DLS_IIIF_ENDPOINT`
+      * `SERVICE_SOURCE_DLS_MEDUSA_ENDPOINT`
+      * `SERVICE_SOURCE_DLS_MEDUSA_USERNAME`
+      * `SERVICE_SOURCE_DLS_MEDUSA_SECRET`
     * Illinois Digital Newspaper Collections
       * `SERVICE_SOURCE_IDNC_KEY`
       * `SERVICE_SOURCE_IDNC_ENDPOINT`
@@ -49,12 +53,6 @@ are available:
     * Medusa Book Tracker
       * `SERVICE_SOURCE_BOOK_TRACKER_KEY`
       * `SERVICE_SOURCE_BOOK_TRACKER_ENDPOINT`
-    * Medusa Collection Registry
-      * `SERVICE_SOURCE_MEDUSA_KEY`
-      * `SERVICE_SOURCE_MEDUSA_ENDPOINT`
-      * `SERVICE_SOURCE_MEDUSA_IIIF_ENDPOINT`
-      * `SERVICE_SOURCE_MEDUSA_USERNAME`
-      * `SERVICE_SOURCE_MEDUSA_SECRET`
 * Sink services
     * Metaslurp
       * `SERVICE_SINK_METASLURP_KEY`

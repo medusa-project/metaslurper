@@ -14,7 +14,6 @@ public final class ServiceFactory {
                             new IDNCService(),
                             new IllinoisDataBankService(),
                             new MedusaBookTrackerService(),
-                            new MedusaCollectionRegistryService(),
                             new MedusaDLSService(),
                             new TestSourceService())));
     private static Set<SinkService> DEFAULT_SINK_SERVICES =

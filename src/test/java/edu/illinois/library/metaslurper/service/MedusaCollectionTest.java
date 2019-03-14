@@ -21,7 +21,7 @@ public class MedusaCollectionTest {
 
     @Before
     public void setUp() throws Exception {
-        instance = MedusaCollectionRegistryService.fetchCollection(COLLECTION_URI);
+        instance = MedusaDLSService.fetchMedusaCollection(COLLECTION_URI);
     }
 
     @Test
@@ -75,7 +75,7 @@ public class MedusaCollectionTest {
     @Test
     public void testGetParentSinkIDWhenParentIsAvailable() throws Exception {
         String uri = "https://medusa.library.illinois.edu/collections/993.json";
-        instance = MedusaCollectionRegistryService.fetchCollection(uri);
+        instance = MedusaDLSService.fetchMedusaCollection(uri);
 
         assertEquals("mc-d52b8bc0-1c3d-0137-6b79-02d0d7bfd6e4-e",
                 instance.getParentSinkID());

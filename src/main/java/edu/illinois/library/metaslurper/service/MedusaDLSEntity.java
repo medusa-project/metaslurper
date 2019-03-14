@@ -37,7 +37,7 @@ abstract class MedusaDLSEntity {
     }
 
     public String getServiceKey() {
-        return MedusaDLSService.getKeyFromConfiguration();
+        return MedusaDLSService.getServiceKey();
     }
 
     public String getSourceID() {

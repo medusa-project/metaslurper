@@ -1,5 +1,6 @@
 package edu.illinois.library.metaslurper.service;
 
+import edu.illinois.library.metaslurper.entity.ConcreteEntity;
 import edu.illinois.library.metaslurper.entity.Image;
 import edu.illinois.library.metaslurper.entity.Variant;
 import org.json.JSONObject;
@@ -9,6 +10,8 @@ import org.junit.Test;
 import java.io.InputStream;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
 
 import static org.junit.Assert.*;
@@ -33,18 +36,20 @@ public class MedusaDLSItemTest {
 
     @Test
     public void testGetAccessImages() {
-        Set<Image> expected = Set.of(
-                new Image("https://iiif.library.illinois.edu/dls/iiif/2/0291bca0-9978-0134-2096-0050569601ca-d/full/!128,128/0/default.jpg", 128, Image.Crop.FULL),
-                new Image("https://iiif.library.illinois.edu/dls/iiif/2/0291bca0-9978-0134-2096-0050569601ca-d/square/!128,128/0/default.jpg", 128, Image.Crop.SQUARE),
-                new Image("https://iiif.library.illinois.edu/dls/iiif/2/0291bca0-9978-0134-2096-0050569601ca-d/full/!256,256/0/default.jpg", 256, Image.Crop.FULL),
-                new Image("https://iiif.library.illinois.edu/dls/iiif/2/0291bca0-9978-0134-2096-0050569601ca-d/square/!256,256/0/default.jpg", 256, Image.Crop.SQUARE),
-                new Image("https://iiif.library.illinois.edu/dls/iiif/2/0291bca0-9978-0134-2096-0050569601ca-d/full/!512,512/0/default.jpg", 512, Image.Crop.FULL),
-                new Image("https://iiif.library.illinois.edu/dls/iiif/2/0291bca0-9978-0134-2096-0050569601ca-d/square/!512,512/0/default.jpg", 512, Image.Crop.SQUARE),
-                new Image("https://iiif.library.illinois.edu/dls/iiif/2/0291bca0-9978-0134-2096-0050569601ca-d/full/!1024,1024/0/default.jpg", 1024, Image.Crop.FULL),
-                new Image("https://iiif.library.illinois.edu/dls/iiif/2/0291bca0-9978-0134-2096-0050569601ca-d/square/!1024,1024/0/default.jpg", 1024, Image.Crop.SQUARE),
-                new Image("https://iiif.library.illinois.edu/dls/iiif/2/0291bca0-9978-0134-2096-0050569601ca-d/full/!2048,2048/0/default.jpg", 2048, Image.Crop.FULL),
-                new Image("https://iiif.library.illinois.edu/dls/iiif/2/0291bca0-9978-0134-2096-0050569601ca-d/square/!2048,2048/0/default.jpg", 2048, Image.Crop.SQUARE)
-        );
+        final String endpoint = "https://images.digital.library.illinois.edu/iiif/2";
+        final String uuid = "0291bca0-9978-0134-2096-0050569601ca-d";
+        final Set<Image> expected = new HashSet<>();
+
+        for (int i = (int) Math.pow(2, ConcreteEntity.MIN_ACCESS_IMAGE_POWER);
+             i <= Math.pow(2, ConcreteEntity.MAX_ACCESS_IMAGE_POWER);
+             i *= 2) {
+            final int size = i;
+            Arrays.stream(Image.Crop.values()).forEach((crop) -> {
+                String uri = String.format("%s/%s/%s/!%d,%d/0/default.jpg",
+                        endpoint, uuid, crop.toIIIFRegion(), size, size);
+                expected.add(new Image(uri, size, crop));
+            });
+        }
         assertEquals(expected, instance.getAccessImages());
     }
 

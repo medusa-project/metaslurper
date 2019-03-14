@@ -20,8 +20,7 @@ final class MedusaCollection implements ConcreteEntity {
     private JSONObject jobj;
 
     private static String getSinkID(String medusaUUID) {
-        return MedusaCollectionRegistryService.getKeyFromConfiguration() +
-                "-" + medusaUUID;
+        return MedusaDLSService.getServiceKey() + "-" + medusaUUID;
     }
 
     MedusaCollection(JSONObject jsonRepresentation) {
@@ -39,7 +38,7 @@ final class MedusaCollection implements ConcreteEntity {
                 final int size = i;
                 Arrays.stream(Image.Crop.values()).forEach((crop) -> {
                     String imageURI = String.format("%s/%s/%s/!%d,%d/0/default.jpg",
-                            MedusaCollectionRegistryService.getIIIFEndpointURI(),
+                            MedusaDLSService.getIIIFEndpointURI(),
                             uuid,
                             crop.toIIIFRegion(),
                             size, size);
@@ -126,7 +125,7 @@ final class MedusaCollection implements ConcreteEntity {
 
     @Override
     public String getServiceKey() {
-        return MedusaCollectionRegistryService.getKeyFromConfiguration();
+        return MedusaDLSService.getServiceKey();
     }
 
     @Override
@@ -139,7 +138,7 @@ final class MedusaCollection implements ConcreteEntity {
         // Technically the source URI is
         // https://medusa.library.illinois.edu/collections/:id, but we want to
         // direct users to DLS instead.
-        return MedusaDLSService.getEndpointURI() + "/collections/" +
+        return MedusaDLSService.getDLSEndpointURI() + "/collections/" +
                 getSourceID();
     }
 
