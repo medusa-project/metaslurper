@@ -74,12 +74,6 @@ final class IllinoisDataBankService implements SourceService {
         }
 
         @Override
-        public String getSinkID() {
-            return getServiceKey() + "-" +
-                    getSourceID().replaceAll("[^A-Za-z\\d]", "_");
-        }
-
-        @Override
         public String getSourceID() {
             return rootObject.getString("identifier");
         }
@@ -95,6 +89,17 @@ final class IllinoisDataBankService implements SourceService {
                 }
                 return url;
             }
+            return null;
+        }
+
+        @Override
+        public String getSinkID() {
+            return getServiceKey() + "-" +
+                    getSourceID().replaceAll("[^A-Za-z\\d]", "_");
+        }
+
+        @Override
+        public String getParentSinkID() {
             return null;
         }
 

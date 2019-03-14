@@ -35,11 +35,6 @@ public class GenericEntity implements ConcreteEntity {
     }
 
     @Override
-    public String getSinkID() {
-        return sinkID;
-    }
-
-    @Override
     public String getSourceID() {
         return sourceID;
     }
@@ -47,6 +42,16 @@ public class GenericEntity implements ConcreteEntity {
     @Override
     public String getSourceURI() {
         return sourceURI;
+    }
+
+    @Override
+    public String getSinkID() {
+        return sinkID;
+    }
+
+    @Override
+    public String getParentSinkID() {
+        return null;
     }
 
     @Override

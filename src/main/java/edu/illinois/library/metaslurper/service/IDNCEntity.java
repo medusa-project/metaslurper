@@ -162,11 +162,6 @@ final class IDNCEntity implements ConcreteEntity {
     }
 
     @Override
-    public String getSinkID() {
-        return IDNCService.ENTITY_ID_PREFIX + getSourceID().replace(".", "_");
-    }
-
-    @Override
     public String getSourceID() {
         return string("//PageMetadata/PageID");
     }
@@ -174,6 +169,16 @@ final class IDNCEntity implements ConcreteEntity {
     @Override
     public String getSourceURI() {
         return IDNCService.getEndpointURI() + string("//PageViewURL");
+    }
+
+    @Override
+    public String getSinkID() {
+        return IDNCService.ENTITY_ID_PREFIX + getSourceID().replace(".", "_");
+    }
+
+    @Override
+    public String getParentSinkID() {
+        return null;
     }
 
     @Override

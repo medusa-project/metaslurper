@@ -19,6 +19,11 @@ final class MedusaCollection implements ConcreteEntity {
 
     private JSONObject jobj;
 
+    private static String getSinkID(String medusaUUID) {
+        return MedusaCollectionRegistryService.getKeyFromConfiguration() +
+                "-" + medusaUUID;
+    }
+
     MedusaCollection(JSONObject jsonRepresentation) {
         this.jobj = jsonRepresentation;
     }
@@ -109,23 +114,6 @@ final class MedusaCollection implements ConcreteEntity {
             elements.add(new Element("access_restrictions", value));
         }
 
-        // child collections
-        JSONArray children = jobj.getJSONArray("child_collections");
-        for (int i = 0; i < children.length(); i++) {
-            JSONObject jchild = children.getJSONObject(i);
-            value = MedusaCollectionRegistryService.getEndpointURI() +
-                    jchild.getString("path");
-            elements.add(new Element("child_collection", value));
-        }
-
-        // parent collections
-        JSONArray parents = jobj.getJSONArray("parent_collections");
-        for (int i = 0; i < parents.length(); i++) {
-            JSONObject jparent = parents.getJSONObject(i);
-            value = MedusaCollectionRegistryService.getEndpointURI() +
-                    jparent.getString("path");
-            elements.add(new Element("parent_collection", value));
-        }
         return elements;
     }
 
@@ -142,11 +130,6 @@ final class MedusaCollection implements ConcreteEntity {
     }
 
     @Override
-    public String getSinkID() {
-        return getServiceKey() + "-" + getSourceID();
-    }
-
-    @Override
     public String getSourceID() {
         return jobj.getString("uuid");
     }
@@ -158,6 +141,22 @@ final class MedusaCollection implements ConcreteEntity {
         // direct users to DLS instead.
         return MedusaDLSService.getEndpointURI() + "/collections/" +
                 getSourceID();
+    }
+
+    @Override
+    public String getSinkID() {
+        return getSinkID(getSourceID());
+    }
+
+    @Override
+    public String getParentSinkID() {
+        JSONArray parents = jobj.getJSONArray("parent_collections");
+        if (parents.length() > 0) {
+            JSONObject jparent = parents.getJSONObject(0);
+            String id = jparent.getString("uuid");
+            return getSinkID(id);
+        }
+        return null;
     }
 
     @Override

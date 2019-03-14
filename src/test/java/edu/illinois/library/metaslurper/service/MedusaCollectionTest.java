@@ -45,18 +45,13 @@ public class MedusaCollectionTest {
 
     @Test
     public void testGetElements() {
-        assertEquals(20, instance.getElements().size());
+        assertTrue(instance.getElements().size() > 10);
+        assertTrue(instance.getElements().size() < 20);
     }
 
     @Test
     public void testGetServiceKey() {
         assertEquals("mc", instance.getServiceKey());
-    }
-
-    @Test
-    public void testGetSinkID() {
-        assertEquals("mc-d52b8bc0-1c3d-0137-6b79-02d0d7bfd6e4-e",
-                instance.getSinkID());
     }
 
     @Test
@@ -67,8 +62,28 @@ public class MedusaCollectionTest {
 
     @Test
     public void testGetSourceURI() {
-        assertEquals("https://medusa.library.illinois.edu/collections/1410",
+        assertEquals("https://digital.library.illinois.edu/collections/d52b8bc0-1c3d-0137-6b79-02d0d7bfd6e4-e",
                 instance.getSourceURI());
+    }
+
+    @Test
+    public void testGetSinkID() {
+        assertEquals("mc-d52b8bc0-1c3d-0137-6b79-02d0d7bfd6e4-e",
+                instance.getSinkID());
+    }
+
+    @Test
+    public void testGetParentSinkIDWhenParentIsAvailable() throws Exception {
+        String uri = "https://medusa.library.illinois.edu/collections/993.json";
+        instance = MedusaCollectionRegistryService.fetchCollection(uri);
+
+        assertEquals("mc-d52b8bc0-1c3d-0137-6b79-02d0d7bfd6e4-e",
+                instance.getParentSinkID());
+    }
+
+    @Test
+    public void testGetParentSinkIDWhenParentIsNotAvailable() {
+        assertNull(instance.getParentSinkID());
     }
 
     @Test

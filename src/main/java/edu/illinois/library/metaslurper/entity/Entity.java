@@ -13,13 +13,6 @@ public interface Entity {
     String getServiceKey();
 
     /**
-     * @return The instance's ID within the sink service. Should not contain
-     *         any URI-illegal characters, whether encoded or not, as some sink
-     *         services may have problems with them.
-     */
-    String getSinkID();
-
-    /**
      * @return Identifier of the entity in the source system.
      */
     String getSourceID();
@@ -28,5 +21,20 @@ public interface Entity {
      * @return URI of the entity in the source system.
      */
     String getSourceURI();
+
+    /**
+     * @return The instance's ID within the sink service. Should not contain
+     *         any URI-illegal characters, whether encoded or not, as some sink
+     *         services may have problems with them.
+     */
+    String getSinkID();
+
+    /**
+     * @return The ID of the instance's parent within the sink service, or
+     *         {@literal null} if the entity does not have a parent. Should
+     *         not contain any URI-illegal characters, whether encoded or not,
+     *         as some sink services may have problems with them.
+     */
+    String getParentSinkID();
 
 }

@@ -89,11 +89,6 @@ final class MedusaBookTrackerService implements SourceService {
         }
 
         @Override
-        public String getSinkID() {
-            return getServiceKey() + "-" + getSourceID();
-        }
-
-        @Override
         public String getSourceID() {
             return Integer.toString(rootObject.getInt("id"));
         }
@@ -102,6 +97,16 @@ final class MedusaBookTrackerService implements SourceService {
         public String getSourceURI() {
             final String key = "url";
             return rootObject.has(key) ? rootObject.getString(key) : null;
+        }
+
+        @Override
+        public String getSinkID() {
+            return getServiceKey() + "-" + getSourceID();
+        }
+
+        @Override
+        public String getParentSinkID() {
+            return null;
         }
 
         @Override

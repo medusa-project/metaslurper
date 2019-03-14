@@ -6,12 +6,16 @@ abstract class IDEALSEntity {
         return IDEALSService.getKeyFromConfiguration();
     }
 
+    public abstract String getSourceID();
+
     public String getSinkID() {
         return getServiceKey() + "-" +
                 getSourceID().replaceAll("[^A-Za-z\\d]", "_");
     }
 
-    public abstract String getSourceID();
+    public String getParentSinkID() {
+        return null;
+    }
 
     @Override
     public String toString() {

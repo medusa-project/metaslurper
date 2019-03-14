@@ -40,12 +40,6 @@ abstract class MedusaDLSEntity {
         return MedusaDLSService.getKeyFromConfiguration();
     }
 
-    public String getSinkID() {
-        final String key = "id";
-        return rootObject.has(key) ?
-                MedusaDLSService.ENTITY_ID_PREFIX + rootObject.getString(key) : null;
-    }
-
     public String getSourceID() {
         final String key = "id";
         return rootObject.has(key) ? rootObject.getString(key) : null;
@@ -54,6 +48,16 @@ abstract class MedusaDLSEntity {
     public String getSourceURI() {
         final String key = "public_uri";
         return rootObject.has(key) ? rootObject.getString(key) : null;
+    }
+
+    public String getSinkID() {
+        final String key = "id";
+        return rootObject.has(key) ?
+                MedusaDLSService.ENTITY_ID_PREFIX + rootObject.getString(key) : null;
+    }
+
+    public String getParentSinkID() {
+        return null;
     }
 
     public String toString() {
