@@ -45,7 +45,8 @@ class MedusaDLSItem extends MedusaDLSEntity implements ConcreteEntity {
 
     @Override
     public Variant getVariant() {
-        return Variant.ITEM;
+        return ("file".equalsIgnoreCase(rootObject.optString("variant"))) ?
+                Variant.FILE : Variant.ITEM;
     }
 
 }
