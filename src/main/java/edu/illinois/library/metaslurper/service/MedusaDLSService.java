@@ -308,7 +308,7 @@ final class MedusaDLSService implements SourceService {
                     String collectionURI = getMedusaEndpointURI() +
                             jcol.getString("path") + ".json";
                     MedusaCollection col = fetchMedusaCollection(collectionURI);
-                    if (col.isPublished()) {
+                    if (col.isDLS() && col.isPublished()) {
                         collections.add(col);
                     }
                 }

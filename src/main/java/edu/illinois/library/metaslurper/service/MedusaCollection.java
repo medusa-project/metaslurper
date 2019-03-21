@@ -163,6 +163,21 @@ final class MedusaCollection implements ConcreteEntity {
         return Variant.COLLECTION;
     }
 
+    /**
+     * @return Whether the collection's content resides in the {@link
+     *         MedusaDLSService}.
+     */
+    boolean isDLS() {
+        JSONArray arr = jobj.getJSONArray("access_systems");
+        for (int i = 0; i < arr.length(); i++) {
+            JSONObject jobj2 = arr.getJSONObject(i);
+            if ("Medusa Digital Library".equals(jobj2.getString("name"))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     boolean isPublished() {
         return jobj.getBoolean("publish");
     }
