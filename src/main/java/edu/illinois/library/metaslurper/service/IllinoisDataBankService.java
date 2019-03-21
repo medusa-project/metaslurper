@@ -45,8 +45,23 @@ final class IllinoisDataBankService implements SourceService {
         public Set<Element> getElements() {
             final Set<Element> elements = new HashSet<>();
 
+            // keywords
+            if (rootObject.has("keywords")) {
+                String value = rootObject.get("keywords").toString();
+                if (!value.isBlank() && !"null".equals(value)) {
+                    String[] parts = value.split(";");
+                    for (int i = 0; i < parts.length; i++) {
+                        String part = parts[i].trim();
+                        if (!part.isBlank()) {
+                            elements.add(new Element("keywords", part));
+                        }
+                    }
+                }
+            }
+
+            // all other elements
             for (String key : new String[] { "corresponding_creator_name",
-                    "created_at", "description", "keywords", "license",
+                    "created_at", "description", "license",
                     "publication_state", "publication_year", "publisher",
                     "release_date", "title", "updated_at" }) {
                 if (rootObject.has(key)) {
