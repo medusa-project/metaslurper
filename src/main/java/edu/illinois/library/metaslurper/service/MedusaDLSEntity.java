@@ -1,6 +1,7 @@
 package edu.illinois.library.metaslurper.service;
 
 import edu.illinois.library.metaslurper.entity.Element;
+import edu.illinois.library.metaslurper.entity.Image;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -11,8 +12,40 @@ abstract class MedusaDLSEntity {
 
     JSONObject rootObject;
 
+    static String getSinkID(String id) {
+        return MedusaDLSService.ENTITY_ID_PREFIX + id;
+    }
+
     MedusaDLSEntity(JSONObject rootObject) {
         this.rootObject = rootObject;
+    }
+
+    public Set<Image> getAccessImages() {
+        final Set<Image> images = new HashSet<>();
+        JSONObject allImages = rootObject.optJSONObject("representative_images");
+        if (allImages != null) {
+            if (allImages.has("full")) {
+                JSONObject fullImages = allImages.getJSONObject("full");
+                fullImages.keySet().forEach(key -> {
+                    String uri = fullImages.getString(key);
+                    if ("full".equals(key)) {
+                        // TODO: deal with this
+                    } else {
+                        int size = Integer.parseInt(key);
+                        images.add(new Image(uri, size, Image.Crop.FULL));
+                    }
+                });
+            }
+            if (allImages.has("square")) {
+                JSONObject squareImages = allImages.getJSONObject("square");
+                squareImages.keySet().forEach(key -> {
+                    int size = Integer.parseInt(key);
+                    String uri = squareImages.getString(key);
+                    images.add(new Image(uri, size, Image.Crop.SQUARE));
+                });
+            }
+        }
+        return images;
     }
 
     public Set<Element> getElements() {
@@ -51,9 +84,7 @@ abstract class MedusaDLSEntity {
     }
 
     public String getSinkID() {
-        final String key = "id";
-        return rootObject.has(key) ?
-                MedusaDLSService.ENTITY_ID_PREFIX + rootObject.getString(key) : null;
+        return getSinkID(getSourceID());
     }
 
     public String getParentSinkID() {
