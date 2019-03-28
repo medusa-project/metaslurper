@@ -41,6 +41,20 @@ class MedusaDLSCollection extends MedusaDLSEntity implements ConcreteEntity {
             elements.add(new Element("accessSystem", value));
         }
 
+        // Add collection type (DLDS-118)
+        final String value = rootObject.optString("package_profile");
+        if (value != null) {
+            String collectionType;
+            switch (value) {
+                case "Free-Form":
+                    collectionType = "Digital Archives";
+                    break;
+                default:
+                    collectionType = "Digitized Materials";
+                    break;
+            }
+            elements.add(new Element("collectionType", collectionType));
+        }
 
         return elements;
     }
