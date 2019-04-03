@@ -246,12 +246,13 @@ final class MetaslurpService implements SinkService {
         JSONArray jimages = new JSONArray();
         entity.getAccessImages().forEach(image -> {
             JSONObject jimage = new JSONObject();
-            jimage.put("size", image.getSize());
             jimage.put("crop", image.getCrop().name().toLowerCase());
+            jimage.put("size", (image.getSize() > 0) ? image.getSize() : "full");
             jimage.put("uri", image.getURI());
+            jimage.put("master", image.isMaster());
             jimages.put(jimage);
         });
-        jobj.put("access_images", jimages);
+        jobj.put("images", jimages);
 
         // elements
         JSONArray jelements = new JSONArray();

@@ -39,15 +39,28 @@ final class MedusaDLSService implements SourceService {
 
     private static final String NAME = "Illinois Digital Library";
 
-    private static final long REQUEST_TIMEOUT = 30;
+    static final long REQUEST_TIMEOUT = 30;
 
-    private HttpClient client;
+    private static HttpClient client;
 
     private final AtomicBoolean isClosed = new AtomicBoolean();
 
     private int numEntities = -1;
 
     private Instant lastModified;
+
+    static synchronized HttpClient getClient() {
+        if (client == null) {
+            client = new HttpClient(new SslContextFactory());
+            client.setFollowRedirects(true);
+            try {
+                client.start();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return client;
+    }
 
     /**
      * @return Base URI of the service.
@@ -93,19 +106,6 @@ final class MedusaDLSService implements SourceService {
     @Override
     public String getName() {
         return NAME;
-    }
-
-    private synchronized HttpClient getClient() {
-        if (client == null) {
-            client = new HttpClient(new SslContextFactory());
-            client.setFollowRedirects(true);
-            try {
-                client.start();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
-        return client;
     }
 
     @Override
@@ -218,34 +218,29 @@ final class MedusaDLSService implements SourceService {
                     .header("Accept", "application/json")
                     .timeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
                     .send();
-            if ("application/json".equals(response.getMediaType())) {
-                switch (response.getStatus()) {
-                    case HttpStatus.OK_200:
-                        String body = response.getContentAsString();
-                        JSONObject jobj = new JSONObject(body);
-                        String variant = jobj.getString("class");
-                        switch (variant) {
-                            case "Agent":
-                                return new MedusaDLSAgent(jobj, uri);
-                            case "Collection":
-                                return new MedusaDLSCollection(jobj);
-                            case "Item":
-                                return new MedusaDLSItem(jobj);
-                            default:
-                                throw new IllegalArgumentException(
-                                        "Unrecognized variant: " + variant);
-                        }
-                    default:
-                        body = response.getContentAsString();
-                        jobj = new JSONObject(body);
-                        String message = jobj.getString("error");
+            switch (response.getStatus()) {
+                case HttpStatus.OK_200:
+                    String body = response.getContentAsString();
+                    JSONObject jobj = new JSONObject(body);
+                    String variant = jobj.getString("class");
+                    switch (variant) {
+                        case "Agent":
+                            return new MedusaDLSAgent(jobj, uri);
+                        case "Collection":
+                            return new MedusaDLSCollection(jobj);
+                        case "Item":
+                            return new MedusaDLSItem(jobj);
+                        default:
+                            throw new IllegalArgumentException(
+                                    "Unrecognized variant: " + variant);
+                    }
+                default:
+                    body = response.getContentAsString();
+                    jobj = new JSONObject(body);
+                    String message = jobj.getString("error");
 
-                        throw new IOException("Got HTTP " + response.getStatus() +
-                                " for " + uri + ": " + message);
-                }
-            } else {
-                throw new IOException("Unsupported response Content-Type: " +
-                        response.getMediaType());
+                    throw new IOException("Got HTTP " + response.getStatus() +
+                            " for " + uri + ": " + message);
             }
         } catch (ExecutionException | InterruptedException |
                 TimeoutException e) {

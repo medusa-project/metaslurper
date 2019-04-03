@@ -20,7 +20,8 @@ public class GenericEntityTest {
 
     @Test
     public void testAddAccessImageWithValidArgument() {
-        Image image = new Image("http://example.org/cats", 512, Image.Crop.FULL);
+        Image image = new Image(
+                "http://example.org/cats", Image.Crop.FULL, 512, false);
         instance.addAccessImage(image);
         assertTrue(instance.getAccessImages().contains(image));
     }

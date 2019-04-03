@@ -23,11 +23,13 @@ public final class Image {
     private Crop crop = Crop.FULL;
     private int size;
     private String uri;
+    private boolean isMaster;
 
-    public Image(String uri, int size, Crop crop) {
-        this.uri = uri;
-        this.size = size;
-        this.crop = crop;
+    public Image(String uri, Crop crop, int size, boolean isMaster) {
+        this.uri      = uri;
+        this.size     = size;
+        this.crop     = crop;
+        this.isMaster = isMaster;
     }
 
     @Override
@@ -55,7 +57,11 @@ public final class Image {
 
     @Override
     public int hashCode() {
-        return ("" + getURI()).hashCode();
+        return getURI().hashCode();
+    }
+
+    public boolean isMaster() {
+        return isMaster;
     }
 
     @Override

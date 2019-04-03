@@ -74,6 +74,30 @@ final class IDNCEntity implements ConcreteEntity {
     public Set<Image> getAccessImages() {
         final Set<Image> images = new HashSet<>();
 
+        // The way to get images from Veridian is through its image
+        // server, imageserver.pl. This endpoint supports the following
+        // arguments:
+        //
+        // oid=[identifier]
+        // color=[all|?]
+        // ext=[jpg|gif|png]
+        // crop=x,y,w,h
+        // width=w
+        // height=h
+        //
+        // It can also deliver unmodified raw images by supplying
+        // getrawimage=true.
+        //
+        // Examples:
+        // http://idnc.library.illinois.edu/cgi-bin/imageserver.pl?oid=TAG19220928.1.1&crop=&color=all&ext=jpg&width=200
+        // http://idnc.library.illinois.edu/cgi-bin/imageserver.pl?oid=TAG19220928.1.1&getrawimage=true
+
+        // master image
+        String uri = String.format(
+                "%s/cgi-bin/imageserver.pl?oid=%s&getrawimage=true",
+                IDNCService.getEndpointURI(), getSourceID());
+        images.add(new Image(uri, Image.Crop.FULL, 0, true));
+
         final String widthStr = string("//PageMetadata/PageImageWidth");
         final String heightStr = string("//PageMetadata/PageImageHeight");
 
@@ -85,24 +109,13 @@ final class IDNCEntity implements ConcreteEntity {
                  exp <= ConcreteEntity.MAX_ACCESS_IMAGE_POWER;
                  exp++) {
                 final int size = (int) Math.pow(2, exp);
-
-                // Available endpoint arguments:
-                //
-                // oid=[identifier]
-                // color=[all|?]
-                // ext=[jpg|gif|png]
-                // crop=x,y,w,h
-                // width=w
-                // height=h
-                //
-                // Example: http://idnc.library.illinois.edu/cgi-bin/imageserver.pl?oid=TAG19220928.1.1&crop=&color=all&ext=jpg&width=200
                 if (size < fullWidth && size < fullHeight) {
                     // full crop
-                    String uri = String.format(
+                    uri = String.format(
                             "%s/cgi-bin/imageserver.pl?oid=%s&color=all&ext=jpg&width=%d&height=%d",
                             IDNCService.getEndpointURI(), getSourceID(),
                             size, size);
-                    images.add(new Image(uri, size, Image.Crop.FULL));
+                    images.add(new Image(uri, Image.Crop.FULL, size, false));
 
                     // square crop
                     int cropSize = (fullWidth > fullHeight) ? fullHeight : fullWidth;
@@ -112,7 +125,7 @@ final class IDNCEntity implements ConcreteEntity {
                             "%s/cgi-bin/imageserver.pl?oid=%s&color=all&ext=jpg&crop=%d,%d,%d,%d&width=%d&height=%d",
                             IDNCService.getEndpointURI(), getSourceID(),
                             cropX, cropY, cropSize, cropSize, size, size);
-                    images.add(new Image(uri, size, Image.Crop.SQUARE));
+                    images.add(new Image(uri, Image.Crop.SQUARE, size, false));
                 }
             }
         }

@@ -2,13 +2,26 @@ package edu.illinois.library.metaslurper.service;
 
 import edu.illinois.library.metaslurper.entity.Element;
 import edu.illinois.library.metaslurper.entity.Image;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.http.HttpStatus;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import static edu.illinois.library.metaslurper.service.MedusaDLSService.getClient;
 
 abstract class MedusaDLSEntity {
+
+    private static final Logger LOGGER =
+            LoggerFactory.getLogger(MedusaDLSEntity.class);
 
     JSONObject rootObject;
 
@@ -22,30 +35,65 @@ abstract class MedusaDLSEntity {
 
     public Set<Image> getAccessImages() {
         final Set<Image> images = new HashSet<>();
-        JSONObject allImages = rootObject.optJSONObject("representative_images");
-        if (allImages != null) {
-            if (allImages.has("full")) {
-                JSONObject fullImages = allImages.getJSONObject("full");
-                fullImages.keySet().forEach(key -> {
-                    String uri = fullImages.getString(key);
+        JSONObject allCrops = rootObject.optJSONObject("representative_images");
+        if (allCrops != null) {
+            // For each full crop
+            JSONObject fullCrops = allCrops.optJSONObject("full");
+            if (fullCrops != null) {
+                fullCrops.keySet().forEach(key -> {
+                    String value = fullCrops.getString(key);
                     if ("full".equals(key)) {
-                        // TODO: deal with this
+                        // The value is a master image binary URI. Fetch its
+                        // representation and create a corresponding Image.
+                        try {
+                            JSONObject binaryObj = fetchBinary(value);
+                            String s3uri = binaryObj.optString("object_uri");
+                            images.add(new Image(s3uri, Image.Crop.FULL, 0, true));
+                        } catch (IOException e) {
+                            LOGGER.error("getAccessImages(): {}", e.getMessage());
+                        }
                     } else {
+                        // The value is the URI of an access image of a
+                        // particular size.
                         int size = Integer.parseInt(key);
-                        images.add(new Image(uri, size, Image.Crop.FULL));
+                        images.add(new Image(value, Image.Crop.FULL, size, false));
                     }
                 });
             }
-            if (allImages.has("square")) {
-                JSONObject squareImages = allImages.getJSONObject("square");
+            // For each square crop
+            JSONObject squareImages = allCrops.optJSONObject("square");
+            if (squareImages != null) {
                 squareImages.keySet().forEach(key -> {
-                    int size = Integer.parseInt(key);
                     String uri = squareImages.getString(key);
-                    images.add(new Image(uri, size, Image.Crop.SQUARE));
+                    int size = Integer.parseInt(key);
+                    images.add(new Image(uri, Image.Crop.SQUARE, size, false));
                 });
             }
         }
         return images;
+    }
+
+    private JSONObject fetchBinary(String uri) throws IOException {
+        try {
+            ContentResponse response = getClient().newRequest(uri)
+                    .header("Accept", "application/json")
+                    .timeout(MedusaDLSService.REQUEST_TIMEOUT, TimeUnit.SECONDS)
+                    .send();
+            String body = response.getContentAsString();
+
+            switch (response.getStatus()) {
+                case HttpStatus.OK_200:
+                    return new JSONObject(body);
+                default:
+                    JSONObject jobj = new JSONObject(body);
+                    String message = jobj.getString("error");
+                    throw new IOException("Got HTTP " + response.getStatus() +
+                            " for " + uri + ": " + message);
+            }
+        } catch (ExecutionException | InterruptedException |
+                TimeoutException e) {
+            throw new IOException(e);
+        }
     }
 
     public Set<Element> getElements() {

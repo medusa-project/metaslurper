@@ -16,7 +16,7 @@ import static org.junit.Assert.*;
 public class IDNCEntityTest {
 
     private static final String PAGE_URL =
-            "http://idnc.library.illinois.edu/cgi-bin/illinois?a=d&d=CHP19370109.1.4&f=XML";
+            "https://idnc.library.illinois.edu/cgi-bin/illinois?a=d&d=CHP19370109.1.4&f=XML";
 
     private IDNCEntity instance;
 
@@ -46,14 +46,36 @@ public class IDNCEntityTest {
     @Test
     public void testGetAccessImageURIs() {
         Set<Image> expected = Set.of(
-                new Image("http://idnc.library.illinois.edu/cgi-bin/imageserver.pl?oid=CHP19370109.1.4&color=all&ext=jpg&width=256&height=256", 256, Image.Crop.FULL),
-                new Image("http://idnc.library.illinois.edu/cgi-bin/imageserver.pl?oid=CHP19370109.1.4&color=all&ext=jpg&crop=0,1160,5461,5461&width=256&height=256", 256, Image.Crop.SQUARE),
-                new Image("http://idnc.library.illinois.edu/cgi-bin/imageserver.pl?oid=CHP19370109.1.4&color=all&ext=jpg&width=512&height=512", 512, Image.Crop.FULL),
-                new Image("http://idnc.library.illinois.edu/cgi-bin/imageserver.pl?oid=CHP19370109.1.4&color=all&ext=jpg&crop=0,1160,5461,5461&width=512&height=512", 512, Image.Crop.SQUARE),
-                new Image("http://idnc.library.illinois.edu/cgi-bin/imageserver.pl?oid=CHP19370109.1.4&color=all&ext=jpg&width=1024&height=1024", 1024, Image.Crop.FULL),
-                new Image("http://idnc.library.illinois.edu/cgi-bin/imageserver.pl?oid=CHP19370109.1.4&color=all&ext=jpg&crop=0,1160,5461,5461&width=1024&height=1024", 1024, Image.Crop.SQUARE),
-                new Image("http://idnc.library.illinois.edu/cgi-bin/imageserver.pl?oid=CHP19370109.1.4&color=all&ext=jpg&width=2048&height=2048", 2048, Image.Crop.FULL),
-                new Image("http://idnc.library.illinois.edu/cgi-bin/imageserver.pl?oid=CHP19370109.1.4&color=all&ext=jpg&crop=0,1160,5461,5461&width=2048&height=2048", 2048, Image.Crop.SQUARE));
+                new Image("https://idnc.library.illinois.edu/cgi-bin/imageserver.pl?oid=CHP19370109.1.4&getrawimage=true",
+                        Image.Crop.FULL, 0, true),
+                new Image("https://idnc.library.illinois.edu/cgi-bin/imageserver.pl?oid=CHP19370109.1.4&color=all&ext=jpg&width=64&height=64",
+                        Image.Crop.FULL, 64, false),
+                new Image("https://idnc.library.illinois.edu/cgi-bin/imageserver.pl?oid=CHP19370109.1.4&color=all&ext=jpg&crop=0,1160,5461,5461&width=64&height=64",
+                        Image.Crop.SQUARE, 64, false),
+                new Image("https://idnc.library.illinois.edu/cgi-bin/imageserver.pl?oid=CHP19370109.1.4&color=all&ext=jpg&width=128&height=128",
+                        Image.Crop.FULL, 128, false),
+                new Image("https://idnc.library.illinois.edu/cgi-bin/imageserver.pl?oid=CHP19370109.1.4&color=all&ext=jpg&crop=0,1160,5461,5461&width=128&height=128",
+                        Image.Crop.SQUARE, 128, false),
+                new Image("https://idnc.library.illinois.edu/cgi-bin/imageserver.pl?oid=CHP19370109.1.4&color=all&ext=jpg&width=256&height=256",
+                        Image.Crop.FULL, 256, false),
+                new Image("https://idnc.library.illinois.edu/cgi-bin/imageserver.pl?oid=CHP19370109.1.4&color=all&ext=jpg&crop=0,1160,5461,5461&width=256&height=256",
+                        Image.Crop.SQUARE, 256, false),
+                new Image("https://idnc.library.illinois.edu/cgi-bin/imageserver.pl?oid=CHP19370109.1.4&color=all&ext=jpg&width=512&height=512",
+                        Image.Crop.FULL, 512, false),
+                new Image("https://idnc.library.illinois.edu/cgi-bin/imageserver.pl?oid=CHP19370109.1.4&color=all&ext=jpg&crop=0,1160,5461,5461&width=512&height=512",
+                        Image.Crop.SQUARE, 512, false),
+                new Image("https://idnc.library.illinois.edu/cgi-bin/imageserver.pl?oid=CHP19370109.1.4&color=all&ext=jpg&width=1024&height=1024",
+                        Image.Crop.FULL, 1024, false),
+                new Image("https://idnc.library.illinois.edu/cgi-bin/imageserver.pl?oid=CHP19370109.1.4&color=all&ext=jpg&crop=0,1160,5461,5461&width=1024&height=1024",
+                        Image.Crop.SQUARE, 1024, false),
+                new Image("https://idnc.library.illinois.edu/cgi-bin/imageserver.pl?oid=CHP19370109.1.4&color=all&ext=jpg&width=2048&height=2048",
+                        Image.Crop.FULL, 2048, false),
+                new Image("https://idnc.library.illinois.edu/cgi-bin/imageserver.pl?oid=CHP19370109.1.4&color=all&ext=jpg&crop=0,1160,5461,5461&width=2048&height=2048",
+                        Image.Crop.SQUARE, 2048, false),
+                new Image("https://idnc.library.illinois.edu/cgi-bin/imageserver.pl?oid=CHP19370109.1.4&color=all&ext=jpg&width=4096&height=4096",
+                        Image.Crop.FULL, 4096, false),
+                new Image("https://idnc.library.illinois.edu/cgi-bin/imageserver.pl?oid=CHP19370109.1.4&color=all&ext=jpg&crop=0,1160,5461,5461&width=4096&height=4096",
+                        Image.Crop.SQUARE, 4096, false));
         Set<Image> actual = instance.getAccessImages();
         assertEquals(expected, actual);
     }
@@ -87,7 +109,7 @@ public class IDNCEntityTest {
 
     @Test
     public void testGetSourceURI() {
-        assertEquals("http://idnc.library.illinois.edu/cgi-bin/illinois?a=d&d=CHP19370109.1.4",
+        assertEquals("https://idnc.library.illinois.edu/?a=d&d=CHP19370109.1.4",
                 instance.getSourceURI());
     }
 
