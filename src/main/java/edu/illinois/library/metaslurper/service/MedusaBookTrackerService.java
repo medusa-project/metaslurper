@@ -196,7 +196,7 @@ final class MedusaBookTrackerService implements SourceService {
 
     private void fetchNumEntities() throws IOException {
         try {
-            String uri = getEndpointURI() + "/items?" + QUERY_FILTER;
+            String uri = getEndpointURI() + "/books?" + QUERY_FILTER;
             if (lastModified != null) {
                 uri += "&last_modified_after=" + lastModified.getEpochSecond();
             }
@@ -251,7 +251,7 @@ final class MedusaBookTrackerService implements SourceService {
         final int numResults = numEntities();
         final int numPages = (int) Math.ceil(numResults / (float) windowSize);
 
-        String uri = String.format("%s/items?page=%d&%s",
+        String uri = String.format("%s/books?page=%d&%s",
                 getEndpointURI(), pageNumber, QUERY_FILTER);
         if (lastModified != null) {
             uri += "&last_modified_after=" + lastModified.getEpochSecond();
