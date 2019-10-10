@@ -110,6 +110,11 @@ final class MedusaBookTrackerService implements SourceService {
         }
 
         @Override
+        public String getContainerSinkID() {
+            return null;
+        }
+
+        @Override
         public Variant getVariant() {
             return Variant.BOOK;
         }

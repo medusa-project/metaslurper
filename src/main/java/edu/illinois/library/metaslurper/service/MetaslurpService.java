@@ -237,6 +237,8 @@ final class MetaslurpService implements SinkService {
         jobj.put("id", entity.getSinkID());
         // parent sink ID
         jobj.put("parent_id", entity.getParentSinkID());
+        // container sink ID
+        jobj.put("container_id", entity.getContainerSinkID());
         // service key
         jobj.put("service_key", entity.getServiceKey());
         // source URI

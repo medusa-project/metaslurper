@@ -31,10 +31,18 @@ public interface Entity {
 
     /**
      * @return The ID of the instance's parent within the sink service, or
-     *         {@literal null} if the entity does not have a parent. Should
+     *         {@code null} if the entity does not have a parent. Should
      *         not contain any URI-illegal characters, whether encoded or not,
      *         as some sink services may have problems with them.
      */
     String getParentSinkID();
+
+    /**
+     * @return The ID of the instance's container within the sink service, or
+     *         {@code null} if the entity does not have a container. Should
+     *         not contain any URI-illegal characters, whether encoded or not,
+     *         as some sink services may have problems with them.
+     */
+    String getContainerSinkID();
 
 }

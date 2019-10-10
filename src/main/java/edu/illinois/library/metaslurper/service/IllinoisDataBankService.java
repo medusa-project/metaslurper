@@ -119,6 +119,11 @@ final class IllinoisDataBankService implements SourceService {
         }
 
         @Override
+        public String getContainerSinkID() {
+            return null;
+        }
+
+        @Override
         public Variant getVariant() {
             return Variant.DATA_SET;
         }

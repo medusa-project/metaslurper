@@ -69,6 +69,12 @@ public class MedusaDLSItemTest {
     }
 
     @Test
+    public void testGetContainerSinkID() {
+        assertEquals("dls-692ae4c0-c09b-0134-2371-0050569601ca-6",
+                instance.getContainerSinkID());
+    }
+
+    @Test
     public void testGetElements() {
         assertTrue(instance.getElements().size() > 10);
     }
