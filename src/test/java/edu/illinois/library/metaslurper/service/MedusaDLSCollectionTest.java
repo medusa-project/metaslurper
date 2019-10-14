@@ -63,6 +63,12 @@ public class MedusaDLSCollectionTest {
     }
 
     @Test
+    public void testGetContainerName() {
+        assertEquals("University of Illinois Archives",
+                instance.getContainerName());
+    }
+
+    @Test
     public void testGetVariant() {
         assertEquals(Variant.COLLECTION, instance.getVariant());
     }

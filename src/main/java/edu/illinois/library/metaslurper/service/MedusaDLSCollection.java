@@ -7,6 +7,8 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 class MedusaDLSCollection extends MedusaDLSEntity implements ConcreteEntity {
 
@@ -82,6 +84,11 @@ class MedusaDLSCollection extends MedusaDLSEntity implements ConcreteEntity {
             return getSinkID(parent.getString("id"));
         }
         return null;
+    }
+
+    @Override
+    public String getContainerName() {
+        return rootObject.optString("repository_title");
     }
 
     @Override

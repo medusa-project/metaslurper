@@ -124,6 +124,11 @@ final class IllinoisDataBankService implements SourceService {
         }
 
         @Override
+        public String getContainerName() {
+            return null;
+        }
+
+        @Override
         public Variant getVariant() {
             return Variant.DATA_SET;
         }

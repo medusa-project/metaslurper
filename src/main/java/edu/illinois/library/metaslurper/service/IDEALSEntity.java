@@ -17,6 +17,10 @@ abstract class IDEALSEntity {
         return null;
     }
 
+    public String getContainerName() {
+        return null;
+    }
+
     public String getContainerSinkID() {
         return null;
     }

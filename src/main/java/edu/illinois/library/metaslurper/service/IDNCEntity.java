@@ -195,6 +195,11 @@ final class IDNCEntity implements ConcreteEntity {
     }
 
     @Override
+    public String getContainerName() {
+        return null;
+    }
+
+    @Override
     public String getContainerSinkID() {
         return null;
     }

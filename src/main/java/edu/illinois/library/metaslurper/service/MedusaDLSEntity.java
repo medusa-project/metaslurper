@@ -143,6 +143,10 @@ abstract class MedusaDLSEntity {
         return null;
     }
 
+    public String getContainerName() {
+        return null;
+    }
+
     public String toString() {
         return getSourceID() + " / " + getSinkID();
     }

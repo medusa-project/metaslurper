@@ -45,4 +45,13 @@ public interface Entity {
      */
     String getContainerSinkID();
 
+    /**
+     * This method is only used if {@link #getContainerSinkID()} returns {@code
+     * null}.
+     *
+     * @return The name of the instance's container, or {@code null} if it does
+     *         not have one.
+     */
+    String getContainerName();
+
 }
