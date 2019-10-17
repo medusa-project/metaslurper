@@ -244,7 +244,7 @@ final class MedusaDLSService implements SourceService {
             }
         } catch (ExecutionException | InterruptedException |
                 TimeoutException e) {
-            throw new IOException(e);
+            throw new IOException("fetchEntity(): failed to retrieve " + uri, e);
         }
     }
 
