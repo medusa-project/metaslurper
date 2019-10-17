@@ -25,7 +25,8 @@ public final class Application {
         LOG_LEVEL("v", "log_level", false, "Log level: error, warn, info, debug (default), trace"),
         SOURCE_SERVICE("s", "source", true, "Source service key"),
         SINK_SERVICE("k", "sink", true, "Sink service key"),
-        THREADS("t", "threads", false, "Number of harvesting threads (default = 1)");
+        THREADS("t", "threads", false, "Number of harvesting threads (default = 1)"),
+        THROTTLE("h", "throttle", false, "Milliseconds to wait between items (default = 0)");
 
         private String shortArg, longArg, description;
         private boolean isRequired;
@@ -41,7 +42,8 @@ public final class Application {
         }
     }
 
-    private static int numThreads = 1;
+    private static int numThreads   = 1;
+    private static int throttleMsec = 0;
 
     /**
      * @param args See {@link Argument}.
@@ -75,6 +77,11 @@ public final class Application {
                     Integer.parseInt(cmd.getOptionValue(Argument.THREADS.longArg)) :
                     numThreads;
             numThreads = Math.max(numThreads, 1);
+
+            throttleMsec = cmd.hasOption(Argument.THROTTLE.longArg) ?
+                    Integer.parseInt(cmd.getOptionValue(Argument.THROTTLE.longArg)) :
+                    throttleMsec;
+
             String sourceStr = cmd.getOptionValue(Argument.SOURCE_SERVICE.longArg);
             String sinkStr = cmd.getOptionValue(Argument.SINK_SERVICE.longArg);
 
@@ -116,6 +123,10 @@ public final class Application {
 
     public static int getNumThreads() {
         return numThreads;
+    }
+
+    public static int getThrottleMsec() {
+        return throttleMsec;
     }
 
     private static Options getOptions() {

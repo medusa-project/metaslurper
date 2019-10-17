@@ -75,6 +75,11 @@ public final class Harvester {
                         // Will break on EndOfIterationException or
                         // HarvestClosedException.
                         while (true) {
+                            try {
+                                Thread.sleep(Application.getThrottleMsec());
+                            } catch (InterruptedException ignore) {
+                            }
+
                             final int currentIndex = index.getAndIncrement();
 
                             // Update the harvest status, if necessary.

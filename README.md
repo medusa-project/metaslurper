@@ -76,6 +76,7 @@ java -jar target/metaslurper-VERSION.jar \
     -sink $SERVICE_SINK_METASLURP_KEY \
     -log_level info \
     -threads 2 \
+    -throttle 100 \
     -incremental 1535380169
 ```
 
