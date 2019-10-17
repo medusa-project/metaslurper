@@ -3,7 +3,9 @@ package edu.illinois.library.metaslurper.service;
 import edu.illinois.library.metaslurper.config.Configuration;
 import edu.illinois.library.metaslurper.entity.Entity;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.util.BasicAuthentication;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.json.JSONArray;
@@ -12,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.URI;
 import java.time.Instant;
 import java.util.NoSuchElementException;
 import java.util.Queue;
@@ -30,11 +33,6 @@ final class MedusaDLSService implements SourceService {
     private static final Logger LOGGER =
             LoggerFactory.getLogger(MedusaDLSService.class);
 
-    /**
-     * N.B.: 100 is the minimum and maximum the DLS allows.
-     */
-    private static final int BATCH_SIZE = 100;
-
     static final String ENTITY_ID_PREFIX = "dls-";
 
     private static final String NAME = "Illinois Digital Library";
@@ -45,7 +43,7 @@ final class MedusaDLSService implements SourceService {
 
     private final AtomicBoolean isClosed = new AtomicBoolean();
 
-    private int numEntities = -1;
+    private int numEntities = -1, windowSize = -1;
 
     private Instant lastModified;
 
@@ -53,6 +51,13 @@ final class MedusaDLSService implements SourceService {
         if (client == null) {
             client = new HttpClient(new SslContextFactory());
             client.setFollowRedirects(true);
+
+            AuthenticationStore auth = client.getAuthenticationStore();
+            auth.addAuthenticationResult(new BasicAuthentication.BasicResult(
+                    URI.create(getEndpointURI()),
+                    getUsername(),
+                    getSecret()));
+
             try {
                 client.start();
             } catch (Exception e) {
@@ -78,6 +83,16 @@ final class MedusaDLSService implements SourceService {
      */
     private static String getHarvestURI() {
         return getEndpointURI() + "/harvest";
+    }
+
+    private static String getUsername() {
+        Configuration config = Configuration.getInstance();
+        return config.getString("SERVICE_SOURCE_DLS_USERNAME");
+    }
+
+    private static String getSecret() {
+        Configuration config = Configuration.getInstance();
+        return config.getString("SERVICE_SOURCE_DLS_SECRET");
     }
 
     static String getServiceKey() {
@@ -116,7 +131,6 @@ final class MedusaDLSService implements SourceService {
             if (lastModified != null) {
                 uri += "?last_modified_after=" + lastModified.getEpochSecond();
             }
-
             try {
                 ContentResponse response = getClient()
                         .newRequest(uri)
@@ -126,6 +140,7 @@ final class MedusaDLSService implements SourceService {
                 String body = response.getContentAsString();
                 JSONObject jobj = new JSONObject(body);
                 numEntities = jobj.getInt("numResults");
+                windowSize = jobj.getInt("windowSize");
             } catch (ExecutionException | InterruptedException |
                     TimeoutException e) {
                 throw new IOException(e);
@@ -176,11 +191,10 @@ final class MedusaDLSService implements SourceService {
         }
 
         final int numResults = numEntities();
-        final int numBatches = (int) Math.ceil(numResults / (double) BATCH_SIZE);
-        final int offset = batchIndex * BATCH_SIZE;
+        final int numBatches = (int) Math.ceil(numResults / (double) windowSize);
+        final int offset = batchIndex * windowSize;
 
-        String uri = String.format("%s?start=%d&limit=%d",
-                getHarvestURI(), offset, BATCH_SIZE);
+        String uri = String.format("%s?start=%d", getHarvestURI(), offset);
         if (lastModified != null) {
             uri += "&last_modified_after=" + lastModified.getEpochSecond();
         }

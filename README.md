@@ -39,6 +39,8 @@ are available:
     * Illinois Digital Library
       * `SERVICE_SOURCE_DLS_KEY`
       * `SERVICE_SOURCE_DLS_ENDPOINT`
+      * `SERVICE_SOURCE_DLS_USERNAME`
+      * `SERVICE_SOURCE_DLS_SECRET`
     * Illinois Digital Newspaper Collections
       * `SERVICE_SOURCE_IDNC_KEY`
       * `SERVICE_SOURCE_IDNC_ENDPOINT`
