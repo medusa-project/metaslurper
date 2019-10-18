@@ -1,7 +1,12 @@
 #!/bin/sh
 
-source docker/env.sh
+if [ $# -lt 1 ]
+then
+    echo "Usage: docker-build.sh <env>"
+    exit 1
+fi
 
-docker build -f docker/Dockerfile \
-    -t $APP_NAME \
-    .
+source docker/env.sh env-common.list
+source docker/env.sh env-$1.list
+
+docker build -f docker/Dockerfile -t $IMAGE_NAME .

@@ -6,4 +6,4 @@
 /*.sh
 
 # Docker stuff
-env.list
+/docker/*.list

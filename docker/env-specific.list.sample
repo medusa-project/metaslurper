@@ -1,0 +1,19 @@
+#
+# Copy to env-demo.list and env-prod.list and DO NOT commit those files to
+# version control.
+#
+
+###########################################################################
+# EXPORTED ENVIRONMENT VARIABLES
+# These are used by the various .sh scripts. They are also copied into the
+# container, but not used there.
+###########################################################################
+
+IMAGE_NAME=
+DOCKER_TAG=
+
+AWS_PROFILE=
+AWS_REGION=
+ECR_HOST=
+
+ECS_TASK_DEFINITION=

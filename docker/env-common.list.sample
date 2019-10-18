@@ -8,14 +8,10 @@
 # container, but not used there.
 ###########################################################################
 
-APP_NAME=metaslurper
-DOCKER_TAG=metaslurper:latest
-
 AWS_PROFILE=
 AWS_REGION=us-east-2
 ECR_HOST=
 
 ECS_CLUSTER=metaslurper
-ECS_TASK_DEFINITION=metaslurper:1
 ECS_SUBNET=
 ECS_SECURITY_GROUP=
