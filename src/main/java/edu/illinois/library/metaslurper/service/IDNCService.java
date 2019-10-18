@@ -2,12 +2,6 @@ package edu.illinois.library.metaslurper.service;
 
 import edu.illinois.library.metaslurper.config.Configuration;
 import edu.illinois.library.metaslurper.entity.Entity;
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.util.InputStreamResponseListener;
-import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.http.HttpStatus;
 import org.jsoup.Jsoup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,19 +15,22 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 import java.util.NoSuchElementException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * <p>Service for the <a href="http://idnc.library.illinois.edu">Illinois
+ * <p>Service for the <a href="https://idnc.library.illinois.edu">Illinois
  * Digital Newspaper Collections</a>.</p>
  *
  * <p>This service uses a not-officially-documented, UIUC-specific feature of
@@ -44,15 +41,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * 1) Find the most recent time you have extracted this information. If this
  *    is your first time, it is best to set the date to 20000101. Times before
  *    1970 will not work.
- * 2) Go to http://idnc.library.illinois.edu/custom/illinois/web/script/create_recently_modified_pagelist.php?lastharvesteddate=[DATE].
+ * 2) Go to https://idnc.library.illinois.edu/custom/illinois/web/script/create_recently_modified_pagelist.php?lastharvesteddate=[DATE].
  *    If this is your first time, you should go to
- *    http://idnc.library.illinois.edu/custom/illinois/web/script/create_recently_modified_pagelist.php?lastharvesteddate=20000101.
+ *    https://idnc.library.illinois.edu/custom/illinois/web/script/create_recently_modified_pagelist.php?lastharvesteddate=20000101.
  *    Dates should be in YYYYMMDD format, but it technically supports any value
  *    that PHP's strtotime() method supports.
  * 3) If all goes well, you should get a simple HTML response saying "Success.
  *    The server is now creating the resulting XML file. Once that is finished,
  *    it will be written to
- *    http://idnc.library.illinois.edu/custom/illinois/web/modified_pageOIDs.xml"
+ *    https://idnc.library.illinois.edu/custom/illinois/web/modified_pageOIDs.xml"
  * 4) Wait some time. 5 minutes should be enough time in all situations, but it
  *    does seem to vary quite significantly as the script needs to check quite
  *    a few files. You know that the process is finished when the link points
@@ -77,7 +74,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *    value in the "Started at [DATE]" to determine which day should be used.
  *    For example, if it says "Started at Tue Sep 4 21:34:03 2018", then the
  *    next time you perform step 2, you just need to go to
- *    http://idnc.library.illinois.edu/custom/illinois/web/script/create_recently_modified_pagelist.php?lastharvesteddate=20180904.
+ *    https://idnc.library.illinois.edu/custom/illinois/web/script/create_recently_modified_pagelist.php?lastharvesteddate=20180904.
  *    The difference between the Start and End times should say how long it
  *    took to find all of the recently modified pages.}
  * </blockquote>
@@ -150,23 +147,25 @@ final class IDNCService implements SourceService {
          *     GetPageContent</a>
          */
         private Entity fetchPage(final String pageURI) throws IOException {
-            // Example: http://idnc.library.illinois.edu/cgi-bin/illinois?a=d&d=CHP19370109.1.4&f=XML
+            // Example: https://idnc.library.illinois.edu/cgi-bin/illinois?a=d&d=CHP19370109.1.4&f=XML
             LOGGER.debug("Fetching page: {}", pageURI);
 
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(pageURI))
+                    .timeout(REQUEST_TIMEOUT)
+                    .build();
             try {
-                ContentResponse response = getClient()
-                        .newRequest(pageURI)
-                        .timeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
-                        .send();
-                if (response.getStatus() == HttpStatus.OK_200) {
-                    String body = response.getContentAsString();
+                HttpResponse<String> response = getClient().send(request,
+                        HttpResponse.BodyHandlers.ofString());
+
+                if (response.statusCode() == 200) {
+                    String body = response.body();
                     return IDNCEntity.fromXML(body);
                 } else {
-                    throw new IOException("Got HTTP " + response.getStatus() +
+                    throw new IOException("Got HTTP " + response.statusCode() +
                             " for " + pageURI);
                 }
-            } catch (ExecutionException | InterruptedException |
-                    TimeoutException | ParserConfigurationException |
+            } catch (InterruptedException | ParserConfigurationException |
                     SAXException e) {
                 throw new IOException(e);
             }
@@ -181,7 +180,13 @@ final class IDNCService implements SourceService {
 
     private static final String NAME = "IDNC";
 
-    private static final int REQUEST_TIMEOUT = 60;
+    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(60);
+
+    /**
+     * After a harvest is initiated, the results will be polled at this
+     * interval to check whether they're available.
+     */
+    private static final Duration RESULTS_POLL_INTERVAL = Duration.ofSeconds(10);
 
     /**
      * YYYYMMDD format. Used for full harvests. May be overridden by {@link
@@ -190,15 +195,9 @@ final class IDNCService implements SourceService {
     private static final int DEFAULT_LAST_MODIFIED = 20000101;
 
     /**
-     * After a harvest is initiated, the results will be polled at this
-     * interval to check whether they're available.
-     */
-    private static final int RESULTS_POLL_INTERVAL_MSEC = 10000;
-
-    /**
      * Maximum amount of time to wait for results to arrive.
      */
-    private static final long MAX_POLL_WAIT_MSEC = 20 * 60 * 1000;
+    private static final Duration MAX_POLL_WAIT = Duration.ofMinutes(30);
 
     private HttpClient client;
 
@@ -220,13 +219,9 @@ final class IDNCService implements SourceService {
 
     private synchronized HttpClient getClient() {
         if (client == null) {
-            client = new HttpClient();
-            client.setFollowRedirects(true);
-            try {
-                client.start();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+            client = HttpClient.newBuilder()
+                    .followRedirects(HttpClient.Redirect.ALWAYS)
+                    .build();
         }
         return client;
     }
@@ -254,15 +249,6 @@ final class IDNCService implements SourceService {
     @Override
     public void close() {
         isClosed.set(true);
-
-        if (client != null) {
-            try {
-                client.stop();
-            } catch (Exception e) {
-                LOGGER.error("close(): {}", e.getMessage());
-            }
-        }
-
         if (harvestResultsFile != null) {
             try {
                 Files.deleteIfExists(harvestResultsFile);
@@ -302,10 +288,8 @@ final class IDNCService implements SourceService {
         // Count the number of <link> elements in the harvest results.
         int count = 0;
         XMLInputFactory factory = XMLInputFactory.newInstance();
-        Reader reader = null;
         XMLStreamReader xmlReader = null;
-        try {
-            reader = Files.newBufferedReader(resultsFile);
+        try (Reader reader = Files.newBufferedReader(resultsFile)) {
             xmlReader = factory.createXMLStreamReader(reader);
             while (xmlReader.hasNext()) {
                 xmlReader.next();
@@ -318,9 +302,6 @@ final class IDNCService implements SourceService {
         } catch (XMLStreamException e) {
             throw new IOException(e);
         } finally {
-            if (reader != null) {
-                reader.close();
-            }
             if (xmlReader != null) {
                 try {
                     xmlReader.close();
@@ -357,11 +338,15 @@ final class IDNCService implements SourceService {
 
                 LOGGER.debug("Initiating harvest: {}", uri);
 
-                ContentResponse response = getClient()
-                        .newRequest(uri)
-                        .timeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
-                        .send();
-                if (response.getStatus() == 200) {
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(uri))
+                        .timeout(REQUEST_TIMEOUT)
+                        .build();
+
+                HttpResponse<String> response = getClient().send(request,
+                        HttpResponse.BodyHandlers.ofString());
+
+                if (response.statusCode() == 200) {
                     // The response entity is expected to look like:
                     //
                     // <html>
@@ -371,22 +356,21 @@ final class IDNCService implements SourceService {
                     //  <body>
                     //    <p>Success. The server is now creating the resulting
                     //    XML file. Once that is finished, it will be written to
-                    //    <a href="http://idnc.library.illinois.edu/custom/illinois/web/modified_pageOIDs.xml">
-                    //    http://idnc.library.illinois.edu/custom/illinois/web/modified_pageOIDs.xml</a></p>
+                    //    <a href="https://idnc.library.illinois.edu/custom/illinois/web/modified_pageOIDs.xml">
+                    //    https://idnc.library.illinois.edu/custom/illinois/web/modified_pageOIDs.xml</a></p>
                     //  </body>
                     // </html>
                     //
                     // We need to extract that link.
-                    String entity = response.getContentAsString();
+                    String entity = response.body();
                     org.jsoup.nodes.Document doc = Jsoup.parse(entity);
                     org.jsoup.nodes.Element link = doc.select("a").get(0);
                     harvestResultsURI = link.absUrl("href");
                 } else {
-                    throw new IOException("Got HTTP " + response.getStatus() +
+                    throw new IOException("Got HTTP " + response.statusCode() +
                             " for " + uri);
                 }
-            } catch (ExecutionException | InterruptedException |
-                    TimeoutException e) {
+            } catch (InterruptedException e) {
                 throw new IOException(e);
             }
         }
@@ -397,8 +381,8 @@ final class IDNCService implements SourceService {
      * Returns when results are available.
      *
      * @param uri URI returned from {@link #sendHarvestRequest()}.
-     * @throws IOException if anything goes wrong or if {@link
-     *         #MAX_POLL_WAIT_MSEC} is exceeded.
+     * @throws IOException if anything goes wrong or if {@link #MAX_POLL_WAIT}
+     *                     is exceeded.
      */
     private void waitForHarvestResults(String uri) throws IOException {
         if (isResultsAvailable.get()) {
@@ -410,19 +394,24 @@ final class IDNCService implements SourceService {
 
         try {
             while (true) {
-                if (now.toEpochMilli() - start.toEpochMilli() > MAX_POLL_WAIT_MSEC) {
+                Duration wait = Duration.ofMillis(
+                        now.toEpochMilli() - start.toEpochMilli());
+                if (wait.toMillis() > MAX_POLL_WAIT.toMillis()) {
                     throw new TimeoutException("Wait time for results exceeded" +
-                            (MAX_POLL_WAIT_MSEC / 1000) + " seconds");
+                            MAX_POLL_WAIT.toSeconds() + " seconds");
                 }
 
-                LOGGER.debug("Polling harvest results: HEAD {}", uri);
+                LOGGER.debug("Polling harvest results (waited {} min): HEAD {}",
+                        wait.toMinutes(), uri);
 
-                ContentResponse response = getClient()
-                        .newRequest(uri)
-                        .method(HttpMethod.HEAD)
-                        .timeout(RESULTS_POLL_INTERVAL_MSEC / 1000, TimeUnit.SECONDS)
-                        .send();
-                if (response.getStatus() == 200) {
+                HttpRequest request = HttpRequest.newBuilder()
+                        .method("HEAD", HttpRequest.BodyPublishers.noBody())
+                        .uri(URI.create(uri))
+                        .timeout(RESULTS_POLL_INTERVAL)
+                        .build();
+                HttpResponse<String> response = getClient().send(request,
+                        HttpResponse.BodyHandlers.ofString());
+                if (response.statusCode() == 200) {
                     // Before results have arrived, the response entity will be
                     // a malformed XML string like:
                     //
@@ -431,22 +420,21 @@ final class IDNCService implements SourceService {
                     //
                     // We'll keep checking the length and break when it has
                     // increased.
-                    long contentLength =
-                            Long.parseLong(response.getHeaders().get("Content-Length"));
+                    long contentLength = Long.parseLong(
+                            response.headers().firstValue("Content-Length").orElse("0"));
                     if (contentLength > 150) {
                         isResultsAvailable.set(true);
                         break;
                     }
                 } else {
-                    throw new IOException("Got HTTP " + response.getStatus() +
+                    throw new IOException("Got HTTP " + response.statusCode() +
                             " for HEAD " + harvestResultsURI);
                 }
 
-                Thread.sleep(RESULTS_POLL_INTERVAL_MSEC);
+                Thread.sleep(RESULTS_POLL_INTERVAL.toMillis());
                 now = Instant.now();
             }
-        } catch (ExecutionException | InterruptedException |
-                TimeoutException e) {
+        } catch (InterruptedException | TimeoutException e) {
             throw new IOException(e);
         }
     }
@@ -467,30 +455,23 @@ final class IDNCService implements SourceService {
             LOGGER.debug("Downloading results from {} to {}",
                     harvestResultsURI, harvestResultsFile);
 
-            final InputStreamResponseListener responseListener =
-                    new InputStreamResponseListener();
-
             try {
-                getClient()
-                        .newRequest(harvestResultsURI)
-                        .timeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
-                        .send(responseListener);
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(harvestResultsURI))
+                        .timeout(REQUEST_TIMEOUT)
+                        .build();
+                HttpResponse<InputStream> response = getClient().send(request,
+                        HttpResponse.BodyHandlers.ofInputStream());
 
-                // Wait for the response headers to arrive.
-                Response response = responseListener.get(
-                        REQUEST_TIMEOUT, TimeUnit.SECONDS);
-
-                if (response.getStatus() == HttpStatus.OK_200) {
-                    try (InputStream is =
-                                 new BufferedInputStream(responseListener.getInputStream())) {
+                if (response.statusCode() == 200) {
+                    try (InputStream is = new BufferedInputStream(response.body())) {
                         Files.copy(is, harvestResultsFile);
                     }
                 } else {
-                    throw new IOException("Got HTTP " + response.getStatus() +
+                    throw new IOException("Got HTTP " + response.statusCode() +
                             " for " + harvestResultsURI);
                 }
-            } catch (ExecutionException | InterruptedException |
-                    TimeoutException e) {
+            } catch (InterruptedException e) {
                 throw new IOException(e);
             }
         }
