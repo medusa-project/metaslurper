@@ -19,7 +19,6 @@ import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
@@ -31,7 +30,7 @@ public final class Harvester {
             LoggerFactory.getLogger(Harvester.class);
 
     /**
-     * Update the sink status after any multiple of this many entities are
+     * Update the sink status after a multiple of this many entities are
      * ingested.
      */
     private static final short STATUS_UPDATE_INCREMENT = 25;
@@ -41,121 +40,31 @@ public final class Harvester {
      * @param sink   Service to harvest into.
      */
     public void harvest(final SourceService source, final SinkService sink) {
-        harvest(source, sink, new Status());
+        harvest(source, sink, new Harvest());
     }
 
     /**
-     * @param source Service to harvest.
-     * @param sink   Service to harvest into.
-     * @param status Object for status tracking.
+     * @param source  Service to harvest.
+     * @param sink    Service to harvest into.
+     * @param harvest Object for status tracking.
      */
     void harvest(final SourceService source,
                  final SinkService sink,
-                 final Status status) {
+                 final Harvest harvest) {
         final int numThreads       = Application.getNumThreads();
         final CountDownLatch latch = new CountDownLatch(numThreads);
         final ExecutorService pool = Executors.newFixedThreadPool(numThreads);
         try {
-            int tmp;
-            try {
-                tmp = source.numEntities();
-            } catch (UnsupportedOperationException e) {
-                tmp = 0;
-            }
-            final int numEntities = tmp;
-            final AtomicInteger index = new AtomicInteger();
-            final ConcurrentIterator<? extends Entity> iter = source.entities();
+            final int numEntities                         = getNumEntities(source);
+            final ConcurrentIterator<? extends Entity> it = source.entities();
 
-            status.setLifecycle(Lifecycle.RUNNING);
+            harvest.setLifecycle(Lifecycle.RUNNING);
+            harvest.setNumEntities(numEntities);
             sink.setNumEntitiesToIngest(numEntities);
 
             for (int i = 0; i < numThreads; i++) {
-                pool.submit(() -> {
-                    try {
-                        // Will break on EndOfIterationException or
-                        // HarvestClosedException.
-                        while (true) {
-                            try {
-                                Thread.sleep(Application.getThrottleMsec());
-                            } catch (InterruptedException ignore) {
-                            }
-
-                            final int currentIndex = index.getAndIncrement();
-
-                            // Update the harvest status, if necessary.
-                            try {
-                                if (currentIndex % STATUS_UPDATE_INCREMENT == 0) {
-                                    sink.updateStatus(status);
-                                }
-                            } catch (IOException e) {
-                                LOGGER.error("Failed to update harvest status: {}",
-                                        e.getMessage(), e);
-                            }
-
-                            try {
-                                // Pull an Entity from the source service.
-                                Entity entity = iter.next();
-
-                                // Push it into the sink service.
-                                if (entity instanceof ConcreteEntity) {
-                                    ConcreteEntity concEntity = (ConcreteEntity) entity;
-                                    try {
-                                        sink.ingest(concEntity);
-                                        status.incrementAndGetNumSucceeded();
-
-                                        LOGGER.debug("Harvested {} {} from {} into {} [{}/{}] [{}]",
-                                                concEntity.getVariant().name().toLowerCase(),
-                                                concEntity, source, sink,
-                                                currentIndex + 1, numEntities,
-                                                NumberUtils.percent(currentIndex + 1, numEntities));
-                                    } catch (HarvestClosedException e) {
-                                        throw e;
-                                    } catch (IOException e) {
-                                        reportSinkFailure(status, concEntity, e);
-                                    }
-                                } else {
-                                    reportSourceFailure(status,
-                                            (PlaceholderEntity) entity);
-                                }
-                            } catch (EndOfIterationException e) {
-                                // If iteration has ended prematurely,
-                                // increment the failure count to make up the
-                                // difference.
-                                final int delta = numEntities - currentIndex;
-                                if (delta > 0) {
-                                    status.addAndGetNumFailed(delta);
-                                    status.getMessages().add("Added " + delta +
-                                            " to the failure count due to a " +
-                                            "discrepancy between the number " +
-                                            "of items reported present in " +
-                                            "the service (" + numEntities +
-                                            ") and the number found (" +
-                                            (status.getNumSucceeded() +
-                                            status.getNumFailed()) + ").");
-                                }
-                                status.setLifecycle(Lifecycle.SUCCEEDED);
-                                break;
-                            } catch (HarvestClosedException e) {
-                                // Set the failure count to the number of
-                                // items remaining.
-                                final int delta = numEntities + 1 - index.get();
-                                if (delta > 0) {
-                                    status.addAndGetNumFailed(delta);
-                                    status.getMessages().add("Harvest " +
-                                            "aborted with " + delta +
-                                            " items left.");
-                                }
-                                status.setLifecycle(Lifecycle.ABORTED);
-                                LOGGER.info("Harvest closed: {}", e.getMessage());
-                                break;
-                            } catch (Exception e) {
-                                reportSourceFailure(status, e);
-                            }
-                        }
-                    } finally {
-                        latch.countDown();
-                    }
-                });
+                pool.submit(() -> harvestInThread(harvest, source, sink, it,
+                        latch));
             }
 
             LOGGER.info("Harvesting {} entities from {} into {} using {} threads",
@@ -167,11 +76,11 @@ public final class Harvester {
                 LOGGER.info(e.getMessage(), e);
             }
         } catch (IOException | UncheckedIOException e) {
-            status.setLifecycle(Lifecycle.FAILED);
+            harvest.setLifecycle(Lifecycle.FAILED);
             LOGGER.error(e.getMessage(), e);
         } finally {
             try {
-                sink.updateStatus(status);
+                sink.updateHarvest(harvest);
             } catch (IOException e) {
                 LOGGER.error("Failed to update final harvest status: {}",
                         e.getMessage(), e);
@@ -181,11 +90,97 @@ public final class Harvester {
         }
     }
 
+    private void harvestInThread(Harvest harvest,
+                                 SourceService source,
+                                 SinkService sink,
+                                 ConcurrentIterator<? extends Entity> it,
+                                 CountDownLatch latch) {
+        try {
+            // Will break on an EndOfIterationException or
+            // HarvestClosedException.
+            while (throttle()) {
+                final int index = harvest.getAndIncrementIndex();
+                updateStatus(sink, harvest);
+                try {
+                    // Pull an Entity from the source service.
+                    Entity entity = it.next();
+
+                    // Push it into the sink service.
+                    if (entity instanceof ConcreteEntity) {
+                        ConcreteEntity concEntity = (ConcreteEntity) entity;
+                        try {
+                            sink.ingest(concEntity);
+                            harvest.incrementNumSucceeded();
+
+                            LOGGER.debug("Harvested {} {} from {} into {} [{}/{}] [{}]",
+                                    concEntity.getVariant().name().toLowerCase(),
+                                    concEntity, source, sink,
+                                    index + 1, harvest.getNumEntities(),
+                                    NumberUtils.percent(index + 1, harvest.getNumEntities()));
+                        } catch (HarvestClosedException e) {
+                            throw e;
+                        } catch (IOException e) {
+                            reportSinkFailure(harvest, concEntity, e);
+                        }
+                    } else {
+                        reportSourceFailure(harvest,
+                                (PlaceholderEntity) entity);
+                    }
+                } catch (EndOfIterationException e) {
+                    harvest.endPrematurely();
+                    LOGGER.info("Harvest ended prematurely: {}", e.getMessage());
+                    break;
+                } catch (HarvestClosedException e) {
+                    harvest.abort();
+                    LOGGER.info("Harvest closed: {}", e.getMessage());
+                    break;
+                } catch (Exception e) {
+                    reportSourceFailure(harvest, e);
+                }
+            }
+        } finally {
+            latch.countDown();
+        }
+    }
+
+    private static void updateStatus(SinkService sink,
+                                     Harvest harvest) {
+        try {
+            if (harvest.getIndex() % STATUS_UPDATE_INCREMENT == 0) {
+                sink.updateHarvest(harvest);
+            }
+        } catch (IOException e) {
+            LOGGER.error("Failed to update harvest status: {}",
+                    e.getMessage(), e);
+        }
+    }
+
+    private static int getNumEntities(SourceService source) throws IOException {
+        int numEntities;
+        try {
+            numEntities = source.numEntities();
+        } catch (UnsupportedOperationException e) {
+            numEntities = 0;
+        }
+        return numEntities;
+    }
+
+    /**
+     * @return {@code} true.
+     */
+    private static boolean throttle() {
+        try {
+            Thread.sleep(Application.getThrottleMsec());
+        } catch (InterruptedException ignore) {
+        }
+        return true;
+    }
+
     /**
      * Reports a failure to acquire an {@link Entity} from a {@link
      * SourceService}.
      */
-    private static void reportSourceFailure(Status status, Throwable t) {
+    private static void reportSourceFailure(Harvest harvest, Throwable t) {
         LOGGER.error("Failed to retrieve from source: {}", t.getMessage(), t);
 
         String message = String.format("**** SOURCE FAILURE:\n" +
@@ -199,15 +194,15 @@ public final class Harvester {
                 Arrays.stream(t.getStackTrace())
                         .map(StackTraceElement::toString)
                         .collect(Collectors.joining("\n")));
-        status.getMessages().add(message);
-        status.incrementAndGetNumFailed();
+        harvest.getMessages().add(message);
+        harvest.incrementNumFailed();
     }
 
     /**
      * Reports a failure to acquire a {@link ConcreteEntity} from a {@link
      * SourceService}.
      */
-    private static void reportSourceFailure(Status status,
+    private static void reportSourceFailure(Harvest harvest,
                                             PlaceholderEntity entity) {
         String message = String.format("**** SOURCE FAILURE:\n" +
                         "    Time: %s\n" +
@@ -216,15 +211,15 @@ public final class Harvester {
                 Instant.now(),
                 entity.getSourceURI(),
                 entity.getSourceID());
-        status.getMessages().add(message);
-        status.incrementAndGetNumFailed();
+        harvest.getMessages().add(message);
+        harvest.incrementNumFailed();
     }
 
     /**
      * Reports a failure to ingest a {@link ConcreteEntity} into a {@link
      * SinkService}.
      */
-    private static void reportSinkFailure(Status status,
+    private static void reportSinkFailure(Harvest harvest,
                                           ConcreteEntity entity,
                                           Throwable t) {
         LOGGER.error("Failed to ingest into sink: {}", t.getMessage(), t);
@@ -242,8 +237,8 @@ public final class Harvester {
                 Arrays.stream(t.getStackTrace())
                         .map(StackTraceElement::toString)
                         .collect(Collectors.joining("\n")));
-        status.getMessages().add(message);
-        status.incrementAndGetNumFailed();
+        harvest.getMessages().add(message);
+        harvest.incrementNumFailed();
     }
 
 }

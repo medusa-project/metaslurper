@@ -1,8 +1,8 @@
 package edu.illinois.library.metaslurper.service;
 
 import edu.illinois.library.metaslurper.entity.ConcreteEntity;
+import edu.illinois.library.metaslurper.harvest.Harvest;
 import edu.illinois.library.metaslurper.harvest.HarvestClosedException;
-import edu.illinois.library.metaslurper.harvest.Status;
 
 import java.io.IOException;
 
@@ -28,10 +28,10 @@ public interface SinkService extends Service {
     /**
      * Sends a status update to the service.
      *
-     * @param status       Status to send. Implementations should not mutate
+     * @param harvest      Harvest to send. Implementations should not mutate
      *                     it.
      * @throws IOException if there was an error.
      */
-    void updateStatus(Status status) throws IOException;
+    void updateHarvest(Harvest harvest) throws IOException;
 
 }

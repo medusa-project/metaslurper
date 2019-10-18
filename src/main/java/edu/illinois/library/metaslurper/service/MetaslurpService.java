@@ -5,7 +5,7 @@ import edu.illinois.library.metaslurper.entity.ConcreteEntity;
 import edu.illinois.library.metaslurper.entity.Entity;
 import edu.illinois.library.metaslurper.entity.Variant;
 import edu.illinois.library.metaslurper.harvest.HarvestClosedException;
-import edu.illinois.library.metaslurper.harvest.Status;
+import edu.illinois.library.metaslurper.harvest.Harvest;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -195,13 +195,13 @@ final class MetaslurpService implements SinkService {
     }
 
     @Override
-    public void updateStatus(final Status status) throws IOException {
-        if (harvest == null) {
+    public void updateHarvest(final Harvest harvest) throws IOException {
+        if (this.harvest == null) {
             return;
         }
-        harvest.setStatus(status);
-        final URI uri = getEndpointURI().resolve(harvest.getPath());
-        final String json = harvest.toJSON();
+        this.harvest.setHarvest(harvest);
+        final URI uri = getEndpointURI().resolve(this.harvest.getPath());
+        final String json = this.harvest.toJSON();
 
         LOGGER.debug("Updating status of {}: {}", uri, json);
         try {

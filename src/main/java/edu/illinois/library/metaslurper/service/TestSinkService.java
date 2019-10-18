@@ -1,7 +1,7 @@
 package edu.illinois.library.metaslurper.service;
 
 import edu.illinois.library.metaslurper.entity.ConcreteEntity;
-import edu.illinois.library.metaslurper.harvest.Status;
+import edu.illinois.library.metaslurper.harvest.Harvest;
 
 /**
  * Fake service that doesn't do anything.
@@ -36,7 +36,7 @@ final class TestSinkService implements SinkService {
     }
 
     @Override
-    public void updateStatus(Status status) {
+    public void updateHarvest(Harvest harvest) {
     }
 
 }

@@ -29,118 +29,118 @@ public class HarvesterTest {
 
     @Test
     public void testHarvestWithNoFailures() throws Exception {
-        Status status = new Status();
+        Harvest harvest = new Harvest();
         try (MockSourceService source = new MockSourceService();
              MockSinkService sink = new MockSinkService()) {
-            instance.harvest(source, sink, status);
+            instance.harvest(source, sink, harvest);
             assertEquals(source.numEntities(), sink.getIngestedEntities().size());
-            assertEquals(source.numEntities(), status.getNumSucceeded());
-            assertEquals(0, status.getNumFailed());
-            assertEquals(0, status.getMessages().size());
-            assertEquals(Lifecycle.SUCCEEDED, status.getLifecycle());
+            assertEquals(source.numEntities(), harvest.getNumSucceeded());
+            assertEquals(0, harvest.getNumFailed());
+            assertEquals(0, harvest.getMessages().size());
+            assertEquals(Lifecycle.SUCCEEDED, harvest.getLifecycle());
         }
     }
 
     @Test
     public void testHarvestWithSourceFailures() {
-        Status status = new Status();
+        Harvest harvest = new Harvest();
         try (MockSourceService source = new MockUnreliableSourceService();
              MockSinkService sink = new MockSinkService()) {
-            instance.harvest(source, sink, status);
-            assertEquals(1, sink.getIngestedEntities().size());
-            assertEquals(1, status.getNumSucceeded());
-            assertEquals(1, status.getNumFailed());
-            assertEquals(1, status.getMessages().size());
-            assertEquals(Lifecycle.SUCCEEDED, status.getLifecycle());
+            instance.harvest(source, sink, harvest);
+            assertEquals(4, sink.getIngestedEntities().size());
+            assertEquals(4, harvest.getNumSucceeded());
+            assertEquals(1, harvest.getNumFailed());
+            assertEquals(1, harvest.getMessages().size());
+            assertEquals(Lifecycle.SUCCEEDED, harvest.getLifecycle());
         }
     }
 
     @Test
     public void testHarvestWithOverCountingSource() throws Exception {
-        Status status = new Status();
+        Harvest harvest = new Harvest();
         try (MockSourceService source = new MockOvercountingSourceService();
              MockSinkService sink = new MockSinkService()) {
-            instance.harvest(source, sink, status);
+            instance.harvest(source, sink, harvest);
             assertEquals(source.numEntities() - 1, sink.getIngestedEntities().size());
-            assertEquals(source.numEntities() - 1, status.getNumSucceeded());
-            assertEquals(1, status.getNumFailed());
-            assertEquals(1, status.getMessages().size());
-            assertEquals(Lifecycle.SUCCEEDED, status.getLifecycle());
+            assertEquals(source.numEntities() - 1, harvest.getNumSucceeded());
+            assertEquals(0, harvest.getNumFailed());
+            assertEquals(0, harvest.getMessages().size());
+            assertEquals(Lifecycle.SUCCEEDED, harvest.getLifecycle());
         }
     }
 
     @Test
     public void testHarvestWithUnderCountingSource() throws Exception {
-        Status status = new Status();
+        Harvest harvest = new Harvest();
         try (MockSourceService source = new MockUndercountingSourceService();
              MockSinkService sink = new MockSinkService()) {
-            instance.harvest(source, sink, status);
+            instance.harvest(source, sink, harvest);
             assertEquals(source.numEntities() + 1, sink.getIngestedEntities().size());
-            assertEquals(source.numEntities() + 1, status.getNumSucceeded());
-            assertEquals(0, status.getNumFailed());
-            assertEquals(0, status.getMessages().size());
-            assertEquals(Lifecycle.SUCCEEDED, status.getLifecycle());
+            assertEquals(source.numEntities() + 1, harvest.getNumSucceeded());
+            assertEquals(0, harvest.getNumFailed());
+            assertEquals(0, harvest.getMessages().size());
+            assertEquals(Lifecycle.SUCCEEDED, harvest.getLifecycle());
         }
     }
 
     @Test
     public void testHarvestWithAbortingHarvest() throws IOException {
-        Status status = new Status();
+        Harvest harvest = new Harvest();
         try (MockSourceService source = new MockAbortingSourceService();
              MockSinkService sink = new MockSinkService()) {
-            instance.harvest(source, sink, status);
+            instance.harvest(source, sink, harvest);
             assertEquals(0, sink.getIngestedEntities().size());
-            assertEquals(0, status.getNumSucceeded());
-            assertEquals(source.numEntities(), status.getNumFailed());
-            assertEquals(1, status.getMessages().size());
-            assertEquals(Lifecycle.ABORTED, status.getLifecycle());
+            assertEquals(0, harvest.getNumSucceeded());
+            assertEquals(source.numEntities() - 1, harvest.getNumFailed());
+            assertEquals(1, harvest.getMessages().size());
+            assertEquals(Lifecycle.ABORTED, harvest.getLifecycle());
         }
     }
 
     @Test
     public void testHarvestWithSourceNumItemsMethodThrowingIOException() {
-        Status status = new Status();
+        Harvest harvest = new Harvest();
         try (MockErroringSourceService1 source = new MockErroringSourceService1();
              MockSinkService sink = new MockSinkService()) {
-            instance.harvest(source, sink, status);
+            instance.harvest(source, sink, harvest);
         }
-        assertEquals(Lifecycle.FAILED, status.getLifecycle());
+        assertEquals(Lifecycle.FAILED, harvest.getLifecycle());
     }
 
     @Test
     public void testHarvestWithSourceNumItemsMethodThrowingUnsupportedOperationException() {
-        Status status = new Status();
+        Harvest harvest = new Harvest();
         try (SourceService source = new MockNonCountingSourceService();
              MockSinkService sink = new MockSinkService()) {
-            instance.harvest(source, sink, status);
+            instance.harvest(source, sink, harvest);
         }
-        assertEquals(2, status.getNumSucceeded());
-        assertEquals(0, status.getNumFailed());
-        assertEquals(0, status.getMessages().size());
-        assertEquals(Lifecycle.SUCCEEDED, status.getLifecycle());
+        assertEquals(2, harvest.getNumSucceeded());
+        assertEquals(0, harvest.getNumFailed());
+        assertEquals(0, harvest.getMessages().size());
+        assertEquals(Lifecycle.SUCCEEDED, harvest.getLifecycle());
     }
 
     @Test
     public void testHarvestWithSourceItemsMethodThrowingIOException() {
-        Status status = new Status();
+        Harvest harvest = new Harvest();
         try (MockErroringSourceService2 source = new MockErroringSourceService2();
              MockSinkService sink = new MockSinkService()) {
-            instance.harvest(source, sink, status);
+            instance.harvest(source, sink, harvest);
         }
-        assertEquals(Lifecycle.FAILED, status.getLifecycle());
+        assertEquals(Lifecycle.FAILED, harvest.getLifecycle());
     }
 
     @Test
     public void testHarvestWithSinkFailures() {
-        Status status = new Status();
+        Harvest harvest = new Harvest();
         try (MockSourceService source = new MockSourceService();
              MockSinkService sink = new MockErroringSinkService()) {
-            instance.harvest(source, sink, status);
+            instance.harvest(source, sink, harvest);
             assertEquals(0, sink.getIngestedEntities().size());
-            assertEquals(0, status.getNumSucceeded());
-            assertEquals(2, status.getNumFailed());
-            assertEquals(2, status.getMessages().size());
-            assertEquals(Lifecycle.SUCCEEDED, status.getLifecycle());
+            assertEquals(0, harvest.getNumSucceeded());
+            assertEquals(5, harvest.getNumFailed());
+            assertEquals(5, harvest.getMessages().size());
+            assertEquals(Lifecycle.SUCCEEDED, harvest.getLifecycle());
         }
     }
 

@@ -28,7 +28,7 @@ public class MockSourceService implements SourceService {
 
     @Override
     public int numEntities() throws IOException {
-        return 2;
+        return 5;
     }
 
     @Override
@@ -40,8 +40,8 @@ public class MockSourceService implements SourceService {
             entities.add(item);
         }
 
-        return new ConcurrentIterator<Entity>() {
-            private final int numEntities = numEntities();
+        return new ConcurrentIterator<>() {
+            private final int numEntities     = numEntities();
             private final AtomicInteger index = new AtomicInteger();
             private final Iterator<Entity> it = entities.iterator();
 

@@ -1,7 +1,7 @@
 package edu.illinois.library.metaslurper.service;
 
 import edu.illinois.library.metaslurper.entity.ConcreteEntity;
-import edu.illinois.library.metaslurper.harvest.Status;
+import edu.illinois.library.metaslurper.harvest.Harvest;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -41,7 +41,7 @@ public class MockSinkService implements SinkService {
     }
 
     @Override
-    public void updateStatus(Status stats) {
+    public void updateHarvest(Harvest stats) {
     }
 
 }

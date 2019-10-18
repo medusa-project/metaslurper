@@ -5,27 +5,37 @@ public enum Lifecycle {
     /**
      * The harvest is new.
      */
-    NEW,
+    NEW(true),
 
     /**
      * The harvest is running.
      */
-    RUNNING,
+    RUNNING(true),
 
     /**
      * The harvest has been aborted.
      */
-    ABORTED,
+    ABORTED(false),
 
     /**
      * The harvest has completed successfully. (This does not necessarily
      * mean that all items were ingested successfully.)
      */
-    SUCCEEDED,
+    SUCCEEDED(false),
 
     /**
      * The harvest encountered a fatal error and terminated prematurely.
      */
-    FAILED
+    FAILED(false);
+
+    private boolean isOpen;
+
+    Lifecycle(boolean isOpen) {
+        this.isOpen = isOpen;
+    }
+
+    boolean isOpen() {
+        return isOpen;
+    }
 
 }
