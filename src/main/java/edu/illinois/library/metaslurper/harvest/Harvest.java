@@ -11,6 +11,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public final class Harvest {
 
+    private static final int MAX_MESSAGES    = 100;
+
     private Lifecycle lifecycle              = Lifecycle.NEW;
     private int numEntities                  = 0;
     private final AtomicInteger index        = new AtomicInteger();
@@ -27,11 +29,17 @@ public final class Harvest {
             final int delta = numEntities - index.get();
             if (delta > 0) {
                 numFailed.addAndGet(delta);
-                getMessages().add("Harvest aborted with " + delta +
-                        " items left.");
+                addMessage("Harvest aborted with " + delta + " items left.");
             }
         }
         setLifecycle(Lifecycle.ABORTED);
+    }
+
+    public void addMessage(String message) {
+        messages.add(message);
+        if (messages.size() > MAX_MESSAGES) {
+            messages.poll();
+        }
     }
 
     /**
@@ -44,7 +52,7 @@ public final class Harvest {
             final int delta = numEntities - index.get();
             if (delta > 0) {
                 numFailed.addAndGet(delta);
-                getMessages().add("Added " + delta + " to the failure count " +
+                addMessage("Added " + delta + " to the failure count " +
                         "due to a discrepancy between the number of items " +
                         "reported present in the service (" + numEntities +
                         ") and the number found (" + (getNumSucceeded() +
@@ -58,6 +66,16 @@ public final class Harvest {
         return lifecycle;
     }
 
+    /**
+     * N.B.: Do not mutate the return value; use {@link #addMessage(String)}
+     * instead.
+     *
+     * @return All messages in the queue.
+     */
+    public Queue<String> getMessages() {
+        return messages;
+    }
+
     public int getAndIncrementIndex() {
         return index.getAndIncrement();
     }
@@ -68,10 +86,6 @@ public final class Harvest {
      */
     public int getIndex() {
         return index.get();
-    }
-
-    public Queue<String> getMessages() {
-        return messages;
     }
 
     public synchronized int getNumEntities() {
@@ -92,6 +106,10 @@ public final class Harvest {
 
     void incrementNumSucceeded() {
         numSucceeded.incrementAndGet();
+    }
+
+    public int numMessages() {
+        return messages.size();
     }
 
     synchronized void setLifecycle(Lifecycle lifecycle) {

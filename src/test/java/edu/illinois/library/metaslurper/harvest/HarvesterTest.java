@@ -36,7 +36,7 @@ public class HarvesterTest {
             assertEquals(source.numEntities(), sink.getIngestedEntities().size());
             assertEquals(source.numEntities(), harvest.getNumSucceeded());
             assertEquals(0, harvest.getNumFailed());
-            assertEquals(0, harvest.getMessages().size());
+            assertEquals(0, harvest.numMessages());
             assertEquals(Lifecycle.SUCCEEDED, harvest.getLifecycle());
         }
     }
@@ -50,7 +50,7 @@ public class HarvesterTest {
             assertEquals(4, sink.getIngestedEntities().size());
             assertEquals(4, harvest.getNumSucceeded());
             assertEquals(1, harvest.getNumFailed());
-            assertEquals(1, harvest.getMessages().size());
+            assertEquals(1, harvest.numMessages());
             assertEquals(Lifecycle.SUCCEEDED, harvest.getLifecycle());
         }
     }
@@ -64,7 +64,7 @@ public class HarvesterTest {
             assertEquals(source.numEntities() - 1, sink.getIngestedEntities().size());
             assertEquals(source.numEntities() - 1, harvest.getNumSucceeded());
             assertEquals(0, harvest.getNumFailed());
-            assertEquals(0, harvest.getMessages().size());
+            assertEquals(0, harvest.numMessages());
             assertEquals(Lifecycle.SUCCEEDED, harvest.getLifecycle());
         }
     }
@@ -78,7 +78,7 @@ public class HarvesterTest {
             assertEquals(source.numEntities() + 1, sink.getIngestedEntities().size());
             assertEquals(source.numEntities() + 1, harvest.getNumSucceeded());
             assertEquals(0, harvest.getNumFailed());
-            assertEquals(0, harvest.getMessages().size());
+            assertEquals(0, harvest.numMessages());
             assertEquals(Lifecycle.SUCCEEDED, harvest.getLifecycle());
         }
     }
@@ -92,7 +92,7 @@ public class HarvesterTest {
             assertEquals(0, sink.getIngestedEntities().size());
             assertEquals(0, harvest.getNumSucceeded());
             assertEquals(source.numEntities() - 1, harvest.getNumFailed());
-            assertEquals(1, harvest.getMessages().size());
+            assertEquals(1, harvest.numMessages());
             assertEquals(Lifecycle.ABORTED, harvest.getLifecycle());
         }
     }
@@ -116,7 +116,7 @@ public class HarvesterTest {
         }
         assertEquals(2, harvest.getNumSucceeded());
         assertEquals(0, harvest.getNumFailed());
-        assertEquals(0, harvest.getMessages().size());
+        assertEquals(0, harvest.numMessages());
         assertEquals(Lifecycle.SUCCEEDED, harvest.getLifecycle());
     }
 
@@ -139,7 +139,7 @@ public class HarvesterTest {
             assertEquals(0, sink.getIngestedEntities().size());
             assertEquals(0, harvest.getNumSucceeded());
             assertEquals(5, harvest.getNumFailed());
-            assertEquals(5, harvest.getMessages().size());
+            assertEquals(5, harvest.numMessages());
             assertEquals(Lifecycle.SUCCEEDED, harvest.getLifecycle());
         }
     }

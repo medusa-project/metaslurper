@@ -33,6 +33,14 @@ public class HarvestTest {
     }
 
     @Test
+    public void testAddMessageRespectsLimit() {
+        for (int i = 0; i < 120; i++) {
+            instance.addMessage("Hello");
+        }
+        assertEquals(100, instance.numMessages());
+    }
+
+    @Test
     public void testEndPrematurely1() {
         instance.endPrematurely();
         assertEquals(Lifecycle.SUCCEEDED, instance.getLifecycle());

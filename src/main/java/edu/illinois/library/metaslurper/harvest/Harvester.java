@@ -194,7 +194,7 @@ public final class Harvester {
                 Arrays.stream(t.getStackTrace())
                         .map(StackTraceElement::toString)
                         .collect(Collectors.joining("\n")));
-        harvest.getMessages().add(message);
+        harvest.addMessage(message);
         harvest.incrementNumFailed();
     }
 
@@ -211,7 +211,7 @@ public final class Harvester {
                 Instant.now(),
                 entity.getSourceURI(),
                 entity.getSourceID());
-        harvest.getMessages().add(message);
+        harvest.addMessage(message);
         harvest.incrementNumFailed();
     }
 
@@ -237,7 +237,7 @@ public final class Harvester {
                 Arrays.stream(t.getStackTrace())
                         .map(StackTraceElement::toString)
                         .collect(Collectors.joining("\n")));
-        harvest.getMessages().add(message);
+        harvest.addMessage(message);
         harvest.incrementNumFailed();
     }
 
