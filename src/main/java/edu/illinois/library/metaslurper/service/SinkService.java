@@ -3,6 +3,7 @@ package edu.illinois.library.metaslurper.service;
 import edu.illinois.library.metaslurper.entity.ConcreteEntity;
 import edu.illinois.library.metaslurper.harvest.Harvest;
 import edu.illinois.library.metaslurper.harvest.HarvestClosedException;
+import edu.illinois.library.metaslurper.harvest.HTTPException;
 
 import java.io.IOException;
 
@@ -21,16 +22,17 @@ public interface SinkService extends Service {
      * @throws HarvestClosedException if the operation could not be completed
      *                                due to the harvest being closed, and no
      *                                more attempts should be made.
-     * @throws IOException            if there was some other error.
+     * @throws HTTPException if there was an HTTP error.
+     * @throws IOException if there was some other error.
      */
     void ingest(ConcreteEntity entity) throws IOException;
 
     /**
      * Sends a status update to the service.
      *
-     * @param harvest      Harvest to send. Implementations should not mutate
-     *                     it.
-     * @throws IOException if there was an error.
+     * @param harvest Harvest to send. Implementations should not mutate it.
+     * @throws HTTPException if there was an HTTP error.
+     * @throws IOException if there was some other error.
      */
     void updateHarvest(Harvest harvest) throws IOException;
 

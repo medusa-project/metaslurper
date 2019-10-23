@@ -2,6 +2,7 @@ package edu.illinois.library.metaslurper.service;
 
 import edu.illinois.library.metaslurper.config.Configuration;
 import edu.illinois.library.metaslurper.entity.Entity;
+import edu.illinois.library.metaslurper.harvest.HTTPException;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -9,6 +10,7 @@ import org.eclipse.jetty.client.util.BasicAuthentication;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -124,7 +126,7 @@ final class MedusaDLSService implements SourceService {
     }
 
     @Override
-    public int numEntities() throws IOException {
+    public int numEntities() throws HTTPException {
         if (numEntities < 0) {
             String uri = getHarvestURI();
 
@@ -138,12 +140,22 @@ final class MedusaDLSService implements SourceService {
                         .timeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
                         .send();
                 String body = response.getContentAsString();
-                JSONObject jobj = new JSONObject(body);
-                numEntities = jobj.getInt("numResults");
-                windowSize = jobj.getInt("windowSize");
+                try {
+                    JSONObject jobj = new JSONObject(body);
+                    numEntities = jobj.getInt("numResults");
+                    windowSize = jobj.getInt("windowSize");
+                } catch (JSONException e) {
+                    throw new HTTPException(
+                            "GET",
+                            uri,
+                            response.getStatus(),
+                            null,
+                            response.getContentAsString(),
+                            e);
+                }
             } catch (ExecutionException | InterruptedException |
                     TimeoutException e) {
-                throw new IOException(e);
+                throw new HTTPException("GET", uri, e);
             }
         }
         return numEntities;
@@ -206,22 +218,25 @@ final class MedusaDLSService implements SourceService {
                     .header("Accept", "application/json")
                     .timeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
                     .send();
+            String body = response.getContentAsString();
             if (response.getStatus() == 200) {
-                String body = response.getContentAsString();
                 JSONObject jobj = new JSONObject(body);
                 JSONArray jarr = jobj.getJSONArray("results");
                 for (int i = 0; i < jarr.length(); i++) {
                     batch.add(jarr.getJSONObject(i).getString("uri"));
                 }
             } else {
-                throw new IOException("Got HTTP " + response.getStatus() +
-                        " for " + uri);
+                throw new HTTPException(
+                        "GET",
+                        uri,
+                        response.getStatus(),
+                        null,
+                        response.getContentAsString());
             }
         } catch (ExecutionException | InterruptedException |
                 TimeoutException e) {
-            throw new IOException(e);
+            throw new HTTPException("GET", uri, e);
         }
-
         LOGGER.debug("Fetched {} results", batch.size());
     }
 
@@ -249,16 +264,16 @@ final class MedusaDLSService implements SourceService {
                                     "Unrecognized variant: " + variant);
                     }
                 default:
-                    body = response.getContentAsString();
-                    jobj = new JSONObject(body);
-                    String message = jobj.getString("error");
-
-                    throw new IOException("Got HTTP " + response.getStatus() +
-                            " for " + uri + ": " + message);
+                    throw new HTTPException(
+                            "GET",
+                            uri,
+                            response.getStatus(),
+                            null,
+                            response.getContentAsString());
             }
         } catch (ExecutionException | InterruptedException |
                 TimeoutException e) {
-            throw new IOException("fetchEntity(): failed to retrieve " + uri, e);
+            throw new HTTPException("GET", uri, e);
         }
     }
 

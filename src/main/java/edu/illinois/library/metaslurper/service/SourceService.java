@@ -1,6 +1,7 @@
 package edu.illinois.library.metaslurper.service;
 
 import edu.illinois.library.metaslurper.entity.Entity;
+import edu.illinois.library.metaslurper.harvest.HTTPException;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -24,9 +25,10 @@ public interface SourceService extends Service {
      * it.</p>
      *
      * @return See above.
-     * @throws IOException if there is an error in obtaining the count.
      * @throws UnsupportedOperationException if obtaining a count is not
      *         possible or would be too burdensome.
+     * @throws HTTPException if there is an HTTP error.
+     * @throws IOException if there is some other error.
      */
     int numEntities() throws IOException, UnsupportedOperationException;
 
@@ -52,7 +54,8 @@ public interface SourceService extends Service {
      *         existing entities, or {@link
      *         edu.illinois.library.metaslurper.entity.PlaceholderEntity}s for
      *         missing ones&mdash;never {@literal null}.
-     * @throws IOException upon fatal error.
+     * @throws HTTPException if there was an HTTP error.
+     * @throws IOException if there was some other error.
      */
     ConcurrentIterator<? extends Entity> entities() throws IOException;
 

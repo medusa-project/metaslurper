@@ -15,7 +15,9 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -120,10 +122,10 @@ public final class Harvester {
                         } catch (HarvestClosedException e) {
                             throw e;
                         } catch (IOException e) {
-                            reportSinkFailure(harvest, concEntity, e);
+                            reportSinkError(harvest, concEntity, e);
                         }
                     } else {
-                        reportSourceFailure(harvest,
+                        reportSourceError(harvest,
                                 (PlaceholderEntity) entity);
                     }
                 } catch (EndOfIterationException e) {
@@ -135,7 +137,7 @@ public final class Harvester {
                     LOGGER.info("Harvest closed: {}", e.getMessage());
                     break;
                 } catch (Exception e) {
-                    reportSourceFailure(harvest, e);
+                    reportSourceError(harvest, e);
                 }
             }
         } finally {
@@ -180,34 +182,31 @@ public final class Harvester {
      * Reports a failure to acquire an {@link Entity} from a {@link
      * SourceService}.
      */
-    private static void reportSourceFailure(Harvest harvest, Throwable t) {
+    private static void reportSourceError(Harvest harvest, Throwable t) {
         LOGGER.error("Failed to retrieve from source: {}", t.getMessage(), t);
 
-        String message = String.format("**** SOURCE FAILURE:\n" +
-                        "    Time: %s\n" +
-                        "    Exception: %s\n" +
-                        "    Message: %s\n" +
-                        "    Stack Trace: %s\n",
-                Instant.now(),
-                t.getClass().getSimpleName(),
-                t.getMessage(),
-                Arrays.stream(t.getStackTrace())
-                        .map(StackTraceElement::toString)
-                        .collect(Collectors.joining("\n")));
+        final List<String> lines = new ArrayList<>();
+        lines.add("******** SOURCE ERROR ********");
+        lines.add("Time: " + Instant.now());
+        lines.add(getMessage(t));
+
+        String message = String.join("\n", lines) + "\n";
         harvest.addMessage(message);
         harvest.incrementNumFailed();
     }
 
     /**
      * Reports a failure to acquire a {@link ConcreteEntity} from a {@link
-     * SourceService}.
+     * SourceService}; i.e. the iterator returned by {@link
+     * SourceService#entities()} has returned a {@link PlaceholderEntity}.
      */
-    private static void reportSourceFailure(Harvest harvest,
-                                            PlaceholderEntity entity) {
-        String message = String.format("**** SOURCE FAILURE:\n" +
-                        "    Time: %s\n" +
-                        "    URI: %s\n" +
-                        "    Source ID: %s\n",
+    private static void reportSourceError(Harvest harvest,
+                                          PlaceholderEntity entity) {
+        String message = String.format(
+                "******** SOURCE ERROR ********\n" +
+                        "Time: %s\n" +
+                        "URI: %s\n" +
+                        "Source ID: %s\n",
                 Instant.now(),
                 entity.getSourceURI(),
                 entity.getSourceID());
@@ -219,26 +218,44 @@ public final class Harvester {
      * Reports a failure to ingest a {@link ConcreteEntity} into a {@link
      * SinkService}.
      */
-    private static void reportSinkFailure(Harvest harvest,
-                                          ConcreteEntity entity,
-                                          Throwable t) {
+    private static void reportSinkError(Harvest harvest,
+                                        ConcreteEntity entity,
+                                        Throwable t) {
         LOGGER.error("Failed to ingest into sink: {}", t.getMessage(), t);
 
-        String message = String.format("**** SINK FAILURE:\n" +
-                        "    Time: %s\n" +
-                        "    URI: %s\n" +
-                        "    Source ID: %s\n" +
-                        "    Exception: %s\n" +
-                        "    Stack Trace: %s\n",
-                Instant.now(),
-                entity.getSourceURI(),
-                entity.getSourceID(),
-                t.getMessage(),
-                Arrays.stream(t.getStackTrace())
-                        .map(StackTraceElement::toString)
-                        .collect(Collectors.joining("\n")));
+        final List<String> lines = new ArrayList<>();
+        lines.add("******** SINK ERROR ********");
+        lines.add("Time: " + Instant.now());
+        lines.add("Source URI: " + entity.getSourceURI());
+        lines.add("Source ID: " + entity.getSourceID());
+        lines.add(getMessage(t));
+
+        String message = String.join("\n", lines) + "\n";
         harvest.addMessage(message);
         harvest.incrementNumFailed();
+    }
+
+    private static String getMessage(Throwable t) {
+        final List<String> lines = new ArrayList<>();
+        lines.add("Exception: " + t.getClass().getName());
+        lines.add("\tMessage: " + t.getMessage());
+        lines.add("\tStack Trace: " + Arrays.stream(t.getStackTrace())
+                .map(StackTraceElement::toString)
+                .collect(Collectors.joining("\n\t\t\t")));
+        // If the Throwable is an HTTPException, we can wring some more useful
+        // information out of it.
+        if (t instanceof HTTPException) {
+            HTTPException hte = (HTTPException) t;
+            lines.add("Method: " + hte.getMethod());
+            lines.add("URI: " + hte.getURI());
+            hte.getStatusCode().ifPresent(code ->
+                    lines.add("Status: " + code));
+            hte.getRequestBody().ifPresent(body ->
+                    lines.add("Request body: " + body));
+            hte.getResponseBody().ifPresent(body ->
+                    lines.add("Response body: " + body));
+        }
+        return String.join("\n", lines);
     }
 
 }

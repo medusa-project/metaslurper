@@ -5,10 +5,12 @@ import edu.illinois.library.metaslurper.entity.ConcreteEntity;
 import edu.illinois.library.metaslurper.entity.Element;
 import edu.illinois.library.metaslurper.entity.Entity;
 import edu.illinois.library.metaslurper.entity.Variant;
+import edu.illinois.library.metaslurper.harvest.HTTPException;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -145,7 +147,7 @@ final class IllinoisDataBankService implements SourceService {
 
     private static final String NAME = "Illinois Data Bank";
 
-    private static final long REQUEST_TIMEOUT = 60; // IDB can be slow sometimes...
+    private static final long REQUEST_TIMEOUT = 60;
 
     private HttpClient client;
 
@@ -251,15 +253,13 @@ final class IllinoisDataBankService implements SourceService {
     private void fetchDataSetURIs() throws IOException {
         final String uri = String.format("%s/datasets", getEndpointURI());
         LOGGER.debug("Fetching data sets: {}", uri);
-
         try {
             ContentResponse response = getClient().newRequest(uri)
                     .header("Accept", "application/json")
                     .timeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
                     .send();
+            String body = response.getContentAsString();
             if (response.getStatus() == 200) {
-                String body = response.getContentAsString();
-
                 JSONArray results = new JSONArray(body);
                 for (int i = 0; i < results.length(); i++) {
                     JSONObject dataSet = results.getJSONObject(i);
@@ -267,12 +267,12 @@ final class IllinoisDataBankService implements SourceService {
                 }
                 LOGGER.debug("Fetched {} data sets", dataSetURIs.size());
             } else {
-                throw new IOException("Got HTTP " + response.getStatus() +
-                        " for " + uri);
+                throw new HTTPException(
+                        "GET", uri, response.getStatus(), null, body);
             }
         } catch (ExecutionException | InterruptedException |
                 TimeoutException e) {
-            throw new IOException(e);
+            throw new HTTPException("GET", uri, e);
         }
     }
 
@@ -284,23 +284,22 @@ final class IllinoisDataBankService implements SourceService {
      */
     private DataSet fetchDataSet(String uri) throws IOException {
         LOGGER.debug("Fetching data set: {}", uri);
-
         try {
             ContentResponse response = getClient().newRequest(uri)
                     .header("Accept", "application/json")
                     .timeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
                     .send();
+            String body = response.getContentAsString();
             if (response.getStatus() == 200) {
-                String body = response.getContentAsString();
                 JSONObject jobj = new JSONObject(body);
                 return jobj.getBoolean("is_test") ? null : new DataSet(jobj);
             } else {
-                throw new IOException("Got HTTP " + response.getStatus() +
-                        " for " + uri);
+                throw new HTTPException(
+                        "GET", uri, response.getStatus(), null, body);
             }
         } catch (ExecutionException | InterruptedException |
                 TimeoutException e) {
-            throw new IOException(e);
+            throw new HTTPException("GET", uri, e);
         }
     }
 

@@ -2,8 +2,8 @@ package edu.illinois.library.metaslurper.service;
 
 import edu.illinois.library.metaslurper.entity.Element;
 import edu.illinois.library.metaslurper.entity.Image;
+import edu.illinois.library.metaslurper.harvest.HTTPException;
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.http.HttpStatus;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -81,18 +81,19 @@ abstract class MedusaDLSEntity {
                     .send();
             String body = response.getContentAsString();
 
-            switch (response.getStatus()) {
-                case HttpStatus.OK_200:
-                    return new JSONObject(body);
-                default:
-                    JSONObject jobj = new JSONObject(body);
-                    String message = jobj.getString("error");
-                    throw new IOException("Got HTTP " + response.getStatus() +
-                            " for " + uri + ": " + message);
+            if (response.getStatus() == 200) {
+                return new JSONObject(body);
+            } else {
+                throw new HTTPException(
+                        "GET",
+                        uri,
+                        response.getStatus(),
+                        null,
+                        response.getContentAsString());
             }
         } catch (ExecutionException | InterruptedException |
                 TimeoutException e) {
-            throw new IOException(e);
+            throw new HTTPException("GET", uri, e);
         }
     }
 

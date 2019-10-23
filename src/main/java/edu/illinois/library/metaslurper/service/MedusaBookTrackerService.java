@@ -5,6 +5,7 @@ import edu.illinois.library.metaslurper.entity.ConcreteEntity;
 import edu.illinois.library.metaslurper.entity.Element;
 import edu.illinois.library.metaslurper.entity.Entity;
 import edu.illinois.library.metaslurper.entity.Variant;
+import edu.illinois.library.metaslurper.harvest.HTTPException;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -205,12 +206,11 @@ final class MedusaBookTrackerService implements SourceService {
     }
 
     private void fetchNumEntities() throws IOException {
+        String uri = getEndpointURI() + "/books?" + QUERY_FILTER;
+        if (lastModified != null) {
+            uri += "&last_modified_after=" + lastModified.getEpochSecond();
+        }
         try {
-            String uri = getEndpointURI() + "/books?" + QUERY_FILTER;
-            if (lastModified != null) {
-                uri += "&last_modified_after=" + lastModified.getEpochSecond();
-            }
-
             ContentResponse response = getClient()
                     .newRequest(uri)
                     .header("Accept", "application/json")
@@ -222,7 +222,7 @@ final class MedusaBookTrackerService implements SourceService {
             windowSize = jobj.getInt("windowSize");
         } catch (ExecutionException | InterruptedException |
                 TimeoutException e) {
-            throw new IOException(e);
+            throw new HTTPException("GET", uri, e);
         }
     }
 
@@ -232,7 +232,7 @@ final class MedusaBookTrackerService implements SourceService {
         final AtomicInteger pageNumber = new AtomicInteger(1);
 
         // Return an iterator that consumes the queue.
-        return new ConcurrentIterator<Entity>() {
+        return new ConcurrentIterator<>() {
             @Override
             public Entity next() throws Exception {
                 // If the queue is empty, fetch the next batch.
@@ -241,11 +241,9 @@ final class MedusaBookTrackerService implements SourceService {
                         fetchBatch(batch, pageNumber.getAndIncrement());
                     }
                 }
-
                 if (batch.peek() == null) {
                     throw new EndOfIterationException();
                 }
-
                 return batch.remove();
             }
         };
@@ -285,14 +283,17 @@ final class MedusaBookTrackerService implements SourceService {
                     batch.add(new BookTrackerEntity(jobj));
                 }
             } else {
-                throw new IOException("Got HTTP " + response.getStatus() +
-                        " for " + uri);
+                throw new HTTPException(
+                        "GET",
+                        uri,
+                        response.getStatus(),
+                        null,
+                        response.getContentAsString());
             }
         } catch (ExecutionException | InterruptedException |
                 TimeoutException e) {
-            throw new IOException(e);
+            throw new HTTPException("GET", uri, e);
         }
-
         LOGGER.debug("Fetched {} results", batch.size());
     }
 

@@ -4,6 +4,7 @@ import edu.illinois.library.metaslurper.config.Configuration;
 import edu.illinois.library.metaslurper.entity.ConcreteEntity;
 import edu.illinois.library.metaslurper.entity.Entity;
 import edu.illinois.library.metaslurper.entity.Variant;
+import edu.illinois.library.metaslurper.harvest.HTTPException;
 import edu.illinois.library.metaslurper.harvest.HarvestClosedException;
 import edu.illinois.library.metaslurper.harvest.Harvest;
 import org.eclipse.jetty.client.HttpClient;
@@ -151,14 +152,15 @@ final class MetaslurpService implements SinkService {
                     throw new HarvestClosedException(
                             "Harvest " + harvest + " has been aborted.");
                 default:
-                    throw new IOException("Received HTTP " + response.getStatus() +
-                            " for PUT " + uri + "\n" +
-                            "Request body: " + json + "\n" +
-                            "Response body: " + response.getContentAsString());
+                    throw new HTTPException("PUT",
+                            uri.toString(),
+                            response.getStatus(),
+                            json,
+                            response.getContentAsString());
             }
         } catch (InterruptedException | ExecutionException |
                 TimeoutException e) {
-            throw new IOException(e);
+            throw new HTTPException("POST", uri.toString(), e);
         }
     }
 
@@ -183,14 +185,15 @@ final class MetaslurpService implements SinkService {
                 harvest = new MetaslurpHarvest(
                         entityJSON.getString("key"), numEntities);
             } else {
-                throw new IOException("Received HTTP " + response.getStatus() +
-                        " for POST " + uri + "\n" +
-                        "Request body: " + json + "\n" +
-                        "Response body: " + response.getContentAsString());
+                throw new HTTPException("POST",
+                        uri.toString(),
+                        response.getStatus(),
+                        json,
+                        response.getContentAsString());
             }
         } catch (InterruptedException | ExecutionException |
                 TimeoutException e) {
-            throw new IOException(e);
+            throw new HTTPException("POST", uri.toString(), e);
         }
     }
 
@@ -212,14 +215,15 @@ final class MetaslurpService implements SinkService {
                     .content(new StringContentProvider(json), "application/json")
                     .send();
             if (response.getStatus() != HttpStatus.NO_CONTENT_204) {
-                throw new IOException("Received HTTP " + response.getStatus() +
-                        " for PATCH " + uri + "\n" +
-                        "Request body: " + json + "\n" +
-                        "Response body: " + response.getContentAsString());
+                throw new HTTPException("PATCH",
+                        uri.toString(),
+                        response.getStatus(),
+                        json,
+                        response.getContentAsString());
             }
         } catch (InterruptedException | ExecutionException |
                 TimeoutException e) {
-            throw new IOException(e);
+            throw new HTTPException("PATCH", uri.toString(), e);
         }
     }
 
