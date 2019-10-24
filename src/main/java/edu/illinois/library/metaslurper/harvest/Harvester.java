@@ -101,7 +101,6 @@ public final class Harvester {
             // Will break on an EndOfIterationException or
             // HarvestClosedException.
             while (throttle()) {
-                final int index = harvest.getAndIncrementIndex();
                 updateStatus(sink, harvest);
                 try {
                     // Pull an Entity from the source service.
@@ -114,10 +113,13 @@ public final class Harvester {
                             sink.ingest(concEntity);
                             harvest.incrementNumSucceeded();
 
+                            int index = harvest.getNumSucceeded() +
+                                    harvest.getNumFailed();
                             LOGGER.debug("Harvested {} {} from {} into {} [{}/{}] [{}]",
                                     concEntity.getVariant().name().toLowerCase(),
                                     concEntity, source, sink,
-                                    index + 1, harvest.getNumEntities(),
+                                    index,
+                                    harvest.getNumEntities(),
                                     NumberUtils.percent(index + 1, harvest.getNumEntities()));
                         } catch (HarvestClosedException e) {
                             throw e;
@@ -148,7 +150,8 @@ public final class Harvester {
     private static void updateStatus(SinkService sink,
                                      Harvest harvest) {
         try {
-            if (harvest.getIndex() % STATUS_UPDATE_INCREMENT == 0) {
+            if (harvest.getNumSucceeded() + harvest.getNumFailed() %
+                    STATUS_UPDATE_INCREMENT == 0) {
                 sink.updateHarvest(harvest);
             }
         } catch (IOException e) {

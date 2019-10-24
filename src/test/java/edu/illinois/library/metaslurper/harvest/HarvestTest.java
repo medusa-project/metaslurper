@@ -24,12 +24,12 @@ public class HarvestTest {
 
     @Test
     public void testAbort2() {
-        instance.getAndIncrementIndex();
-        instance.getAndIncrementIndex();
-        instance.getAndIncrementIndex();
+        instance.incrementNumSucceeded();
+        instance.incrementNumSucceeded();
+        instance.incrementNumFailed();
         instance.abort();
         assertEquals(Lifecycle.ABORTED, instance.getLifecycle());
-        assertEquals(instance.getNumEntities() - 3, instance.getNumFailed());
+        assertEquals(instance.getNumEntities() - 2, instance.getNumFailed());
     }
 
     @Test
@@ -49,12 +49,12 @@ public class HarvestTest {
 
     @Test
     public void testEndPrematurely2() {
-        instance.getAndIncrementIndex();
-        instance.getAndIncrementIndex();
-        instance.getAndIncrementIndex();
+        instance.incrementNumSucceeded();
+        instance.incrementNumSucceeded();
+        instance.incrementNumFailed();
         instance.endPrematurely();
         assertEquals(Lifecycle.SUCCEEDED, instance.getLifecycle());
-        assertEquals(instance.getNumEntities() - 3, instance.getNumFailed());
+        assertEquals(instance.getNumEntities() - 2, instance.getNumFailed());
     }
 
 }

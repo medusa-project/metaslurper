@@ -15,7 +15,6 @@ public final class Harvest {
 
     private Lifecycle lifecycle              = Lifecycle.NEW;
     private int numEntities                  = 0;
-    private final AtomicInteger index        = new AtomicInteger();
     private final AtomicInteger numSucceeded = new AtomicInteger();
     private final AtomicInteger numFailed    = new AtomicInteger();
     private final Queue<String> messages     = new ConcurrentLinkedQueue<>();
@@ -26,7 +25,7 @@ public final class Harvest {
     synchronized void abort() {
         if (lifecycle.isOpen()) {
             // Set the failure count to the number of items remaining.
-            final int delta = numEntities - index.get();
+            final int delta = numEntities - numSucceeded.get() - numFailed.get();
             if (delta > 0) {
                 numFailed.addAndGet(delta);
                 addMessage("Harvest aborted with " + delta + " items left.");
@@ -49,7 +48,7 @@ public final class Harvest {
      */
     synchronized void endPrematurely() {
         if (lifecycle.isOpen()) {
-            final int delta = numEntities - index.get();
+            final int delta = numEntities - numSucceeded.get() - numFailed.get();
             if (delta > 0) {
                 numFailed.addAndGet(delta);
                 addMessage("Added " + delta + " to the failure count " +
@@ -74,18 +73,6 @@ public final class Harvest {
      */
     public Queue<String> getMessages() {
         return messages;
-    }
-
-    public int getAndIncrementIndex() {
-        return index.getAndIncrement();
-    }
-
-    /**
-     * @return The last index that any thread has reported attempting to
-     *         harvest.
-     */
-    public int getIndex() {
-        return index.get();
     }
 
     public synchronized int getNumEntities() {
