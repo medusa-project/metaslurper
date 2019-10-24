@@ -22,14 +22,25 @@ public class IllinoisDataBankServiceTest {
 
     @Test
     public void testEntities() throws Exception {
-        ConcurrentIterator<? extends Entity> it = instance.entities();
-
         final int count = instance.numEntities();
-
-        for (int i = 0; i < count; i++) {
-            Entity entity = it.next();
-            assertFalse(entity.getSinkID().isEmpty());
+        final ConcurrentIterator<? extends Entity> it = instance.entities();
+        int i = 0;
+        while (true) {
+            try {
+                Entity entity = it.next();
+                assertFalse(entity.getSinkID().isEmpty());
+            } catch (HTTPException e) {
+                // Some items are restricted; that's OK.
+                if (e.getStatusCode().get() != 403) {
+                    throw e;
+                }
+            } catch (EndOfIterationException e) {
+                break;
+            } finally {
+                i++;
+            }
         }
+        assertEquals(count, i);
     }
 
 }

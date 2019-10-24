@@ -11,13 +11,13 @@ public class ServiceFactoryTest {
     @Test
     public void testAllSinkServices() {
         Set<SinkService> actual = ServiceFactory.allSinkServices();
-        assertEquals(1, actual.size());
+        assertEquals(2, actual.size());
     }
 
     @Test
     public void testAllSourceServices() {
         Set<SourceService> actual = ServiceFactory.allSourceServices();
-        assertEquals(5, actual.size());
+        assertEquals(6, actual.size());
     }
 
     @Test
