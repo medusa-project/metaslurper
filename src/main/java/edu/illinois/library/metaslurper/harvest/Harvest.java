@@ -42,11 +42,9 @@ public final class Harvest {
     }
 
     /**
-     * Call to end a harvest when there are no more entities left to harvest
-     * but the number of harvested entities is less than the declared entity
-     * count.
+     * Ends the harvest.
      */
-    synchronized void endPrematurely() {
+    synchronized void end() {
         if (lifecycle.isOpen()) {
             final int delta = numEntities - numSucceeded.get() - numFailed.get();
             if (delta > 0) {
@@ -57,8 +55,8 @@ public final class Harvest {
                         ") and the number found (" + (getNumSucceeded() +
                         getNumFailed()) + ").");
             }
+            setLifecycle(Lifecycle.SUCCEEDED);
         }
-        setLifecycle(Lifecycle.SUCCEEDED);
     }
 
     public synchronized Lifecycle getLifecycle() {

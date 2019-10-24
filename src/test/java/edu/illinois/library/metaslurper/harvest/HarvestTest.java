@@ -42,7 +42,7 @@ public class HarvestTest {
 
     @Test
     public void testEndPrematurely1() {
-        instance.endPrematurely();
+        instance.end();
         assertEquals(Lifecycle.SUCCEEDED, instance.getLifecycle());
         assertEquals(instance.getNumEntities(), instance.getNumFailed());
     }
@@ -52,7 +52,7 @@ public class HarvestTest {
         instance.incrementNumSucceeded();
         instance.incrementNumSucceeded();
         instance.incrementNumFailed();
-        instance.endPrematurely();
+        instance.end();
         assertEquals(Lifecycle.SUCCEEDED, instance.getLifecycle());
         assertEquals(instance.getNumEntities() - 2, instance.getNumFailed());
     }

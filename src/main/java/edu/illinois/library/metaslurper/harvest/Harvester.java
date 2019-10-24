@@ -83,6 +83,7 @@ public final class Harvester {
             harvest.setLifecycle(Lifecycle.FAILED);
             LOGGER.error(e.getMessage(), e);
         } finally {
+            harvest.end();
             try {
                 sink.updateHarvest(harvest);
             } catch (IOException e) {
@@ -132,9 +133,8 @@ public final class Harvester {
                         reportSourceError(harvest,
                                 (PlaceholderEntity) entity);
                     }
-                } catch (EndOfIterationException e) {
-                    harvest.endPrematurely();
-                    LOGGER.info("Harvest ended prematurely: {}", e.getMessage());
+                } catch (EndOfIterationException ignore) {
+                    // This thread is done.
                     break;
                 } catch (HarvestClosedException e) {
                     harvest.abort();
@@ -152,7 +152,7 @@ public final class Harvester {
     private static void updateStatus(SinkService sink,
                                      Harvest harvest) {
         try {
-            if (harvest.getNumSucceeded() + harvest.getNumFailed() %
+            if ((harvest.getNumSucceeded() + harvest.getNumFailed()) %
                     STATUS_UPDATE_INCREMENT == 0) {
                 sink.updateHarvest(harvest);
             }
@@ -246,7 +246,7 @@ public final class Harvester {
         lines.add("\tMessage: " + t.getMessage());
         lines.add("\tStack Trace: " + Arrays.stream(t.getStackTrace())
                 .map(StackTraceElement::toString)
-                .collect(Collectors.joining("\n\t\t\t")));
+                .collect(Collectors.joining("\n\t\t")));
         // If the Throwable is an HTTPException, we can wring some more useful
         // information out of it.
         if (t instanceof HTTPException) {
