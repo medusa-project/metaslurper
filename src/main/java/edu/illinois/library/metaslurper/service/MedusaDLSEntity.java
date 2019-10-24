@@ -2,26 +2,13 @@ package edu.illinois.library.metaslurper.service;
 
 import edu.illinois.library.metaslurper.entity.Element;
 import edu.illinois.library.metaslurper.entity.Image;
-import edu.illinois.library.metaslurper.harvest.HTTPException;
-import org.eclipse.jetty.client.api.ContentResponse;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
-import static edu.illinois.library.metaslurper.service.MedusaDLSService.getClient;
 
 abstract class MedusaDLSEntity {
-
-    private static final Logger LOGGER =
-            LoggerFactory.getLogger(MedusaDLSEntity.class);
 
     JSONObject rootObject;
 
@@ -35,66 +22,12 @@ abstract class MedusaDLSEntity {
 
     public Set<Image> getAccessImages() {
         final Set<Image> images = new HashSet<>();
-        JSONObject allCrops = rootObject.optJSONObject("representative_images");
-        if (allCrops != null) {
-            // For each full crop
-            JSONObject fullCrops = allCrops.optJSONObject("full");
-            if (fullCrops != null) {
-                fullCrops.keySet().forEach(key -> {
-                    String value = fullCrops.getString(key);
-                    if ("full".equals(key)) {
-                        // The value is a master image binary URI. Fetch its
-                        // representation and create a corresponding Image.
-                        try {
-                            JSONObject binaryObj = fetchBinary(value);
-                            String s3uri = binaryObj.optString("object_uri");
-                            images.add(new Image(s3uri, Image.Crop.FULL, 0, true));
-                        } catch (IOException e) {
-                            LOGGER.error("getAccessImages(): {}", e.getMessage());
-                        }
-                    } else {
-                        // The value is the URI of an access image of a
-                        // particular size.
-                        int size = Integer.parseInt(key);
-                        images.add(new Image(value, Image.Crop.FULL, size, false));
-                    }
-                });
-            }
-            // For each square crop
-            JSONObject squareImages = allCrops.optJSONObject("square");
-            if (squareImages != null) {
-                squareImages.keySet().forEach(key -> {
-                    String uri = squareImages.getString(key);
-                    int size = Integer.parseInt(key);
-                    images.add(new Image(uri, Image.Crop.SQUARE, size, false));
-                });
-            }
+        JSONObject image = rootObject.optJSONObject("access_master_image");
+        if (image != null) {
+            String s3uri = image.optString("object_uri");
+            images.add(new Image(s3uri, Image.Crop.FULL, 0, true));
         }
         return images;
-    }
-
-    private JSONObject fetchBinary(String uri) throws IOException {
-        try {
-            ContentResponse response = getClient().newRequest(uri)
-                    .header("Accept", "application/json")
-                    .timeout(MedusaDLSService.REQUEST_TIMEOUT, TimeUnit.SECONDS)
-                    .send();
-            String body = response.getContentAsString();
-
-            if (response.getStatus() == 200) {
-                return new JSONObject(body);
-            } else {
-                throw new HTTPException(
-                        "GET",
-                        uri,
-                        response.getStatus(),
-                        null,
-                        response.getContentAsString());
-            }
-        } catch (ExecutionException | InterruptedException |
-                TimeoutException e) {
-            throw new HTTPException("GET", uri, e);
-        }
     }
 
     public Set<Element> getElements() {
