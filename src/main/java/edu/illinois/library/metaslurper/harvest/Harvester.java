@@ -31,6 +31,8 @@ public final class Harvester {
     private static final Logger LOGGER =
             LoggerFactory.getLogger(Harvester.class);
 
+    private static final String NEWLINE = "(\\n|\\r|\\r\\n)";
+
     /**
      * Update the sink status after a multiple of this many entities are
      * ingested.
@@ -249,14 +251,15 @@ public final class Harvester {
         // information out of it.
         if (t instanceof HTTPException) {
             HTTPException hte = (HTTPException) t;
-            lines.add("Method: " + hte.getMethod());
-            lines.add("URI: " + hte.getURI());
+            lines.add("HTTP Exchange");
+            lines.add("\tMethod: " + hte.getMethod());
+            lines.add("\tURI: " + hte.getURI());
             hte.getStatusCode().ifPresent(code ->
-                    lines.add("Status: " + code));
+                    lines.add("\tStatus: " + code));
             hte.getRequestBody().ifPresent(body ->
-                    lines.add("Request body: " + body));
+                    lines.add("\tRequest body: " + body.replaceAll(NEWLINE, "\t\t\n")));
             hte.getResponseBody().ifPresent(body ->
-                    lines.add("Response body: " + body));
+                    lines.add("\tResponse body: " + body.replaceAll(NEWLINE, "\t\t\n")));
         }
         return String.join("\n", lines);
     }
