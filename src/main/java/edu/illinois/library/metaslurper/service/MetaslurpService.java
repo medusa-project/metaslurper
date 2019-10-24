@@ -4,7 +4,6 @@ import edu.illinois.library.metaslurper.config.Configuration;
 import edu.illinois.library.metaslurper.entity.ConcreteEntity;
 import edu.illinois.library.metaslurper.entity.Entity;
 import edu.illinois.library.metaslurper.entity.Variant;
-import edu.illinois.library.metaslurper.harvest.HTTPException;
 import edu.illinois.library.metaslurper.harvest.HarvestClosedException;
 import edu.illinois.library.metaslurper.harvest.Harvest;
 import org.eclipse.jetty.client.HttpClient;

@@ -1,7 +1,6 @@
 package edu.illinois.library.metaslurper.service;
 
 import edu.illinois.library.metaslurper.entity.Entity;
-import edu.illinois.library.metaslurper.harvest.HTTPException;
 
 import java.io.IOException;
 import java.time.Instant;

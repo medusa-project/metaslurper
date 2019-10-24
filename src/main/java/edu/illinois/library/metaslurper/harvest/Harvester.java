@@ -6,6 +6,7 @@ import edu.illinois.library.metaslurper.entity.Entity;
 import edu.illinois.library.metaslurper.entity.PlaceholderEntity;
 import edu.illinois.library.metaslurper.service.ConcurrentIterator;
 import edu.illinois.library.metaslurper.service.EndOfIterationException;
+import edu.illinois.library.metaslurper.service.HTTPException;
 import edu.illinois.library.metaslurper.service.SinkService;
 import edu.illinois.library.metaslurper.service.SourceService;
 import edu.illinois.library.metaslurper.util.NumberUtils;

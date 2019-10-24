@@ -1,4 +1,4 @@
-package edu.illinois.library.metaslurper.harvest;
+package edu.illinois.library.metaslurper.service;
 
 import java.io.IOException;
 import java.util.Optional;

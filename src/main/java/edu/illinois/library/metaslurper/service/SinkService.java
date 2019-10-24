@@ -3,7 +3,6 @@ package edu.illinois.library.metaslurper.service;
 import edu.illinois.library.metaslurper.entity.ConcreteEntity;
 import edu.illinois.library.metaslurper.harvest.Harvest;
 import edu.illinois.library.metaslurper.harvest.HarvestClosedException;
-import edu.illinois.library.metaslurper.harvest.HTTPException;
 
 import java.io.IOException;
 
