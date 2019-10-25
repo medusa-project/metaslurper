@@ -46,14 +46,16 @@ public final class Harvest {
      */
     synchronized void end() {
         if (lifecycle.isOpen()) {
-            final int delta = numEntities - numSucceeded.get() - numFailed.get();
+            int numSucceededInt = numSucceeded.get();
+            int numFailedInt    = numFailed.get();
+            final int delta     = numEntities - numSucceededInt - numFailedInt;
             if (delta > 0) {
                 numFailed.addAndGet(delta);
                 addMessage("Added " + delta + " to the failure count " +
                         "due to a discrepancy between the number of items " +
                         "reported present in the service (" + numEntities +
-                        ") and the number found (" + (getNumSucceeded() +
-                        getNumFailed()) + ").");
+                        ") and the number found (" + (numSucceededInt +
+                        numFailedInt) + ").");
             }
             setLifecycle(Lifecycle.SUCCEEDED);
         }
