@@ -7,8 +7,6 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 class MedusaDLSCollection extends MedusaDLSEntity implements ConcreteEntity {
 
@@ -27,7 +25,7 @@ class MedusaDLSCollection extends MedusaDLSEntity implements ConcreteEntity {
         addStringIfExists(elements, "physical_collection_uri", "physicalCollectionURI");
         addStringIfExists(elements, "repository_title", "repositoryTitle");
 
-        // Add resource types
+        // Add resource types.
         JSONArray arr = rootObject.getJSONArray("resource_types");
         for (int i = 0; i < arr.length(); i++) {
             String value = arr.getString(i);
@@ -36,11 +34,19 @@ class MedusaDLSCollection extends MedusaDLSEntity implements ConcreteEntity {
             elements.add(new Element("resourceType", value));
         }
 
-        // Add access systems
+        // Add access systems.
         arr = rootObject.getJSONArray("access_systems");
+        boolean isDLSNative = false;
         for (int i = 0; i < arr.length(); i++) {
             String value = arr.getString(i);
             elements.add(new Element("accessSystem", value));
+            if ("Medusa Digital Library".equals(value)) {
+                isDLSNative = true;
+            }
+        }
+        // Add a service element for DLS-native collections only.
+        if (isDLSNative) {
+            elements.add(new Element("service", MedusaDLSService.PUBLIC_NAME));
         }
 
         // Add collection type (DLDS-118) later renamed to collection structure

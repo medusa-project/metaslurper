@@ -136,6 +136,9 @@ final class IDNCEntity implements ConcreteEntity {
     public Set<Element> getElements() {
         final Set<Element> elements = new HashSet<>();
 
+        // service name
+        elements.add(new Element("service", IDNCService.PUBLIC_NAME));
+
         String date = string("//DocumentMetadata/DocumentDate");
         if (!date.isEmpty()) {
             elements.add(new Element("date", date));

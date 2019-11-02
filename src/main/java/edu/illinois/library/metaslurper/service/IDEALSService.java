@@ -18,7 +18,9 @@ final class IDEALSService implements SourceService {
 
     static final Logger LOGGER = LoggerFactory.getLogger(IDEALSService.class);
 
-    private static final String NAME = "IDEALS";
+    static final String PUBLIC_NAME = "Scholarship";
+
+    private static final String PRIVATE_NAME = "IDEALS";
 
     private final Harvester harvester = new Harvester();
     private int numEntities = -1;
@@ -47,7 +49,7 @@ final class IDEALSService implements SourceService {
 
     @Override
     public String getName() {
-        return NAME;
+        return PRIVATE_NAME;
     }
 
     @Override

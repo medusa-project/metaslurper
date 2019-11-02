@@ -1,9 +1,11 @@
 package edu.illinois.library.metaslurper.service;
 
 import edu.illinois.library.metaslurper.entity.ConcreteEntity;
+import edu.illinois.library.metaslurper.entity.Element;
 import edu.illinois.library.metaslurper.entity.Variant;
 import org.json.JSONObject;
 
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -25,6 +27,13 @@ class MedusaDLSItem extends MedusaDLSEntity implements ConcreteEntity {
             }
         }
         return null;
+    }
+
+    @Override
+    public Set<Element> getElements() {
+        Set<Element> elements = super.getElements();
+        elements.add(new Element("service", MedusaDLSService.PUBLIC_NAME));
+        return elements;
     }
 
     @Override

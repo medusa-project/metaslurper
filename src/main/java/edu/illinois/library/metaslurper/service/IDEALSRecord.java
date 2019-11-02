@@ -19,7 +19,9 @@ final class IDEALSRecord extends IDEALSEntity implements ConcreteEntity {
 
     @Override
     public Set<Element> getElements() {
-        return pmhRecord.getElements();
+        Set<Element> elements = pmhRecord.getElements();
+        elements.add(new Element("service", IDEALSService.PUBLIC_NAME));
+        return elements;
     }
 
     @Override

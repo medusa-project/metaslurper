@@ -36,7 +36,15 @@ final class MedusaDLSService implements SourceService {
 
     static final String ENTITY_ID_PREFIX = "dls-";
 
-    private static final String NAME = "Illinois Digital Library";
+    /**
+     * Used within the application.
+     */
+    private static final String PRIVATE_NAME = "Illinois Digital Library";
+
+    /**
+     * Presented to public users.
+     */
+    static final String PUBLIC_NAME = "Digital Special Collections";
 
     static final long REQUEST_TIMEOUT = 30;
 
@@ -121,7 +129,7 @@ final class MedusaDLSService implements SourceService {
 
     @Override
     public String getName() {
-        return NAME;
+        return PRIVATE_NAME;
     }
 
     @Override

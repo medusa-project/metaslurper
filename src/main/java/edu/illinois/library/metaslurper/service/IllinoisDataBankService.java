@@ -45,13 +45,16 @@ final class IllinoisDataBankService implements SourceService {
         public Set<Element> getElements() {
             final Set<Element> elements = new HashSet<>();
 
+            // service name
+            elements.add(new Element("service", PUBLIC_NAME));
+
             // keywords
             if (rootObject.has("keywords")) {
                 String value = rootObject.get("keywords").toString();
                 if (!value.isBlank() && !"null".equals(value)) {
                     String[] parts = value.split(";");
-                    for (int i = 0; i < parts.length; i++) {
-                        String part = parts[i].trim();
+                    for (String s : parts) {
+                        String part = s.trim();
                         if (!part.isBlank()) {
                             elements.add(new Element("keywords", part));
                         }
@@ -143,7 +146,8 @@ final class IllinoisDataBankService implements SourceService {
     private static final Logger LOGGER =
             LoggerFactory.getLogger(IllinoisDataBankService.class);
 
-    private static final String NAME = "Illinois Data Bank";
+    private static final String PRIVATE_NAME = "Illinois Data Bank";
+    private static final String PUBLIC_NAME  = "Research Data";
 
     private static final long REQUEST_TIMEOUT = 60;
 
@@ -194,7 +198,7 @@ final class IllinoisDataBankService implements SourceService {
 
     @Override
     public String getName() {
-        return NAME;
+        return PRIVATE_NAME;
     }
 
     private synchronized HttpClient getClient() {

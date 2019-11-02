@@ -178,7 +178,10 @@ final class IDNCService implements SourceService {
 
     static final String ENTITY_ID_PREFIX = "idnc-";
 
-    private static final String NAME = "IDNC";
+    static final String PUBLIC_NAME  = "Digitized Newspapers";
+
+    private static final String PRIVATE_NAME = "IDNC";
+
 
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(60);
 
@@ -272,7 +275,7 @@ final class IDNCService implements SourceService {
 
     @Override
     public String getName() {
-        return NAME;
+        return PRIVATE_NAME;
     }
 
     /**

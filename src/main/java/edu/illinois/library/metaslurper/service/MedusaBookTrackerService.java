@@ -52,6 +52,10 @@ final class MedusaBookTrackerService implements SourceService {
         public Set<Element> getElements() {
             final Set<Element> elements = new HashSet<>();
 
+            // service name
+            elements.add(new Element("service", PUBLIC_NAME));
+
+            // all other elements
             for (String key : ELEMENTS) {
                 if (rootObject.has(key)) {
                     if (rootObject.get(key) instanceof JSONArray) {
@@ -134,7 +138,8 @@ final class MedusaBookTrackerService implements SourceService {
     private static final Logger LOGGER =
             LoggerFactory.getLogger(MedusaBookTrackerService.class);
 
-    private static final String NAME = "Medusa Book Tracker";
+    private static final String PRIVATE_NAME = "Medusa Book Tracker";
+    private static final String PUBLIC_NAME  = "Digitized Books";
 
     private static final String QUERY_FILTER = "harvest=true";
 
@@ -180,7 +185,7 @@ final class MedusaBookTrackerService implements SourceService {
 
     @Override
     public String getName() {
-        return NAME;
+        return PRIVATE_NAME;
     }
 
     private synchronized HttpClient getClient() {
