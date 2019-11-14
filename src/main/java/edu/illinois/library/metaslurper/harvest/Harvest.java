@@ -15,17 +15,20 @@ public final class Harvest {
 
     private Lifecycle lifecycle              = Lifecycle.NEW;
     private int numEntities                  = 0;
+    private int maxNumEntities               = -1;
     private final AtomicInteger numSucceeded = new AtomicInteger();
     private final AtomicInteger numFailed    = new AtomicInteger();
     private final Queue<String> messages     = new ConcurrentLinkedQueue<>();
 
     /**
-     * Call to cancel a harvest before all entities have been harvested.
+     * Cancels a harvest before all entities have been harvested.
      */
     synchronized void abort() {
         if (lifecycle.isOpen()) {
+            final int canonicalNumEntities = getCanonicalNumEntities();
             // Set the failure count to the number of items remaining.
-            final int delta = numEntities - numSucceeded.get() - numFailed.get();
+            final int delta = canonicalNumEntities - numSucceeded.get() -
+                    numFailed.get();
             if (delta > 0) {
                 numFailed.addAndGet(delta);
                 addMessage("Harvest aborted with " + delta + " items left.");
@@ -46,23 +49,46 @@ public final class Harvest {
      */
     synchronized void end() {
         if (lifecycle.isOpen()) {
-            int numSucceededInt = numSucceeded.get();
-            int numFailedInt    = numFailed.get();
-            final int delta     = numEntities - numSucceededInt - numFailedInt;
+            final int canonicalNumEntities = getCanonicalNumEntities();
+            int numSucceededInt            = numSucceeded.get();
+            int numFailedInt               = numFailed.get();
+            final int delta                = canonicalNumEntities -
+                    numSucceededInt - numFailedInt;
             if (delta > 0) {
                 numFailed.addAndGet(delta);
                 addMessage("Added " + delta + " to the failure count " +
                         "due to a discrepancy between the number of items " +
-                        "reported present in the service (" + numEntities +
-                        ") and the number found (" + (numSucceededInt +
-                        numFailedInt) + ").");
+                        "reported present in the service (" +
+                        canonicalNumEntities + ") and the number found (" +
+                        (numSucceededInt + numFailedInt) + ").");
             }
             setLifecycle(Lifecycle.SUCCEEDED);
         }
     }
 
+    /**
+     * Must only be called after {@link #setNumEntities(int)} and {@link
+     * #setMaxNumEntities(int)}.
+     *
+     * @return The number of entities to be harvested.
+     */
+    int getCanonicalNumEntities() {
+        int tmp = numEntities;
+        if (maxNumEntities > 0) {
+            tmp = Math.min(numEntities, maxNumEntities);
+        }
+        return tmp;
+    }
+
     public synchronized Lifecycle getLifecycle() {
         return lifecycle;
+    }
+
+    /**
+     * @return The maximum number of entities to harvest.
+     */
+    public int getMaxNumEntities() {
+        return maxNumEntities;
     }
 
     /**
@@ -95,12 +121,33 @@ public final class Harvest {
         numSucceeded.incrementAndGet();
     }
 
+    /**
+     * @return Whether the instance is available for use.
+     */
+    boolean isOpen() {
+        // N.B. A condition for "no max and numFailed + numSucceeded <
+        // numEntities" is not included because the number of items reported
+        // present in a source service may be smaller than the number of items
+        // actually present.
+        return getLifecycle().isOpen() &&
+                ((getMaxNumEntities() > 0 &&
+                        getNumFailed() + getNumSucceeded() < getMaxNumEntities()) ||
+                getMaxNumEntities() < 1);
+    }
+
     public int numMessages() {
         return messages.size();
     }
 
     synchronized void setLifecycle(Lifecycle lifecycle) {
         this.lifecycle = lifecycle;
+    }
+
+    /**
+     * @param numEntities The maximum number of entities to harvest.
+     */
+    public void setMaxNumEntities(int numEntities) {
+        this.maxNumEntities = numEntities;
     }
 
     /**

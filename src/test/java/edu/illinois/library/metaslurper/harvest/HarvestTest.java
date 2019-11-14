@@ -33,6 +33,17 @@ public class HarvestTest {
     }
 
     @Test
+    public void testAbortWithMaxEntities() {
+        instance.setMaxNumEntities(5);
+        instance.incrementNumSucceeded();
+        instance.incrementNumSucceeded();
+        instance.abort();
+        assertEquals(Lifecycle.ABORTED, instance.getLifecycle());
+        assertEquals(2, instance.getNumSucceeded());
+        assertEquals(3, instance.getNumFailed());
+    }
+
+    @Test
     public void testAddMessageRespectsLimit() {
         for (int i = 0; i < 120; i++) {
             instance.addMessage("Hello");
@@ -55,6 +66,37 @@ public class HarvestTest {
         instance.end();
         assertEquals(Lifecycle.SUCCEEDED, instance.getLifecycle());
         assertEquals(instance.getNumEntities() - 2, instance.getNumFailed());
+    }
+
+    @Test
+    public void testEndWithMaxEntities() {
+        instance.setMaxNumEntities(5);
+        instance.incrementNumSucceeded();
+        instance.incrementNumSucceeded();
+        instance.incrementNumFailed();
+        instance.end();
+        assertEquals(Lifecycle.SUCCEEDED, instance.getLifecycle());
+        assertEquals(3, instance.getNumFailed());
+    }
+
+    @Test
+    public void testGetCanonicalNumEntitiesWithNoMax() {
+        instance.setNumEntities(50);
+        assertEquals(50, instance.getCanonicalNumEntities());
+    }
+
+    @Test
+    public void testGetCanonicalNumEntitiesWithSmallerMax() {
+        instance.setNumEntities(50);
+        instance.setMaxNumEntities(25);
+        assertEquals(25, instance.getCanonicalNumEntities());
+    }
+
+    @Test
+    public void testGetCanonicalNumEntitiesWithLargerMax() {
+        instance.setNumEntities(25);
+        instance.setMaxNumEntities(50);
+        assertEquals(25, instance.getCanonicalNumEntities());
     }
 
 }

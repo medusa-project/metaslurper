@@ -1,5 +1,6 @@
 package edu.illinois.library.metaslurper;
 
+import edu.illinois.library.metaslurper.harvest.Harvest;
 import edu.illinois.library.metaslurper.service.SinkService;
 import edu.illinois.library.metaslurper.service.SourceService;
 import edu.illinois.library.metaslurper.service.ServiceFactory;
@@ -23,6 +24,7 @@ public final class Application {
     private enum Argument {
         INCREMENTAL("i", "incremental", false, "Last-modified epoch second"),
         LOG_LEVEL("v", "log_level", false, "Log level: error, warn, info, debug (default), trace"),
+        MAX_NUM_ENTITIES("m", "max_entities", false, "Maximum number of entities to harvest"),
         SOURCE_SERVICE("s", "source", true, "Source service key"),
         SINK_SERVICE("k", "sink", true, "Sink service key"),
         THREADS("t", "threads", false, "Number of harvesting threads (default = 1)"),
@@ -53,6 +55,7 @@ public final class Application {
             CommandLineParser parser = new DefaultParser();
             CommandLine cmd = parser.parse(getOptions(), args);
 
+            // Set log level
             if (cmd.hasOption(Argument.LOG_LEVEL.longArg)) {
                 String level = cmd.getOptionValue(Argument.LOG_LEVEL.longArg).toLowerCase();
                 switch (level) {
@@ -73,11 +76,13 @@ public final class Application {
                 }
             }
 
+            // Set num threads
             numThreads = cmd.hasOption(Argument.THREADS.longArg) ?
                     Integer.parseInt(cmd.getOptionValue(Argument.THREADS.longArg)) :
                     numThreads;
             numThreads = Math.max(numThreads, 1);
 
+            // Set throttle time
             throttleMsec = cmd.hasOption(Argument.THROTTLE.longArg) ?
                     Integer.parseInt(cmd.getOptionValue(Argument.THROTTLE.longArg)) :
                     throttleMsec;
@@ -95,7 +100,7 @@ public final class Application {
                                 Instant lastModified = Instant.ofEpochSecond(second);
                                 source.setLastModified(lastModified);
                             }
-                            new Harvester().harvest(source, sink);
+                            new Harvester().harvest(source, sink, newHarvest(cmd));
                         } else {
                             System.err.println("Unrecognized source service key: " + sourceStr);
                             printSourceServices();
@@ -141,6 +146,15 @@ public final class Application {
                         .required(arg.isRequired)
                         .build()));
         return options;
+    }
+
+    private static Harvest newHarvest(CommandLine cmd) {
+        Harvest harvest = new Harvest();
+        if (cmd.hasOption(Argument.MAX_NUM_ENTITIES.longArg)) {
+            harvest.setMaxNumEntities(Integer.parseInt(
+                    cmd.getOptionValue(Argument.MAX_NUM_ENTITIES.longArg)));
+        }
+        return harvest;
     }
 
     private static void printSourceServices() {

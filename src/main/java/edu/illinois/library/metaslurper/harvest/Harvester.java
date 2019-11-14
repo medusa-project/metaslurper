@@ -41,30 +41,23 @@ public final class Harvester {
     private static final short STATUS_UPDATE_INCREMENT = 25;
 
     /**
-     * @param source Service to harvest.
-     * @param sink   Service to harvest into.
-     */
-    public void harvest(final SourceService source, final SinkService sink) {
-        harvest(source, sink, new Harvest());
-    }
-
-    /**
      * @param source  Service to harvest.
      * @param sink    Service to harvest into.
      * @param harvest Object for status tracking.
      */
-    void harvest(final SourceService source,
-                 final SinkService sink,
-                 final Harvest harvest) {
+    public void harvest(final SourceService source,
+                        final SinkService sink,
+                        final Harvest harvest) {
         final int numThreads       = Application.getNumThreads();
         final CountDownLatch latch = new CountDownLatch(numThreads);
         final ExecutorService pool = Executors.newFixedThreadPool(numThreads);
         try {
-            final int numEntities                         = getNumEntities(source);
+            final int numSourceEntities                   = getNumEntities(source);
             final ConcurrentIterator<? extends Entity> it = source.entities();
 
             harvest.setLifecycle(Lifecycle.RUNNING);
-            harvest.setNumEntities(numEntities);
+            harvest.setNumEntities(numSourceEntities);
+            final int numEntities = harvest.getCanonicalNumEntities();
             sink.setNumEntitiesToIngest(numEntities);
 
             for (int i = 0; i < numThreads; i++) {
@@ -109,38 +102,40 @@ public final class Harvester {
                 try {
                     // Pull an Entity from the source service.
                     Entity entity = it.next();
-
                     // Push it into the sink service.
                     if (entity instanceof ConcreteEntity) {
                         ConcreteEntity concEntity = (ConcreteEntity) entity;
-                        try {
-                            sink.ingest(concEntity);
-                            harvest.incrementNumSucceeded();
+                        if (harvest.isOpen()) {
+                            try {
+                                sink.ingest(concEntity);
+                                harvest.incrementNumSucceeded();
 
-                            int index = harvest.getNumSucceeded() +
-                                    harvest.getNumFailed();
-                            LOGGER.debug("Harvested {} {} from {} into {} [{}/{}] [{}]",
-                                    concEntity.getVariant().name().toLowerCase(),
-                                    concEntity, source, sink,
-                                    index,
-                                    harvest.getNumEntities(),
-                                    NumberUtils.percent(index + 1, harvest.getNumEntities()));
-                        } catch (HarvestClosedException e) {
-                            throw e;
-                        } catch (IOException e) {
-                            reportSinkError(harvest, concEntity, e);
+                                int index = harvest.getNumSucceeded() +
+                                        harvest.getNumFailed();
+                                LOGGER.debug("Harvested {} {} from {} into {} [{}/{}] [{}]",
+                                        concEntity.getVariant().name().toLowerCase(),
+                                        concEntity, source, sink,
+                                        index,
+                                        harvest.getNumEntities(),
+                                        NumberUtils.percent(index + 1, harvest.getNumEntities()));
+                            } catch (HarvestClosedException e) {
+                                throw e;
+                            } catch (IOException e) {
+                                reportSinkError(harvest, concEntity, e);
+                            }
+                        } else {
+                            break; // This thread is done.
                         }
                     } else {
                         reportSourceError(harvest,
                                 (PlaceholderEntity) entity);
                     }
                 } catch (EndOfIterationException ignore) {
-                    // This thread is done.
-                    break;
+                    break; // This thread is done.
                 } catch (HarvestClosedException e) {
                     harvest.abort();
                     LOGGER.info("Harvest closed: {}", e.getMessage());
-                    break;
+                    break; // This thread is done.
                 } catch (Exception e) {
                     reportSourceError(harvest, e);
                 }

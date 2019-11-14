@@ -28,6 +28,22 @@ public class HarvesterTest {
     }
 
     @Test
+    public void testHarvestWithMaxNumEntities() {
+        Harvest harvest = new Harvest();
+        harvest.setMaxNumEntities(5);
+        try (MockSourceService source = new MockSourceService();
+             MockSinkService sink = new MockSinkService()) {
+            source.setNumEntities(10);
+            instance.harvest(source, sink, harvest);
+            assertEquals(5, sink.getIngestedEntities().size());
+            assertEquals(5, harvest.getNumSucceeded());
+            assertEquals(0, harvest.getNumFailed());
+            assertEquals(0, harvest.numMessages());
+            assertEquals(Lifecycle.SUCCEEDED, harvest.getLifecycle());
+        }
+    }
+
+    @Test
     public void testHarvestWithNoFailures() throws Exception {
         Harvest harvest = new Harvest();
         try (MockSourceService source = new MockSourceService();

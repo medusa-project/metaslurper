@@ -12,6 +12,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class MockSourceService implements SourceService {
 
+    private int numEntities = 5;
+
     @Override
     public String getKey() {
         return MockSourceService.class.getSimpleName().toLowerCase();
@@ -28,7 +30,7 @@ public class MockSourceService implements SourceService {
 
     @Override
     public int numEntities() throws IOException {
-        return 5;
+        return numEntities;
     }
 
     @Override
@@ -60,6 +62,14 @@ public class MockSourceService implements SourceService {
     public void setLastModified(Instant lastModified)
             throws UnsupportedOperationException {
         throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Controls the return value of {@link #numEntities()} and the number of
+     * entities iterated by the return value of {@link #entities()}.
+     */
+    public void setNumEntities(int numEntities) {
+        this.numEntities = numEntities;
     }
 
 }
