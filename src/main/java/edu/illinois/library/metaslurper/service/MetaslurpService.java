@@ -52,6 +52,11 @@ final class MetaslurpService implements SinkService {
         }
     }
 
+    private static String getIndex() {
+        Configuration config = Configuration.getInstance();
+        return config.getString("SERVICE_SINK_METASLURP_INDEX");
+    }
+
     private static String getUsername() {
         Configuration config = Configuration.getInstance();
         return config.getString("SERVICE_SINK_METASLURP_USERNAME");
@@ -228,26 +233,23 @@ final class MetaslurpService implements SinkService {
 
     private String toJSON(ConcreteEntity entity) {
         JSONObject jobj = new JSONObject();
-        // harvest key
-        jobj.put("harvest_key", harvest.getKey());
-        // variant
-        jobj.put("variant", toString(entity.getVariant()));
-        // media type
-        jobj.put("media_type", entity.getMediaType());
-        // source ID
-        jobj.put("source_id", entity.getSourceID());
-        // sink ID
-        jobj.put("id", entity.getSinkID());
-        // parent sink ID
-        jobj.put("parent_id", entity.getParentSinkID());
         // container sink ID
         jobj.put("container_id", entity.getContainerSinkID());
         // container name
         jobj.put("container_name", entity.getContainerName());
-        // service key
-        jobj.put("service_key", entity.getServiceKey());
-        // source URI
-        jobj.put("source_uri", entity.getSourceURI());
+
+        // elements
+        JSONArray jelements = new JSONArray();
+        entity.getElements().forEach(element -> {
+            JSONObject jelement = new JSONObject();
+            jelement.put("name", element.getName());
+            jelement.put("value", element.getValue());
+            jelements.put(jelement);
+        });
+        jobj.put("elements", jelements);
+
+        // harvest key
+        jobj.put("harvest_key", harvest.getKey());
 
         // access images
         JSONArray jimages = new JSONArray();
@@ -261,15 +263,24 @@ final class MetaslurpService implements SinkService {
         });
         jobj.put("images", jimages);
 
-        // elements
-        JSONArray jelements = new JSONArray();
-        entity.getElements().forEach(element -> {
-            JSONObject jelement = new JSONObject();
-            jelement.put("name", element.getName());
-            jelement.put("value", element.getValue());
-            jelements.put(jelement);
-        });
-        jobj.put("elements", jelements);
+        // index
+        if (getIndex() != null) {
+            jobj.put("id", getIndex());
+        }
+        // sink ID
+        jobj.put("id", entity.getSinkID());
+        // media type
+        jobj.put("media_type", entity.getMediaType());
+        // parent sink ID
+        jobj.put("parent_id", entity.getParentSinkID());
+        // service key
+        jobj.put("service_key", entity.getServiceKey());
+        // source ID
+        jobj.put("source_id", entity.getSourceID());
+        // source URI
+        jobj.put("source_uri", entity.getSourceURI());
+        // variant
+        jobj.put("variant", toString(entity.getVariant()));
 
         return jobj.toString();
     }

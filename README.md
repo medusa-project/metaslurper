@@ -1,6 +1,6 @@
 # About
 
-Metaslurper is a command-line tool that harvests (slurps) digital object
+Metaslurper is a command-line tool that slurps (harvests) digital object
 properties and metadata from one or more source services, normalizes it, and
 uploads it to a sink service. It supports efficient multi-threaded streaming of
 large numbers of entities from any number of source services, and support for
@@ -18,7 +18,7 @@ services are modular, too.
 
 # Requirements
 
-The only requirements are JDK 8+ and Maven 3. CPU and memory requirements are
+The only requirements are JDK 11+ and Maven 3. CPU and memory requirements are
 minimal.
 
 Docker is required for deployment to AWS ECR. See "AWS ECS Notes" below.
@@ -34,31 +34,33 @@ are available:
 
 * Source services
     * Illinois Data Bank
-      * `SERVICE_SOURCE_IDB_KEY`
-      * `SERVICE_SOURCE_IDB_ENDPOINT`
+        * `SERVICE_SOURCE_IDB_KEY`
+        * `SERVICE_SOURCE_IDB_ENDPOINT`
     * Illinois Digital Library
-      * `SERVICE_SOURCE_DLS_KEY`
-      * `SERVICE_SOURCE_DLS_ENDPOINT`
-      * `SERVICE_SOURCE_DLS_USERNAME`
-      * `SERVICE_SOURCE_DLS_SECRET`
+        * `SERVICE_SOURCE_DLS_KEY`
+        * `SERVICE_SOURCE_DLS_ENDPOINT`
+        * `SERVICE_SOURCE_DLS_USERNAME`
+        * `SERVICE_SOURCE_DLS_SECRET`
     * Illinois Digital Newspaper Collections
-      * `SERVICE_SOURCE_IDNC_KEY`
-      * `SERVICE_SOURCE_IDNC_ENDPOINT`
-      * `SERVICE_SOURCE_IDNC_HARVEST_SCRIPT_URI`
+        * `SERVICE_SOURCE_IDNC_KEY`
+        * `SERVICE_SOURCE_IDNC_ENDPOINT`
+        * `SERVICE_SOURCE_IDNC_HARVEST_SCRIPT_URI`
     * IDEALS
-      * `SERVICE_SOURCE_IDEALS_KEY`
-      * `SERVICE_SOURCE_IDEALS_ENDPOINT`
+        * `SERVICE_SOURCE_IDEALS_KEY`
+        * `SERVICE_SOURCE_IDEALS_ENDPOINT`
     * Medusa Book Tracker
-      * `SERVICE_SOURCE_BOOK_TRACKER_KEY`
-      * `SERVICE_SOURCE_BOOK_TRACKER_ENDPOINT`
+        * `SERVICE_SOURCE_BOOK_TRACKER_KEY`
+        * `SERVICE_SOURCE_BOOK_TRACKER_ENDPOINT`
 * Sink services
     * Metaslurp
-      * `SERVICE_SINK_METASLURP_KEY`
-      * `SERVICE_SINK_METASLURP_ENDPOINT`
-      * `SERVICE_SINK_METASLURP_USERNAME`
-      * `SERVICE_SINK_METASLURP_SECRET`
-      * `SERVICE_SINK_METASLURP_HARVEST_KEY` (optional; if not set, a new
-        harvest will be created)
+        * `SERVICE_SINK_METASLURP_KEY`
+        * `SERVICE_SINK_METASLURP_ENDPOINT`
+        * `SERVICE_SINK_METASLURP_USERNAME`
+        * `SERVICE_SINK_METASLURP_SECRET`
+        * `SERVICE_SINK_METASLURP_HARVEST_KEY` (if not set, a new harvest will
+          be initiated)
+        * `SERVICE_SINK_METASLURP_INDEX` (if not set, the default
+          index is used)
 
 # Run
 
@@ -88,8 +90,7 @@ Change it to a random string to print a list of available service keys.
 
 ## In Docker
 
-1. `cp docker-run.sh.sample docker-run.sh` and edit as necessary
-2. `docker-run.sh <source service key> <sink service key>`
+`docker-run.sh <environment> <source service key> <sink service key>`
 
 # Adding services
 
@@ -99,11 +100,11 @@ Change it to a random string to print a list of available service keys.
 2. Add it to the return value of
    `e.i.l.m.service.ServiceFactory.allSourceServices()`
 
-Probably the service will require a couple of new configuration keys. In AWS,
+The service will probably require a couple of new configuration keys. In AWS,
 these will need to be added as environment variables to the ECS task
 definition. If using Metaslurp as a sink, the value of its
 `METASLURPER_ECS_TASK_DEFINITION` environment variable must then be changed to
-this new version.
+this new version, if it is not already using `latest`.
 
 ## Adding a sink service
 
@@ -119,7 +120,7 @@ this new version.
 
 # AWS ECS notes
 
-Metaslurper can run in AWS ECS. The general procedure for deploying is:
+The general procedure for deploying to ECS is:
 
 1. Install Docker
 2. Create an ECR repository, an ECS Fargate cluster, and an ECS task definition
@@ -127,6 +128,10 @@ Metaslurper can run in AWS ECS. The general procedure for deploying is:
        the "Configuration" section (above)
     2. The task definition also must specify a read-write filesystem (for
        `/tmp` usage)
+    3. (At UIUC, all of this is terraformed in
+       [demo](https://code.library.illinois.edu/projects/TER/repos/aws-metadata-demo-service/browse)
+       and
+       [production](https://code.library.illinois.edu/projects/TER/repos/aws-metadata-prod-service/browse).)
 3. Install the `aws` command-line tool
 4. `cp ecr-push.sh.sample ecr-push.sh` and edit as necessary
 5. `ecr-push.sh`
@@ -135,6 +140,6 @@ At this point the container is available and tasks are ready to run. One way to
 run them is with the `aws` command-line tool, for which a convenient wrapper
 script has been written:
 
-`ecs-run-task.sh <source service key> <sink service key>`
+`ecs-run-task.sh <environment> <source service key> <sink service key>`
 
 But they can also be invoked via the AWS web UI or API.
