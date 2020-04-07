@@ -5,9 +5,9 @@ import edu.illinois.library.metaslurper.entity.ConcreteEntity;
 import edu.illinois.library.metaslurper.entity.Element;
 import edu.illinois.library.metaslurper.entity.Entity;
 import edu.illinois.library.metaslurper.entity.Variant;
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -19,9 +19,7 @@ import java.util.HashSet;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -151,7 +149,7 @@ final class IllinoisDataBankService implements SourceService {
 
     private static final long REQUEST_TIMEOUT = 60;
 
-    private HttpClient client;
+    private OkHttpClient client;
 
     private final AtomicBoolean isClosed = new AtomicBoolean();
 
@@ -175,14 +173,6 @@ final class IllinoisDataBankService implements SourceService {
     @Override
     public void close() {
         isClosed.set(true);
-
-        if (client != null) {
-            try {
-                client.stop();
-            } catch (Exception e) {
-                LOGGER.error("close(): " + e.getMessage());
-            }
-        }
     }
 
     private void checkClosed() {
@@ -201,15 +191,14 @@ final class IllinoisDataBankService implements SourceService {
         return PRIVATE_NAME;
     }
 
-    private synchronized HttpClient getClient() {
+    private synchronized OkHttpClient getClient() {
         if (client == null) {
-            client = new HttpClient(new SslContextFactory());
-            client.setFollowRedirects(true);
-            try {
-                client.start();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+            OkHttpClient.Builder builder = new OkHttpClient.Builder()
+                    .followRedirects(true)
+                    .connectTimeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
+                    .readTimeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
+                    .writeTimeout(REQUEST_TIMEOUT, TimeUnit.SECONDS);
+            client = builder.build();
         }
         return client;
     }
@@ -255,53 +244,46 @@ final class IllinoisDataBankService implements SourceService {
     private void fetchDataSetURIs() throws IOException {
         final String uri = String.format("%s/datasets", getEndpointURI());
         LOGGER.debug("Fetching data sets: {}", uri);
-        try {
-            ContentResponse response = getClient().newRequest(uri)
-                    .header("Accept", "application/json")
-                    .timeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
-                    .send();
-            String body = response.getContentAsString();
-            if (response.getStatus() == 200) {
-                JSONArray results = new JSONArray(body);
-                for (int i = 0; i < results.length(); i++) {
-                    JSONObject dataSet = results.getJSONObject(i);
-                    dataSetURIs.add(dataSet.getString("url"));
-                }
-                LOGGER.debug("Fetched {} data sets", dataSetURIs.size());
-            } else {
-                throw new HTTPException(
-                        "GET", uri, response.getStatus(), null, body);
+        Request.Builder builder = new Request.Builder()
+                .method("GET", null)
+                .header("Accept", "application/json")
+                .url(uri);
+        Request request = builder.build();
+        Response response = getClient().newCall(request).execute();
+        String body = response.body().string();
+        if (response.code() == 200) {
+            JSONArray results = new JSONArray(body);
+            for (int i = 0; i < results.length(); i++) {
+                JSONObject dataSet = results.getJSONObject(i);
+                dataSetURIs.add(dataSet.getString("url"));
             }
-        } catch (ExecutionException | InterruptedException |
-                TimeoutException e) {
-            throw new HTTPException("GET", uri, e);
+            LOGGER.debug("Fetched {} data sets", dataSetURIs.size());
+        } else {
+            throw new HTTPException("GET", uri, response.code(), null, body);
         }
     }
 
     /**
      * Fetches and returns the data set at the given URI.
      *
-     * @return Data set, or {@literal null} if the data set at the given URI is
+     * @return Data set, or {@code null} if the data set at the given URI is
      *         a test data set.
      */
     private DataSet fetchDataSet(String uri) throws IOException {
         LOGGER.debug("Fetching data set: {}", uri);
-        try {
-            ContentResponse response = getClient().newRequest(uri)
-                    .header("Accept", "application/json")
-                    .timeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
-                    .send();
-            String body = response.getContentAsString();
-            if (response.getStatus() == 200) {
-                JSONObject jobj = new JSONObject(body);
-                return jobj.getBoolean("is_test") ? null : new DataSet(jobj);
-            } else {
-                throw new HTTPException(
-                        "GET", uri, response.getStatus(), null, body);
-            }
-        } catch (ExecutionException | InterruptedException |
-                TimeoutException e) {
-            throw new HTTPException("GET", uri, e);
+        Request.Builder builder = new Request.Builder()
+                .method("GET", null)
+                .header("Accept", "application/json")
+                .url(uri);
+        Request request = builder.build();
+        Response response = getClient().newCall(request).execute();
+        String body = response.body().string();
+        if (response.code() == 200) {
+            JSONObject jobj = new JSONObject(body);
+            return jobj.getBoolean("is_test") ? null : new DataSet(jobj);
+        } else {
+            throw new HTTPException(
+                    "GET", uri, response.code(), null, body);
         }
     }
 

@@ -17,7 +17,7 @@ public class IllinoisDataBankServiceTest {
 
     @Test
     public void testNumEntities() throws Exception {
-        assertTrue(instance.numEntities() > 50);
+        assertTrue(instance.numEntities() > 250);
     }
 
     @Test
@@ -29,6 +29,7 @@ public class IllinoisDataBankServiceTest {
             try {
                 Entity entity = it.next();
                 assertFalse(entity.getSinkID().isEmpty());
+                i++;
             } catch (HTTPException e) {
                 // Some items are restricted; that's OK.
                 if (e.getStatusCode().get() != 403) {
@@ -36,8 +37,6 @@ public class IllinoisDataBankServiceTest {
                 }
             } catch (EndOfIterationException e) {
                 break;
-            } finally {
-                i++;
             }
         }
         assertEquals(count, i);

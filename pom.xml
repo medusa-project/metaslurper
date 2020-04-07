@@ -13,6 +13,12 @@
     </properties>
 
     <dependencies>
+        <!-- Application HTTP client -->
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
+            <version>3.13.1</version>
+        </dependency>
         <!-- Parsing command-line arguments -->
         <dependency>
             <groupId>commons-cli</groupId>
