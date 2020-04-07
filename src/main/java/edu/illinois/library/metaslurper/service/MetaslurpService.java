@@ -213,7 +213,6 @@ final class MetaslurpService implements SinkService {
         LOGGER.debug("Updating status of {}: {}", uri, json);
 
         Request.Builder builder = new Request.Builder()
-                .method("PATCH", null)
                 .header("Accept", "application/json")
                 .patch(new RequestBody() {
                     @Override
