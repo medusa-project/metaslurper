@@ -1,11 +1,9 @@
 package edu.illinois.library.metaslurper.service.oai_pmh;
 
 import edu.illinois.library.metaslurper.service.ConcurrentIterator;
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.util.InputStreamResponseListener;
-import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -50,37 +48,29 @@ public final class Harvester implements AutoCloseable {
             LoggerFactory.getLogger(Harvester.class);
 
     private static final String DEFAULT_METADATA_PREFIX = "oai_dc";
-    static final int REQUEST_TIMEOUT_SECONDS = 30;
+    private static final int REQUEST_TIMEOUT_SECONDS = 30;
 
-    private HttpClient client;
+    private OkHttpClient client;
 
     private String endpointURI;
     private String metadataPrefix = DEFAULT_METADATA_PREFIX;
 
     private Instant from, until;
 
-    private synchronized HttpClient getClient() {
+    private synchronized OkHttpClient getClient() {
         if (client == null) {
-            client = new HttpClient(new SslContextFactory());
-            client.setFollowRedirects(true);
-            try {
-                client.start();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+            OkHttpClient.Builder builder = new OkHttpClient.Builder()
+                    .followRedirects(true)
+                    .connectTimeout(REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                    .readTimeout(REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                    .writeTimeout(REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            client = builder.build();
         }
         return client;
     }
 
     @Override
     public void close() {
-        if (client != null) {
-            try {
-                client.stop();
-            } catch (Exception e) {
-                LOGGER.error("close(): " + e.getMessage());
-            }
-        }
     }
 
     /**
@@ -112,25 +102,19 @@ public final class Harvester implements AutoCloseable {
             throw new IllegalStateException("Endpoint URI is not set");
         }
 
-        InputStreamResponseListener responseListener =
-                new InputStreamResponseListener();
-
         LOGGER.debug("fetchCountFromListResponse(): requesting {}", uri);
 
-        getClient().newRequest(uri)
-                .timeout(REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-                .send(responseListener);
-
+        Request.Builder builder = new Request.Builder()
+                .method("GET", null)
+                .url(uri);
+        Request request = builder.build();
+        Response response = getClient().newCall(request).execute();
         try {
-            // Wait for the response headers to arrive.
-            Response response = responseListener.get(
-                    REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-
-            if (response.getStatus() == HttpStatus.OK_200) {
-                try (InputStream is = responseListener.getInputStream()) {
+            if (response.code() == 200) {
+                try (InputStream is = response.body().byteStream()) {
                     DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-                    DocumentBuilder builder = factory.newDocumentBuilder();
-                    Document doc = builder.parse(is);
+                    DocumentBuilder docBuilder = factory.newDocumentBuilder();
+                    Document doc = docBuilder.parse(is);
                     XPathFactory xPathfactory = XPathFactory.newInstance();
                     XPath xpath = xPathfactory.newXPath();
                     XPathExpression expr =
@@ -145,7 +129,7 @@ public final class Harvester implements AutoCloseable {
                     return value;
                 }
             } else {
-                throw new IOException("Received HTTP " + response.getStatus() +
+                throw new IOException("Received HTTP " + response.code() +
                         " for " + uri);
             }
         } catch (IOException e) {

@@ -6,14 +6,13 @@ import edu.illinois.library.metaslurper.entity.Entity;
 import edu.illinois.library.metaslurper.entity.Variant;
 import edu.illinois.library.metaslurper.harvest.HarvestClosedException;
 import edu.illinois.library.metaslurper.harvest.Harvest;
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.AuthenticationStore;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.util.BasicAuthentication;
-import org.eclipse.jetty.client.util.StringContentProvider;
-import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
+import okhttp3.Credentials;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+import okio.BufferedSink;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -22,7 +21,9 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -36,8 +37,9 @@ final class MetaslurpService implements SinkService {
             LoggerFactory.getLogger(MetaslurpService.class);
 
     private static final String NAME = "Metaslurp";
+    private static final long REQUEST_TIMEOUT = 30;
 
-    private HttpClient client;
+    private OkHttpClient client;
     private final AtomicBoolean isClosed = new AtomicBoolean();
     private MetaslurpHarvest harvest;
     private int numEntities;
@@ -71,33 +73,25 @@ final class MetaslurpService implements SinkService {
         return getEndpointURI().resolve("/api/v1/items/" + entity.getSinkID());
     }
 
-    private synchronized HttpClient getClient() {
+    private synchronized OkHttpClient getClient() {
         if (client == null) {
-            client = new HttpClient(new SslContextFactory());
-            client.setFollowRedirects(true);
-            try {
-                if (getUsername() != null && getSecret() != null) {
-                    AuthenticationStore auth = client.getAuthenticationStore();
-                    auth.addAuthenticationResult(new BasicAuthentication.BasicResult(
-                            getEndpointURI(), getUsername(), getSecret()));
-                }
-                client.start();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+            OkHttpClient.Builder builder = new OkHttpClient.Builder()
+                    .followRedirects(true)
+                    .authenticator((route, response) -> {
+                        String credential = Credentials.basic(getUsername(), getSecret());
+                        return response.request().newBuilder()
+                                .header("Authorization", credential).build();
+                    })
+                    .connectTimeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
+                    .readTimeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
+                    .writeTimeout(REQUEST_TIMEOUT, TimeUnit.SECONDS);
+            client = builder.build();
         }
         return client;
     }
 
     @Override
     public void close() {
-        if (client != null) {
-            try {
-                client.stop();
-            } catch (Exception e) {
-                LOGGER.error("close(): " + e.getMessage());
-            }
-        }
     }
 
     @Override
@@ -134,37 +128,40 @@ final class MetaslurpService implements SinkService {
             }
         }
 
-        final URI uri = getURI(entity);
+        final String uri = getURI(entity).toString();
         final String json = toJSON(entity);
 
         LOGGER.debug("Ingesting {} {}: {}",
                 entity.getVariant().name().toLowerCase(), entity, json);
-        try {
-            ContentResponse response = getClient()
-                    .newRequest(uri)
-                    .method(HttpMethod.PUT)
-                    .header("Content-Type", "application/json")
-                    .content(new StringContentProvider(json), "application/json")
-                    .send();
-            switch (response.getStatus()) {
-                case HttpStatus.NO_CONTENT_204: // success
-                    break;
-                case 480: // harvest ended (this should never happen)
-                    throw new HarvestClosedException(
-                            "Harvest " + harvest + " is no longer available.");
-                case 481: // harvest aborted
-                    throw new HarvestClosedException(
-                            "Harvest " + harvest + " has been aborted.");
-                default:
-                    throw new HTTPException("PUT",
-                            uri.toString(),
-                            response.getStatus(),
-                            json,
-                            response.getContentAsString());
-            }
-        } catch (InterruptedException | ExecutionException |
-                TimeoutException e) {
-            throw new HTTPException("POST", uri.toString(), e);
+
+        Request.Builder builder = new Request.Builder()
+                .header("Accept", "application/json")
+                .put(new RequestBody() {
+                    @Override
+                    public MediaType contentType() {
+                        return MediaType.get("application/json");
+                    }
+                    @Override
+                    public void writeTo(BufferedSink bufferedSink) throws IOException {
+                        bufferedSink.writeString(json, StandardCharsets.UTF_8);
+                    }
+                })
+                .url(uri);
+        Request request = builder.build();
+        Response response = getClient().newCall(request).execute();
+
+        switch (response.code()) {
+            case 204: // success
+                break;
+            case 480: // harvest ended (this should never happen)
+                throw new HarvestClosedException(
+                        "Harvest " + harvest + " is no longer available.");
+            case 481: // harvest aborted
+                throw new HarvestClosedException(
+                        "Harvest " + harvest + " has been aborted.");
+            default:
+                throw new HTTPException("PUT",
+                        uri, response.code(), json, response.body().string());
         }
     }
 
@@ -172,32 +169,35 @@ final class MetaslurpService implements SinkService {
      * Populates {@link #harvest}.
      */
     private void createHarvest(final String serviceKey) throws IOException {
-        final URI uri = getEndpointURI().resolve("/api/v1/harvests");
+        final String uri = getEndpointURI().resolve("/api/v1/harvests").toString();
         final String json = "{\"service_key\":\"" + serviceKey + "\"}";
 
         LOGGER.debug("Creating harvest: {}", json);
-        try {
-            ContentResponse response = getClient()
-                    .newRequest(uri)
-                    .method(HttpMethod.POST)
-                    .header("Content-Type", "application/json")
-                    .content(new StringContentProvider(json), "application/json")
-                    .send();
-            if (response.getStatus() == HttpStatus.CREATED_201) {
-                String entity = response.getContentAsString();
-                JSONObject entityJSON = new JSONObject(entity);
-                harvest = new MetaslurpHarvest(
-                        entityJSON.getString("key"), numEntities);
-            } else {
-                throw new HTTPException("POST",
-                        uri.toString(),
-                        response.getStatus(),
-                        json,
-                        response.getContentAsString());
-            }
-        } catch (InterruptedException | ExecutionException |
-                TimeoutException e) {
-            throw new HTTPException("POST", uri.toString(), e);
+
+        Request.Builder builder = new Request.Builder()
+                .header("Accept", "application/json")
+                .post(new RequestBody() {
+                    @Override
+                    public MediaType contentType() {
+                        return MediaType.get("application/json");
+                    }
+                    @Override
+                    public void writeTo(BufferedSink bufferedSink) throws IOException {
+                        bufferedSink.writeString(json, StandardCharsets.UTF_8);
+                    }
+                })
+                .url(uri);
+        Request request = builder.build();
+        Response response = getClient().newCall(request).execute();
+        String entity = response.body().string();
+
+        if (response.code() == 201) {
+            JSONObject entityJSON = new JSONObject(entity);
+            harvest = new MetaslurpHarvest(
+                    entityJSON.getString("key"), numEntities);
+        } else {
+            throw new HTTPException("POST",
+                    uri, response.code(), json, entity);
         }
     }
 
@@ -207,28 +207,36 @@ final class MetaslurpService implements SinkService {
             return;
         }
         this.harvest.setHarvest(harvest);
-        final URI uri = getEndpointURI().resolve(this.harvest.getPath());
+        final String uri = getEndpointURI().resolve(this.harvest.getPath()).toString();
         final String json = this.harvest.toJSON();
 
         LOGGER.debug("Updating status of {}: {}", uri, json);
-        try {
-            ContentResponse response = getClient()
-                    .newRequest(uri)
-                    .method("PATCH")
-                    .header("Content-Type", "application/json")
-                    .content(new StringContentProvider(json), "application/json")
-                    .send();
-            if (response.getStatus() != HttpStatus.NO_CONTENT_204) {
-                throw new HTTPException("PATCH",
-                        uri.toString(),
-                        response.getStatus(),
-                        json,
-                        response.getContentAsString());
-            }
-        } catch (InterruptedException | ExecutionException |
-                TimeoutException e) {
-            throw new HTTPException("PATCH", uri.toString(), e);
+
+        Request.Builder builder = new Request.Builder()
+                .method("PATCH", null)
+                .header("Accept", "application/json")
+                .patch(new RequestBody() {
+                    @Override
+                    public MediaType contentType() {
+                        return MediaType.get("application/json");
+                    }
+                    @Override
+                    public void writeTo(BufferedSink bufferedSink) throws IOException {
+                        bufferedSink.writeString(json, StandardCharsets.UTF_8);
+                    }
+                })
+                .url(uri);
+        Request request = builder.build();
+        Response response = getClient().newCall(request).execute();
+
+        if (response.code() != 204) {
+            throw new HTTPException("PATCH",
+                    uri.toString(),
+                    response.code(),
+                    json,
+                    response.body().string());
         }
+
     }
 
     private String toJSON(ConcreteEntity entity) {

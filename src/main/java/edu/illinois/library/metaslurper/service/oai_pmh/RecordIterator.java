@@ -3,7 +3,7 @@ package edu.illinois.library.metaslurper.service.oai_pmh;
 import edu.illinois.library.metaslurper.entity.Element;
 import edu.illinois.library.metaslurper.service.ConcurrentIterator;
 import edu.illinois.library.metaslurper.service.EndOfIterationException;
-import org.eclipse.jetty.client.HttpClient;
+import okhttp3.OkHttpClient;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -25,7 +25,7 @@ class RecordIterator<T> extends AbstractIterator<T>
     private String endpointURI, resumptionToken, metadataPrefix;
     private Instant from, until;
 
-    RecordIterator(HttpClient client,
+    RecordIterator(OkHttpClient client,
                    String endpointURI,
                    String metadataPrefix,
                    Instant from,

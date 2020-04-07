@@ -5,9 +5,9 @@ import edu.illinois.library.metaslurper.entity.ConcreteEntity;
 import edu.illinois.library.metaslurper.entity.Element;
 import edu.illinois.library.metaslurper.entity.Entity;
 import edu.illinois.library.metaslurper.entity.Variant;
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -19,9 +19,7 @@ import java.util.HashSet;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -145,7 +143,7 @@ final class MedusaBookTrackerService implements SourceService {
 
     private static final long REQUEST_TIMEOUT = 30;
 
-    private HttpClient client;
+    private OkHttpClient client;
 
     private final AtomicBoolean isClosed = new AtomicBoolean();
 
@@ -168,14 +166,6 @@ final class MedusaBookTrackerService implements SourceService {
     @Override
     public void close() {
         isClosed.set(true);
-
-        if (client != null) {
-            try {
-                client.stop();
-            } catch (Exception e) {
-                LOGGER.error("close(): " + e.getMessage());
-            }
-        }
     }
 
     @Override
@@ -188,15 +178,14 @@ final class MedusaBookTrackerService implements SourceService {
         return PRIVATE_NAME;
     }
 
-    private synchronized HttpClient getClient() {
+    private synchronized OkHttpClient getClient() {
         if (client == null) {
-            client = new HttpClient(new SslContextFactory());
-            client.setFollowRedirects(true);
-            try {
-                client.start();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+            OkHttpClient.Builder builder = new OkHttpClient.Builder()
+                    .followRedirects(true)
+                    .connectTimeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
+                    .readTimeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
+                    .writeTimeout(REQUEST_TIMEOUT, TimeUnit.SECONDS);
+            client = builder.build();
         }
         return client;
     }
@@ -214,20 +203,18 @@ final class MedusaBookTrackerService implements SourceService {
         if (lastModified != null) {
             uri += "&last_modified_after=" + lastModified.getEpochSecond();
         }
-        try {
-            ContentResponse response = getClient()
-                    .newRequest(uri)
-                    .header("Accept", "application/json")
-                    .timeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
-                    .send();
-            String body = response.getContentAsString();
-            JSONObject jobj = new JSONObject(body);
-            numEntities = jobj.getInt("numResults");
-            windowSize = jobj.getInt("windowSize");
-        } catch (ExecutionException | InterruptedException |
-                TimeoutException e) {
-            throw new HTTPException("GET", uri, e);
-        }
+
+        Request.Builder builder = new Request.Builder()
+                .method("GET", null)
+                .header("Accept", "application/json")
+                .url(uri);
+        Request request = builder.build();
+        Response response = getClient().newCall(request).execute();
+        String body = response.body().string();
+
+        JSONObject jobj = new JSONObject(body);
+        numEntities = jobj.getInt("numResults");
+        windowSize = jobj.getInt("windowSize");
     }
 
     @Override
@@ -271,32 +258,24 @@ final class MedusaBookTrackerService implements SourceService {
         LOGGER.debug("Fetching {} results (page {} of {}): {}",
                 windowSize, pageNumber, numPages, uri);
 
-        try {
-            ContentResponse response = getClient().newRequest(uri)
-                    .header("Accept", "application/json")
-                    .timeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
-                    .send();
-            if (response.getStatus() == 200) {
-                String body = response.getContentAsString();
+        Request.Builder builder = new Request.Builder()
+                .method("GET", null)
+                .header("Accept", "application/json")
+                .url(uri);
+        Request request = builder.build();
+        Response response = getClient().newCall(request).execute();
+        String body = response.body().string();
 
-                JSONObject jobj = new JSONObject(body);
-                JSONArray jarr = jobj.getJSONArray("results");
+        if (response.code() == 200) {
+            JSONObject jobj = new JSONObject(body);
+            JSONArray jarr = jobj.getJSONArray("results");
 
-                for (int i = 0; i < jarr.length(); i++) {
-                    jobj = jarr.getJSONObject(i);
-                    batch.add(new BookTrackerEntity(jobj));
-                }
-            } else {
-                throw new HTTPException(
-                        "GET",
-                        uri,
-                        response.getStatus(),
-                        null,
-                        response.getContentAsString());
+            for (int i = 0; i < jarr.length(); i++) {
+                jobj = jarr.getJSONObject(i);
+                batch.add(new BookTrackerEntity(jobj));
             }
-        } catch (ExecutionException | InterruptedException |
-                TimeoutException e) {
-            throw new HTTPException("GET", uri, e);
+        } else {
+            throw new HTTPException("GET", uri, response.code(), null, body);
         }
         LOGGER.debug("Fetched {} results", batch.size());
     }

@@ -3,7 +3,7 @@ package edu.illinois.library.metaslurper.service.oai_pmh;
 import edu.illinois.library.metaslurper.entity.Element;
 import edu.illinois.library.metaslurper.service.ConcurrentIterator;
 import edu.illinois.library.metaslurper.service.EndOfIterationException;
-import org.eclipse.jetty.client.HttpClient;
+import okhttp3.OkHttpClient;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -23,7 +23,7 @@ class SetIterator<T> extends AbstractIterator<T>
     private final AtomicInteger index = new AtomicInteger();
     private String endpointURI, resumptionToken;
 
-    SetIterator(HttpClient client,
+    SetIterator(OkHttpClient client,
                 String endpointURI,
                 int numSets,
                 ElementTransformer tx) {
