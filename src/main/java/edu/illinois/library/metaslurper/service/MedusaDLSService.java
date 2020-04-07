@@ -2,12 +2,10 @@ package edu.illinois.library.metaslurper.service;
 
 import edu.illinois.library.metaslurper.config.Configuration;
 import edu.illinois.library.metaslurper.entity.Entity;
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.AuthenticationStore;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.util.BasicAuthentication;
-import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
+import okhttp3.Credentials;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -15,14 +13,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.URI;
 import java.time.Instant;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -48,7 +43,7 @@ final class MedusaDLSService implements SourceService {
 
     static final long REQUEST_TIMEOUT = 30;
 
-    private static HttpClient client;
+    private static OkHttpClient client;
 
     private final AtomicBoolean isClosed = new AtomicBoolean();
 
@@ -56,22 +51,19 @@ final class MedusaDLSService implements SourceService {
 
     private Instant lastModified;
 
-    static synchronized HttpClient getClient() {
+    static synchronized OkHttpClient getClient() {
         if (client == null) {
-            client = new HttpClient(new SslContextFactory());
-            client.setFollowRedirects(true);
-
-            AuthenticationStore auth = client.getAuthenticationStore();
-            auth.addAuthenticationResult(new BasicAuthentication.BasicResult(
-                    URI.create(getEndpointURI()),
-                    getUsername(),
-                    getSecret()));
-
-            try {
-                client.start();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+            OkHttpClient.Builder builder = new OkHttpClient.Builder()
+                    .followRedirects(true)
+                    .authenticator((route, response) -> {
+                        String credential = Credentials.basic(getUsername(), getSecret());
+                        return response.request().newBuilder()
+                                .header("Authorization", credential).build();
+                    })
+                    .connectTimeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
+                    .readTimeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
+                    .writeTimeout(REQUEST_TIMEOUT, TimeUnit.SECONDS);
+            client = builder.build();
         }
         return client;
     }
@@ -112,14 +104,6 @@ final class MedusaDLSService implements SourceService {
     @Override
     public void close() {
         isClosed.set(true);
-
-        if (client != null) {
-            try {
-                client.stop();
-            } catch (Exception e) {
-                LOGGER.error("close(): " + e.getMessage());
-            }
-        }
     }
 
     @Override
@@ -133,36 +117,27 @@ final class MedusaDLSService implements SourceService {
     }
 
     @Override
-    public int numEntities() throws HTTPException {
+    public int numEntities() throws IOException {
         if (numEntities < 0) {
             String uri = getHarvestURI();
 
             if (lastModified != null) {
                 uri += "?last_modified_after=" + lastModified.getEpochSecond();
             }
+            Request.Builder builder = new Request.Builder()
+                    .method("GET", null)
+                    .header("Accept", "application/json")
+                    .url(uri);
+            Request request = builder.build();
+            Response response = getClient().newCall(request).execute();
+            String body = response.body().string();
             try {
-                ContentResponse response = getClient()
-                        .newRequest(uri)
-                        .header("Accept", "application/json")
-                        .timeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
-                        .send();
-                String body = response.getContentAsString();
-                try {
-                    JSONObject jobj = new JSONObject(body);
-                    numEntities = jobj.getInt("numResults");
-                    windowSize = jobj.getInt("windowSize");
-                } catch (JSONException e) {
-                    throw new HTTPException(
-                            "GET",
-                            uri,
-                            response.getStatus(),
-                            null,
-                            response.getContentAsString(),
-                            e);
-                }
-            } catch (ExecutionException | InterruptedException |
-                    TimeoutException e) {
-                throw new HTTPException("GET", uri, e);
+                JSONObject jobj = new JSONObject(body);
+                numEntities = jobj.getInt("numResults");
+                windowSize = jobj.getInt("windowSize");
+            } catch (JSONException e) {
+                throw new HTTPException(
+                        "GET", uri, response.code(), null, body, e);
             }
         }
         return numEntities;
@@ -220,67 +195,55 @@ final class MedusaDLSService implements SourceService {
         LOGGER.debug("Fetching batch {} of {}: {}",
                 batchIndex + 1, numBatches, uri);
 
-        try {
-            ContentResponse response = getClient().newRequest(uri)
-                    .header("Accept", "application/json")
-                    .timeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
-                    .send();
-            String body = response.getContentAsString();
-            if (response.getStatus() == 200) {
-                JSONObject jobj = new JSONObject(body);
-                JSONArray jarr = jobj.getJSONArray("results");
-                for (int i = 0; i < jarr.length(); i++) {
-                    batch.add(jarr.getJSONObject(i).getString("uri"));
-                }
-            } else {
-                throw new HTTPException(
-                        "GET",
-                        uri,
-                        response.getStatus(),
-                        null,
-                        response.getContentAsString());
+        Request.Builder builder = new Request.Builder()
+                .method("GET", null)
+                .header("Accept", "application/json")
+                .url(uri);
+        Request request = builder.build();
+        Response response = getClient().newCall(request).execute();
+        String body = response.body().string();
+
+        if (response.code() == 200) {
+            JSONObject jobj = new JSONObject(body);
+            JSONArray jarr = jobj.getJSONArray("results");
+            for (int i = 0; i < jarr.length(); i++) {
+                batch.add(jarr.getJSONObject(i).getString("uri"));
             }
-        } catch (ExecutionException | InterruptedException |
-                TimeoutException e) {
-            throw new HTTPException("GET", uri, e);
+        } else {
+            throw new HTTPException("GET", uri, response.code(), null, body);
         }
+
         LOGGER.debug("Fetched {} results", batch.size());
     }
 
     private Entity fetchEntity(String uri) throws IOException {
         LOGGER.debug("Fetching entity: {}", uri);
-        try {
-            ContentResponse response = getClient().newRequest(uri)
-                    .header("Accept", "application/json")
-                    .timeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
-                    .send();
-            switch (response.getStatus()) {
-                case HttpStatus.OK_200:
-                    String body = response.getContentAsString();
-                    JSONObject jobj = new JSONObject(body);
-                    String variant = jobj.getString("class");
-                    switch (variant) {
-                        case "Agent":
-                            return new MedusaDLSAgent(jobj, uri);
-                        case "Collection":
-                            return new MedusaDLSCollection(jobj);
-                        case "Item":
-                            return new MedusaDLSItem(jobj);
-                        default:
-                            throw new IllegalArgumentException(
-                                    "Unrecognized variant: " + variant);
-                    }
-                default:
-                    throw new HTTPException(
-                            "GET",
-                            uri,
-                            response.getStatus(),
-                            null,
-                            response.getContentAsString());
-            }
-        } catch (ExecutionException | InterruptedException |
-                TimeoutException e) {
-            throw new HTTPException("GET", uri, e);
+
+        Request.Builder builder = new Request.Builder()
+                .method("GET", null)
+                .header("Accept", "application/json")
+                .url(uri);
+        Request request = builder.build();
+        Response response = getClient().newCall(request).execute();
+        String body = response.body().string();
+
+        switch (response.code()) {
+            case 200:
+                JSONObject jobj = new JSONObject(body);
+                String variant = jobj.getString("class");
+                switch (variant) {
+                    case "Agent":
+                        return new MedusaDLSAgent(jobj, uri);
+                    case "Collection":
+                        return new MedusaDLSCollection(jobj);
+                    case "Item":
+                        return new MedusaDLSItem(jobj);
+                    default:
+                        throw new IllegalArgumentException(
+                                "Unrecognized variant: " + variant);
+                }
+            default:
+                throw new HTTPException("GET", uri, response.code(), null, body);
         }
     }
 
