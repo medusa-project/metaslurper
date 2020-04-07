@@ -83,13 +83,15 @@ public class IDNCEntityTest {
     @Test
     public void testGetElements() {
         Set<Element> elements = instance.getElements();
-        assertEquals(6, elements.size());
+        assertEquals(7, elements.size());
         assertEquals("Chicago Packer",
                 elementValue("publicationTitle", elements));
         assertEquals("Chicago Packer, 9 January 1937 - Page 4",
                 elementValue("title", elements));
         assertEquals("CHP19370109.1.3",
                 elementValue("previousPageID", elements));
+        assertEquals("Digitized Newspapers",
+                elementValue("service", elements));
         assertEquals("9 January 1937",
                 elementValue("date", elements));
         assertEquals("CHP19370109.1.5",

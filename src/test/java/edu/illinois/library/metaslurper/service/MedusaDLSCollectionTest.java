@@ -19,7 +19,7 @@ import static org.junit.Assert.*;
 public class MedusaDLSCollectionTest {
 
     private static final String COLLECTION_URI =
-            "https://digital.library.illinois.edu/collections/81180450-e3fb-012f-c5b6-0019b9e633c5-2.json";
+            "https://digital.library.illinois.edu/harvest/collections/81180450-e3fb-012f-c5b6-0019b9e633c5-2.json";
 
     private static HttpClient client;
 
@@ -58,7 +58,7 @@ public class MedusaDLSCollectionTest {
     @Test
     public void testGetAccessImages() {
         Set<Image> expected = Set.of(
-                new Image("s3://medusa-main/1164/2754/2519/access/2014_12996_393_004.jp2",
+                new Image("s3://medusa-main/67/2412/access/11100019t.jp2",
                         Image.Crop.FULL, 0, true));
         Set<Image> actual = instance.getAccessImages();
         assertEquals(expected, actual);

@@ -58,7 +58,7 @@ public class MedusaDLSItemTest {
     @Test
     public void testGetAccessImages() {
         Set<Image> expected = Set.of(
-                new Image("s3://medusa-main/1164/2754/2519/access/2014_12996_393_004.jp2",
+                new Image("s3://medusa-main/1164/2754/2519/access/2014_12996_393_001.jp2",
                         Image.Crop.FULL, 0, true));
         Set<Image> actual = instance.getAccessImages();
         assertEquals(expected, actual);

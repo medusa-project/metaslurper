@@ -39,7 +39,8 @@ public class MedusaDLSAgentTest {
     @Test
     public void testGetElements() {
         Set<Element> expected = Set.of(
-                new Element("name", "Motley, Harriette"));
+                new Element("name", "Motley, Harriette"),
+                new Element("service", "Digital Special Collections"));
         Set<Element> actual = instance.getElements();
         assertEquals(expected, actual);
     }

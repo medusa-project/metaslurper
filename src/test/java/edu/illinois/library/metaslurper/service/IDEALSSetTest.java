@@ -27,7 +27,7 @@ public class IDEALSSetTest {
 
     @Test
     public void testGetElements() {
-        assertEquals(2, instance.getElements().size());
+        assertEquals(3, instance.getElements().size());
     }
 
     @Test

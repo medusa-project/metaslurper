@@ -5,6 +5,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 import static org.junit.Assert.*;
 
@@ -26,7 +27,7 @@ public class MedusaBookTrackerServiceTest {
     public void testNumEntitiesIncremental() throws Exception {
         int totalCount = instance.numEntities();
 
-        instance.setLastModified(Instant.ofEpochSecond(1533913634));
+        instance.setLastModified(Instant.now().minus(60, ChronoUnit.DAYS));
         assertTrue(instance.numEntities() < totalCount);
     }
 
