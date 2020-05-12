@@ -2,19 +2,41 @@
 
 Metaslurper is a command-line tool that slurps (harvests) digital object
 properties and metadata from one or more source services, normalizes it, and
-uploads it to a sink service. It supports efficient multi-threaded streaming of
-large numbers of entities from any number of source services, and support for
-new services is straightforward to implement.
+uploads it to a sink service. It supports:
+
+* efficient streaming of large numbers of entities from any number of source
+  services
+* throttling
+* multi-threaded harvesting
+* incremental harvesting
+* harvest count limits
+
+Support for new source and sink services is straightforward to implement.
 
 Metaslurper generally passes along whatever key-value entity metadata the
 source services make available to the sink service without modifying it. The
 sink service decides what to do with these disparate elements: which ones to
-keep, how to map them, etc. This enables the harvester to run with minimal
-configuration, and in conjunction with pretty much any mapping process.
+keep, how to map them, etc. This enables the harvester to be written in a
+generalized way and run with minimal configuration, and in conjunction with
+pretty much any mapping process.
 
-Metaslurper is designed to work in conjunction with the
-[Metaslurp](https://github.com/medusa-project/metaslurp) sink service, but sink
-services are modular, too.
+```
+------------------               ---------------                ----------------
+|                |               |             |   invocation   |              |
+|                |    queries    |             | <------------- |              |
+|                | <------------ |             |                |              |
+| source service |               | metaslurper |    content     | sink service |
+|                |               |             | -------------> |              |
+|                |    content    |             |                |              |
+|                | ------------> |             | status updates |              |
+|                |               |             | -------------> |              |
+------------------               ---------------                ----------------
+```
+
+Metaslurper currently works only with the
+[Metaslurp](https://github.com/medusa-project/metaslurp) sink service, by
+interacting with its [HTTP API](https://metadata.library.illinois.edu/api/v1),
+but sink services are modular, too.
 
 # Requirements
 
@@ -72,7 +94,7 @@ Invoke with no arguments to print a list of available arguments:
 java -jar target/metaslurper-VERSION.jar
 ```
 
-Example invocation:
+Example kitchen-sink invocation:
 
 ```
 java -jar target/metaslurper-VERSION.jar \
@@ -100,11 +122,13 @@ Change it to a random string to print a list of available service keys.
 2. Add it to the return value of
    `e.i.l.m.service.ServiceFactory.allSourceServices()`
 
-The service will probably require a couple of new configuration keys. In AWS,
-these will need to be added as environment variables to the ECS task
-definition. If using Metaslurp as a sink, the value of its
-`METASLURPER_ECS_TASK_DEFINITION` environment variable must then be changed to
-this new version, if it is not already using `latest`.
+The service will probably require a couple of new configuration keys (a.k.a.
+environment variables). In AWS, there are two ways to make these available:
+
+1. Add them to the ECS task definition. If using Metaslurp as a sink, the value
+   of its `METASLURPER_ECS_TASK_DEFINITION` environment variable must then be
+   changed to this new version, if it is not already using `latest`.
+2. Pass them into the task invocation via the ECS API.
 
 ## Adding a sink service
 
@@ -142,4 +166,4 @@ script has been written:
 
 `ecs-run-task.sh <environment> <source service key> <sink service key>`
 
-But they can also be invoked via the AWS web UI or API.
+But they can also be invoked via the ECS API or web UI.
