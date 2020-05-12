@@ -27,7 +27,7 @@ public class MedusaBookTrackerServiceTest {
     public void testNumEntitiesIncremental() throws Exception {
         int totalCount = instance.numEntities();
 
-        instance.setLastModified(Instant.now().minus(60, ChronoUnit.DAYS));
+        instance.setLastModified(Instant.now().minus(1, ChronoUnit.DAYS));
         assertTrue(instance.numEntities() < totalCount);
     }
 

@@ -33,6 +33,7 @@ public class MetaslurpServiceTest {
         item.setServiceKey("test");
         item.getElements().add(new Element("title", "test"));
         instance.setNumEntitiesToIngest(1);
+        instance.setSourceKey("test");
         instance.ingest(item);
     }
 
@@ -41,6 +42,7 @@ public class MetaslurpServiceTest {
         GenericEntity item = new GenericEntity();
         item.setSinkID("cats");
         instance.setNumEntitiesToIngest(1);
+        instance.setSourceKey("test");
         instance.ingest(item);
     }
 
