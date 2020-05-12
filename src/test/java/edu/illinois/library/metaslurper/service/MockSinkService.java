@@ -41,6 +41,10 @@ public class MockSinkService implements SinkService {
     }
 
     @Override
+    public void setSourceKey(String sourceKey) {
+    }
+
+    @Override
     public void updateHarvest(Harvest stats) {
     }
 

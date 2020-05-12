@@ -22,9 +22,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -111,21 +109,30 @@ final class MetaslurpService implements SinkService {
     }
 
     @Override
+    public void setSourceKey(String sourceKey) throws IOException {
+        // Create a harvest.
+        // The harvest key environment variable here will be:
+        //
+        // 1. Non-null, typically indicating that a harvest has been started by
+        //    the counterpart web app and its key passed into the container/VM
+        //    in which this app is running, as the value of this environment
+        //    variable.
+        // 2. Null if a harvest has not yet been created, which will typically
+        //    be the case when the application is invoked directly via the
+        //    command line.
+        final String harvestKey =
+                System.getenv("SERVICE_SINK_METASLURP_HARVEST_KEY");
+        if (harvestKey != null && !harvestKey.isEmpty()) { // (1)
+            harvest = new MetaslurpHarvest(harvestKey, numEntities);
+        } else { // (2)
+            createHarvest(sourceKey);
+        }
+    }
+
+    @Override
     public void ingest(ConcreteEntity entity) throws IOException {
         if (isClosed.get()) {
             throw new IllegalStateException("Instance is closed.");
-        }
-
-        synchronized (this) {
-            if (harvest == null) {
-                final String harvestKey =
-                        System.getenv("SERVICE_SINK_METASLURP_HARVEST_KEY");
-                if (harvestKey != null && !harvestKey.isEmpty()) {
-                    harvest = new MetaslurpHarvest(harvestKey, numEntities);
-                } else {
-                    createHarvest(entity.getServiceKey());
-                }
-            }
         }
 
         final String uri = getURI(entity).toString();
@@ -169,6 +176,10 @@ final class MetaslurpService implements SinkService {
      * Populates {@link #harvest}.
      */
     private void createHarvest(final String serviceKey) throws IOException {
+        if (harvest != null) {
+            throw new RuntimeException("A harvest already exists. " +
+                    "This is probably a bug.");
+        }
         final String uri = getEndpointURI().resolve("/api/v1/harvests").toString();
         final String json = "{\"service_key\":\"" + serviceKey + "\"}";
 

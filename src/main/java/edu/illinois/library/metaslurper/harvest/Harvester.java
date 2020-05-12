@@ -57,6 +57,7 @@ public final class Harvester {
 
             harvest.setLifecycle(Lifecycle.RUNNING);
             sink.setNumEntitiesToIngest(numEntities);
+            sink.setSourceKey(source.getKey());
 
             if (numThreads > 0) {
                 LOGGER.info("Harvesting {} entities from {} into {} using {} threads",
