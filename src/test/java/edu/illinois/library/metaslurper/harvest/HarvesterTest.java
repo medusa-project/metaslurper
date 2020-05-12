@@ -44,6 +44,21 @@ public class HarvesterTest {
     }
 
     @Test
+    public void testHarvestWithNoEntitiesToHarvest() {
+        Harvest harvest = new Harvest();
+        try (MockSourceService source = new MockSourceService();
+             MockSinkService sink = new MockSinkService()) {
+            source.setNumEntities(0);
+            instance.harvest(source, sink, harvest);
+            assertEquals(0, sink.getIngestedEntities().size());
+            assertEquals(0, harvest.getNumSucceeded());
+            assertEquals(0, harvest.getNumFailed());
+            assertEquals(0, harvest.numMessages());
+            assertEquals(Lifecycle.SUCCEEDED, harvest.getLifecycle());
+        }
+    }
+
+    @Test
     public void testHarvestWithNoFailures() throws Exception {
         Harvest harvest = new Harvest();
         try (MockSourceService source = new MockSourceService();
@@ -114,7 +129,7 @@ public class HarvesterTest {
     }
 
     @Test
-    public void testHarvestWithSourceNumItemsMethodThrowingIOException() {
+    public void testHarvestWithSourceNumEntitiesMethodThrowingIOException() {
         Harvest harvest = new Harvest();
         try (MockErroringSourceService1 source = new MockErroringSourceService1();
              MockSinkService sink = new MockSinkService()) {
@@ -124,7 +139,7 @@ public class HarvesterTest {
     }
 
     @Test
-    public void testHarvestWithSourceNumItemsMethodThrowingUnsupportedOperationException() {
+    public void testHarvestWithSourceNumEntitiesMethodThrowingUnsupportedOperationException() {
         Harvest harvest = new Harvest();
         try (SourceService source = new MockNonCountingSourceService();
              MockSinkService sink = new MockSinkService()) {
@@ -137,7 +152,7 @@ public class HarvesterTest {
     }
 
     @Test
-    public void testHarvestWithSourceItemsMethodThrowingIOException() {
+    public void testHarvestWithSourceEntitiesMethodThrowingIOException() {
         Harvest harvest = new Harvest();
         try (MockErroringSourceService2 source = new MockErroringSourceService2();
              MockSinkService sink = new MockSinkService()) {

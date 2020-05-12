@@ -52,14 +52,15 @@ public final class Harvester {
         try {
             int numEntities = getNumEntities(source);
             harvest.setNumEntities(numEntities);
-            numEntities = harvest.getCanonicalNumEntities();
-            final int numThreads = Math.min(numEntities, Application.getNumThreads());
-
             harvest.setLifecycle(Lifecycle.RUNNING);
             sink.setNumEntitiesToIngest(numEntities);
             sink.setSourceKey(source.getKey());
 
-            if (numThreads > 0) {
+            if (numEntities != 0) {
+                numEntities = harvest.getCanonicalNumEntities();
+                final int numThreads = (numEntities > 0) ?
+                        Math.min(numEntities, Application.getNumThreads()) :
+                        Application.getNumThreads();
                 LOGGER.info("Harvesting {} entities from {} into {} using {} threads",
                         numEntities, source, sink, numThreads);
 
@@ -165,12 +166,17 @@ public final class Harvester {
         }
     }
 
+    /**
+     * @return The number of entities available in the given service,
+     *         disregarding any limit set in the application configuration. If
+     *         the count is unknown, {@code -1} is returned.
+     */
     private static int getNumEntities(SourceService source) throws IOException {
         int numEntities;
         try {
             numEntities = source.numEntities();
         } catch (UnsupportedOperationException e) {
-            numEntities = 0;
+            numEntities = -1;
         }
         return numEntities;
     }

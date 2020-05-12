@@ -70,7 +70,9 @@ public final class Harvest {
      * Must only be called after {@link #setNumEntities(int)} and {@link
      * #setMaxNumEntities(int)}.
      *
-     * @return The number of entities to be harvested.
+     * @return The number of entities to be harvested. May be {@code -1} to
+     *         indicate an unknown number.
+     * @see #getNumEntities()
      */
     int getCanonicalNumEntities() {
         int tmp = numEntities;
@@ -101,6 +103,12 @@ public final class Harvest {
         return messages;
     }
 
+    /**
+     * @return The number of entities available in the source service, or
+     *         {@code -1} to indicate "unknown." (This may not be the same as
+     *         the number of entities to be harvested.)
+     * @see #getCanonicalNumEntities()
+     */
     public synchronized int getNumEntities() {
         return numEntities;
     }
@@ -152,7 +160,8 @@ public final class Harvest {
 
     /**
      * @param numEntities Number of entities reported to be available in the
-     *                    source service.
+     *                    source service. Supply {@code -1} to indicate
+     *                    "unknown."
      */
     synchronized void setNumEntities(int numEntities) {
         this.numEntities = numEntities;
@@ -160,10 +169,10 @@ public final class Harvest {
 
     @Override
     public String toString() {
-        return String.format("%s: %s [%d total] [%d succeeded] [%d failed]",
+        return String.format("%s: %s [%s total] [%d succeeded] [%d failed]",
                 getClass().getSimpleName(),
                 getLifecycle(),
-                getNumEntities(),
+                (getNumEntities() > -1) ? getNumEntities() : "unknown",
                 getNumSucceeded(),
                 getNumFailed());
     }
