@@ -173,6 +173,12 @@ final class IllinoisDataBankService implements SourceService {
     @Override
     public void close() {
         isClosed.set(true);
+        if (client != null) {
+            // If OkHttp isn't shut down manually, it will keep the app running
+            // for a time after a harvest instead of immediately exiting.
+            client.dispatcher().executorService().shutdown();
+            client.connectionPool().evictAll();
+        }
     }
 
     private void checkClosed() {
