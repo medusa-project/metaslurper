@@ -48,30 +48,34 @@ public final class Harvester {
     public void harvest(final SourceService source,
                         final SinkService sink,
                         final Harvest harvest) {
-        final int numThreads       = Application.getNumThreads();
-        final CountDownLatch latch = new CountDownLatch(numThreads);
-        final ExecutorService pool = Executors.newFixedThreadPool(numThreads);
+        ExecutorService pool = null;
         try {
-            final int numSourceEntities                   = getNumEntities(source);
-            final ConcurrentIterator<? extends Entity> it = source.entities();
+            int numEntities = getNumEntities(source);
+            harvest.setNumEntities(numEntities);
+            numEntities = harvest.getCanonicalNumEntities();
+            final int numThreads = Math.min(numEntities, Application.getNumThreads());
 
             harvest.setLifecycle(Lifecycle.RUNNING);
-            harvest.setNumEntities(numSourceEntities);
-            final int numEntities = harvest.getCanonicalNumEntities();
             sink.setNumEntitiesToIngest(numEntities);
 
-            for (int i = 0; i < numThreads; i++) {
-                pool.submit(() -> harvestInThread(harvest, source, sink, it,
-                        latch));
-            }
+            if (numThreads > 0) {
+                LOGGER.info("Harvesting {} entities from {} into {} using {} threads",
+                        numEntities, source, sink, numThreads);
 
-            LOGGER.info("Harvesting {} entities from {} into {} using {} threads",
-                    numEntities, source, sink, numThreads);
-
-            try {
-                latch.await();
-            } catch (InterruptedException e) {
-                LOGGER.info(e.getMessage(), e);
+                final CountDownLatch latch = new CountDownLatch(numThreads);
+                pool = Executors.newFixedThreadPool(numThreads);
+                final ConcurrentIterator<? extends Entity> it = source.entities();
+                for (int i = 0; i < numThreads; i++) {
+                    pool.submit(() -> harvestInThread(harvest, source, sink, it,
+                            latch));
+                }
+                try {
+                    latch.await();
+                } catch (InterruptedException e) {
+                    LOGGER.info(e.getMessage(), e);
+                }
+            } else {
+                LOGGER.info("Nothing to harvest");
             }
         } catch (IOException | UncheckedIOException e) {
             harvest.setLifecycle(Lifecycle.FAILED);
@@ -84,7 +88,9 @@ public final class Harvester {
                 LOGGER.error("Failed to update final harvest status: {}",
                         e.getMessage(), e);
             } finally {
-                pool.shutdown();
+                if (pool != null) {
+                    pool.shutdown();
+                }
             }
         }
     }
