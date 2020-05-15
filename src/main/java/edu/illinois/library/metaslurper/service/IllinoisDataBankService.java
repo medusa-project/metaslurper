@@ -8,6 +8,7 @@ import edu.illinois.library.metaslurper.entity.Variant;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import okhttp3.ResponseBody;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -256,16 +257,19 @@ final class IllinoisDataBankService implements SourceService {
                 .url(uri);
         Request request = builder.build();
         Response response = getClient().newCall(request).execute();
-        String body = response.body().string();
-        if (response.code() == 200) {
-            JSONArray results = new JSONArray(body);
-            for (int i = 0; i < results.length(); i++) {
-                JSONObject dataSet = results.getJSONObject(i);
-                dataSetURIs.add(dataSet.getString("url"));
+        try (ResponseBody body = response.body()) {
+            final String bodyStr = body.string();
+            if (response.code() == 200) {
+                JSONArray results = new JSONArray(bodyStr);
+                for (int i = 0; i < results.length(); i++) {
+                    JSONObject dataSet = results.getJSONObject(i);
+                    dataSetURIs.add(dataSet.getString("url"));
+                }
+                LOGGER.debug("Fetched {} data sets", dataSetURIs.size());
+            } else {
+                throw new HTTPException(
+                        "GET", uri, response.code(), null, bodyStr);
             }
-            LOGGER.debug("Fetched {} data sets", dataSetURIs.size());
-        } else {
-            throw new HTTPException("GET", uri, response.code(), null, body);
         }
     }
 
@@ -281,15 +285,17 @@ final class IllinoisDataBankService implements SourceService {
                 .method("GET", null)
                 .header("Accept", "application/json")
                 .url(uri);
-        Request request = builder.build();
+        Request request   = builder.build();
         Response response = getClient().newCall(request).execute();
-        String body = response.body().string();
-        if (response.code() == 200) {
-            JSONObject jobj = new JSONObject(body);
-            return jobj.getBoolean("is_test") ? null : new DataSet(jobj);
-        } else {
-            throw new HTTPException(
-                    "GET", uri, response.code(), null, body);
+        try (ResponseBody body = response.body()) {
+            final String bodyStr = body.string();
+            if (response.code() == 200) {
+                JSONObject jobj = new JSONObject(bodyStr);
+                return jobj.getBoolean("is_test") ? null : new DataSet(jobj);
+            } else {
+                throw new HTTPException(
+                        "GET", uri, response.code(), null, bodyStr);
+            }
         }
     }
 

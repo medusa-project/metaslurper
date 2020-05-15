@@ -6,6 +6,7 @@ import okhttp3.Credentials;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import okhttp3.ResponseBody;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -126,7 +127,6 @@ final class MedusaDLSService implements SourceService {
     public int numEntities() throws IOException {
         if (numEntities < 0) {
             String uri = getHarvestURI();
-
             if (lastModified != null) {
                 uri += "?last_modified_after=" + lastModified.getEpochSecond();
             }
@@ -136,14 +136,16 @@ final class MedusaDLSService implements SourceService {
                     .url(uri);
             Request request = builder.build();
             Response response = getClient().newCall(request).execute();
-            String body = response.body().string();
-            try {
-                JSONObject jobj = new JSONObject(body);
-                numEntities = jobj.getInt("numResults");
-                windowSize = jobj.getInt("windowSize");
-            } catch (JSONException e) {
-                throw new HTTPException(
-                        "GET", uri, response.code(), null, body, e);
+            try (ResponseBody body = response.body()) {
+                final String bodyStr = body.string();
+                try {
+                    JSONObject jobj = new JSONObject(bodyStr);
+                    numEntities     = jobj.getInt("numResults");
+                    windowSize      = jobj.getInt("windowSize");
+                } catch (JSONException e) {
+                    throw new HTTPException(
+                            "GET", uri, response.code(), null, bodyStr, e);
+                }
             }
         }
         return numEntities;
@@ -207,18 +209,19 @@ final class MedusaDLSService implements SourceService {
                 .url(uri);
         Request request = builder.build();
         Response response = getClient().newCall(request).execute();
-        String body = response.body().string();
-
-        if (response.code() == 200) {
-            JSONObject jobj = new JSONObject(body);
-            JSONArray jarr = jobj.getJSONArray("results");
-            for (int i = 0; i < jarr.length(); i++) {
-                batch.add(jarr.getJSONObject(i).getString("uri"));
+        try (ResponseBody body = response.body()) {
+            String bodyStr = body.string();
+            if (response.code() == 200) {
+                JSONObject jobj = new JSONObject(bodyStr);
+                JSONArray jarr = jobj.getJSONArray("results");
+                for (int i = 0; i < jarr.length(); i++) {
+                    batch.add(jarr.getJSONObject(i).getString("uri"));
+                }
+            } else {
+                throw new HTTPException(
+                        "GET", uri, response.code(), null, bodyStr);
             }
-        } else {
-            throw new HTTPException("GET", uri, response.code(), null, body);
         }
-
         LOGGER.debug("Fetched {} results", batch.size());
     }
 
@@ -231,25 +234,27 @@ final class MedusaDLSService implements SourceService {
                 .url(uri);
         Request request = builder.build();
         Response response = getClient().newCall(request).execute();
-        String body = response.body().string();
-
-        switch (response.code()) {
-            case 200:
-                JSONObject jobj = new JSONObject(body);
-                String variant = jobj.getString("class");
-                switch (variant) {
-                    case "Agent":
-                        return new MedusaDLSAgent(jobj, uri);
-                    case "Collection":
-                        return new MedusaDLSCollection(jobj);
-                    case "Item":
-                        return new MedusaDLSItem(jobj);
-                    default:
-                        throw new IllegalArgumentException(
-                                "Unrecognized variant: " + variant);
-                }
-            default:
-                throw new HTTPException("GET", uri, response.code(), null, body);
+        try (ResponseBody body = response.body()) {
+            final String bodyStr = body.string();
+            switch (response.code()) {
+                case 200:
+                    JSONObject jobj = new JSONObject(bodyStr);
+                    String variant = jobj.getString("class");
+                    switch (variant) {
+                        case "Agent":
+                            return new MedusaDLSAgent(jobj, uri);
+                        case "Collection":
+                            return new MedusaDLSCollection(jobj);
+                        case "Item":
+                            return new MedusaDLSItem(jobj);
+                        default:
+                            throw new IllegalArgumentException(
+                                    "Unrecognized variant: " + variant);
+                    }
+                default:
+                    throw new HTTPException(
+                            "GET", uri, response.code(), null, bodyStr);
+            }
         }
     }
 

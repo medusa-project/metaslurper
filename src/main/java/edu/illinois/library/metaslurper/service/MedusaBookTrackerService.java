@@ -8,6 +8,7 @@ import edu.illinois.library.metaslurper.entity.Variant;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import okhttp3.ResponseBody;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -216,11 +217,11 @@ final class MedusaBookTrackerService implements SourceService {
                 .url(uri);
         Request request = builder.build();
         Response response = getClient().newCall(request).execute();
-        String body = response.body().string();
-
-        JSONObject jobj = new JSONObject(body);
-        numEntities = jobj.getInt("numResults");
-        windowSize = jobj.getInt("windowSize");
+        try (ResponseBody body = response.body()) {
+            JSONObject jobj = new JSONObject(body.string());
+            numEntities     = jobj.getInt("numResults");
+            windowSize      = jobj.getInt("windowSize");
+        }
     }
 
     @Override
@@ -270,18 +271,19 @@ final class MedusaBookTrackerService implements SourceService {
                 .url(uri);
         Request request = builder.build();
         Response response = getClient().newCall(request).execute();
-        String body = response.body().string();
-
-        if (response.code() == 200) {
-            JSONObject jobj = new JSONObject(body);
-            JSONArray jarr = jobj.getJSONArray("results");
-
-            for (int i = 0; i < jarr.length(); i++) {
-                jobj = jarr.getJSONObject(i);
-                batch.add(new BookTrackerEntity(jobj));
+        try (ResponseBody body = response.body()) {
+            final String bodyStr = body.string();
+            if (response.code() == 200) {
+                JSONObject jobj = new JSONObject(bodyStr);
+                JSONArray jarr = jobj.getJSONArray("results");
+                for (int i = 0; i < jarr.length(); i++) {
+                    jobj = jarr.getJSONObject(i);
+                    batch.add(new BookTrackerEntity(jobj));
+                }
+            } else {
+                throw new HTTPException(
+                        "GET", uri, response.code(), null, bodyStr);
             }
-        } else {
-            throw new HTTPException("GET", uri, response.code(), null, body);
         }
         LOGGER.debug("Fetched {} results", batch.size());
     }

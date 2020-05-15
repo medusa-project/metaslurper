@@ -12,6 +12,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import okhttp3.ResponseBody;
 import okio.BufferedSink;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -173,9 +174,12 @@ final class MetaslurpService implements SinkService {
                 throw new HarvestClosedException(
                         "Harvest " + harvest + " has been aborted.");
             default:
-                throw new HTTPException("PUT",
-                        uri, response.code(), json, response.body().string());
+                try (ResponseBody body = response.body()) {
+                    throw new HTTPException("PUT",
+                            uri, response.code(), json, body.string());
+                }
         }
+
     }
 
     /**

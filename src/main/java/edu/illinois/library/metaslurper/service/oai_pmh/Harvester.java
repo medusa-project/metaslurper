@@ -4,6 +4,7 @@ import edu.illinois.library.metaslurper.service.ConcurrentIterator;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import okhttp3.ResponseBody;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -115,33 +116,32 @@ public final class Harvester implements AutoCloseable {
                 .url(uri);
         Request request = builder.build();
         Response response = getClient().newCall(request).execute();
-        try {
-            if (response.code() == 200) {
-                try (InputStream is = response.body().byteStream()) {
-                    DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-                    DocumentBuilder docBuilder = factory.newDocumentBuilder();
-                    Document doc = docBuilder.parse(is);
-                    XPathFactory xPathfactory = XPathFactory.newInstance();
-                    XPath xpath = xPathfactory.newXPath();
-                    XPathExpression expr =
-                            xpath.compile("//resumptionToken/@completeListSize");
-                    int value;
-                    try {
-                        value = Integer.parseInt(expr.evaluate(doc));
-                    } catch (NumberFormatException e) {
-                        expr = xpath.compile("count(//" + elementToCount + ")");
-                        value = Integer.parseInt(expr.evaluate(doc));
-                    }
-                    return value;
+        if (response.code() == 200) {
+            try (ResponseBody body = response.body();
+                 InputStream is = body.byteStream()) {
+                DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+                DocumentBuilder docBuilder = factory.newDocumentBuilder();
+                Document doc = docBuilder.parse(is);
+                XPathFactory xPathfactory = XPathFactory.newInstance();
+                XPath xpath = xPathfactory.newXPath();
+                XPathExpression expr =
+                        xpath.compile("//resumptionToken/@completeListSize");
+                int value;
+                try {
+                    value = Integer.parseInt(expr.evaluate(doc));
+                } catch (NumberFormatException e) {
+                    expr  = xpath.compile("count(//" + elementToCount + ")");
+                    value = Integer.parseInt(expr.evaluate(doc));
                 }
-            } else {
-                throw new IOException("Received HTTP " + response.code() +
-                        " for " + uri);
+                return value;
+            } catch (IOException e) {
+                throw e;
+            } catch (Exception e) {
+                throw new IOException(e);
             }
-        } catch (IOException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new IOException(e);
+        } else {
+            throw new IOException("Received HTTP " + response.code() +
+                    " for " + uri);
         }
     }
 

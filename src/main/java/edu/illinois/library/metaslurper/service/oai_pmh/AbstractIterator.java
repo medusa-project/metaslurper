@@ -3,6 +3,7 @@ package edu.illinois.library.metaslurper.service.oai_pmh;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import okhttp3.ResponseBody;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -39,25 +40,24 @@ abstract class AbstractIterator<T> {
                 .url(uri);
         Request request = builder.build();
         Response response = client.newCall(request).execute();
-
-        try {
-            if (response.code() == 200) {
+        if (response.code() == 200) {
+            try (ResponseBody body = response.body();
+                InputStream is = body.byteStream()) {
                 final DocumentBuilderFactory factory =
-                        DocumentBuilderFactory.newInstance();
+                     DocumentBuilderFactory.newInstance();
                 factory.setNamespaceAware(true);
                 final DocumentBuilder docBuilder = factory.newDocumentBuilder();
-                try (InputStream is = response.body().byteStream()) {
-                    return docBuilder.parse(is);
-                }
-            } else {
-                throw new IOException("Received HTTP " + response.code() +
-                        " for " + uri);
+                return docBuilder.parse(is);
+            } catch (IOException e) {
+                throw e;
+            } catch (Exception e) {
+                throw new IOException(e);
             }
-        } catch (IOException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new IOException(e);
+        } else {
+            throw new IOException("Received HTTP " + response.code() +
+                    " for " + uri);
         }
+
     }
 
 }
