@@ -12,7 +12,6 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
-import okhttp3.ResponseBody;
 import okio.BufferedSink;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -162,24 +161,21 @@ final class MetaslurpService implements SinkService {
                 })
                 .url(uri);
         Request request = builder.build();
-        Response response = getClient().newCall(request).execute();
-
-        switch (response.code()) {
-            case 204: // success
-                break;
-            case 480: // harvest ended (this should never happen)
-                throw new HarvestClosedException(
-                        "Harvest " + harvest + " is no longer available.");
-            case 481: // harvest aborted
-                throw new HarvestClosedException(
-                        "Harvest " + harvest + " has been aborted.");
-            default:
-                try (ResponseBody body = response.body()) {
+        try (Response response = getClient().newCall(request).execute()) {
+            switch (response.code()) {
+                case 204: // success
+                    break;
+                case 480: // harvest ended (this should never happen)
+                    throw new HarvestClosedException(
+                            "Harvest " + harvest + " is no longer available.");
+                case 481: // harvest aborted
+                    throw new HarvestClosedException(
+                            "Harvest " + harvest + " has been aborted.");
+                default:
                     throw new HTTPException("PUT",
-                            uri, response.code(), json, body.string());
-                }
+                            uri, response.code(), json, response.body().string());
+            }
         }
-
     }
 
     /**
@@ -209,16 +205,16 @@ final class MetaslurpService implements SinkService {
                 })
                 .url(uri);
         Request request = builder.build();
-        Response response = getClient().newCall(request).execute();
-        String entity = response.body().string();
-
-        if (response.code() == 201) {
-            JSONObject entityJSON = new JSONObject(entity);
-            harvest = new MetaslurpHarvest(
-                    entityJSON.getString("key"), numEntities);
-        } else {
-            throw new HTTPException("POST",
-                    uri, response.code(), json, entity);
+        try (Response response = getClient().newCall(request).execute()) {
+            final String entity = response.body().string();
+            if (response.code() == 201) {
+                JSONObject entityJSON = new JSONObject(entity);
+                harvest = new MetaslurpHarvest(
+                        entityJSON.getString("key"), numEntities);
+            } else {
+                throw new HTTPException("POST",
+                        uri, response.code(), json, entity);
+            }
         }
     }
 
@@ -247,16 +243,12 @@ final class MetaslurpService implements SinkService {
                 })
                 .url(uri);
         Request request = builder.build();
-        Response response = getClient().newCall(request).execute();
-
-        if (response.code() != 204) {
-            throw new HTTPException("PATCH",
-                    uri.toString(),
-                    response.code(),
-                    json,
-                    response.body().string());
+        try (Response response = getClient().newCall(request).execute()) {
+            if (response.code() != 204) {
+                throw new HTTPException("PATCH",
+                        uri, response.code(), json, response.body().string());
+            }
         }
-
     }
 
     private String toJSON(ConcreteEntity entity) {

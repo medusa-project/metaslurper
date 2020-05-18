@@ -8,7 +8,6 @@ import edu.illinois.library.metaslurper.entity.Variant;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
-import okhttp3.ResponseBody;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -216,17 +215,16 @@ final class MedusaBookTrackerService implements SourceService {
                 .header("Accept", "application/json")
                 .url(uri);
         Request request = builder.build();
-        Response response = getClient().newCall(request).execute();
-        try (ResponseBody body = response.body()) {
-            JSONObject jobj = new JSONObject(body.string());
-            numEntities     = jobj.getInt("numResults");
-            windowSize      = jobj.getInt("windowSize");
+        try (Response response = getClient().newCall(request).execute()) {
+            JSONObject jobj = new JSONObject(response.body().string());
+            numEntities = jobj.getInt("numResults");
+            windowSize = jobj.getInt("windowSize");
         }
     }
 
     @Override
     public ConcurrentIterator<? extends Entity> entities() {
-        final Queue<Entity> batch = new ConcurrentLinkedQueue<>();
+        final Queue<Entity> batch      = new ConcurrentLinkedQueue<>();
         final AtomicInteger pageNumber = new AtomicInteger(1);
 
         // Return an iterator that consumes the queue.
@@ -270,9 +268,8 @@ final class MedusaBookTrackerService implements SourceService {
                 .header("Accept", "application/json")
                 .url(uri);
         Request request = builder.build();
-        Response response = getClient().newCall(request).execute();
-        try (ResponseBody body = response.body()) {
-            final String bodyStr = body.string();
+        try (Response response = getClient().newCall(request).execute()) {
+            final String bodyStr = response.body().string();
             if (response.code() == 200) {
                 JSONObject jobj = new JSONObject(bodyStr);
                 JSONArray jarr = jobj.getJSONArray("results");
@@ -292,7 +289,7 @@ final class MedusaBookTrackerService implements SourceService {
     public void setLastModified(Instant lastModified)
             throws UnsupportedOperationException {
         this.lastModified = lastModified;
-        this.numEntities = -1;
+        this.numEntities  = -1;
     }
 
     @Override

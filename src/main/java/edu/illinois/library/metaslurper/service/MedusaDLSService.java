@@ -6,7 +6,6 @@ import okhttp3.Credentials;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
-import okhttp3.ResponseBody;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -135,9 +134,8 @@ final class MedusaDLSService implements SourceService {
                     .header("Accept", "application/json")
                     .url(uri);
             Request request = builder.build();
-            Response response = getClient().newCall(request).execute();
-            try (ResponseBody body = response.body()) {
-                final String bodyStr = body.string();
+            try (Response response = getClient().newCall(request).execute()) {
+                final String bodyStr = response.body().string();
                 try {
                     JSONObject jobj = new JSONObject(bodyStr);
                     numEntities     = jobj.getInt("numResults");
@@ -171,7 +169,6 @@ final class MedusaDLSService implements SourceService {
                         fetchBatch(batch, batchIndex.getAndIncrement());
                     }
                 }
-
                 try {
                     return fetchEntity(batch.remove());
                 } catch (NoSuchElementException e) {
@@ -208,9 +205,8 @@ final class MedusaDLSService implements SourceService {
                 .header("Accept", "application/json")
                 .url(uri);
         Request request = builder.build();
-        Response response = getClient().newCall(request).execute();
-        try (ResponseBody body = response.body()) {
-            String bodyStr = body.string();
+        try (Response response = getClient().newCall(request).execute()) {
+            String bodyStr = response.body().string();
             if (response.code() == 200) {
                 JSONObject jobj = new JSONObject(bodyStr);
                 JSONArray jarr = jobj.getJSONArray("results");
@@ -233,9 +229,8 @@ final class MedusaDLSService implements SourceService {
                 .header("Accept", "application/json")
                 .url(uri);
         Request request = builder.build();
-        Response response = getClient().newCall(request).execute();
-        try (ResponseBody body = response.body()) {
-            final String bodyStr = body.string();
+        try (Response response = getClient().newCall(request).execute()) {
+            final String bodyStr = response.body().string();
             switch (response.code()) {
                 case 200:
                     JSONObject jobj = new JSONObject(bodyStr);
@@ -262,7 +257,7 @@ final class MedusaDLSService implements SourceService {
     public void setLastModified(Instant lastModified)
             throws UnsupportedOperationException {
         this.lastModified = lastModified;
-        this.numEntities = -1;
+        this.numEntities  = -1;
     }
 
     @Override

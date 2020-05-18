@@ -8,7 +8,6 @@ import edu.illinois.library.metaslurper.entity.Variant;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
-import okhttp3.ResponseBody;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -213,7 +212,6 @@ final class IllinoisDataBankService implements SourceService {
     @Override
     public synchronized int numEntities() throws IOException {
         checkClosed();
-
         if (dataSetURIs.isEmpty()) {
             fetchDataSetURIs();
         }
@@ -224,16 +222,13 @@ final class IllinoisDataBankService implements SourceService {
     public synchronized ConcurrentIterator<? extends Entity> entities()
             throws IOException {
         checkClosed();
-
         if (dataSetURIs.isEmpty()) {
             fetchDataSetURIs();
         }
-
         return () -> {
             if (dataSetURIs.peek() == null) {
                 throw new EndOfIterationException();
             }
-
             DataSet dataSet;
             do {
                 dataSet = fetchDataSet(dataSetURIs.remove());
@@ -256,9 +251,8 @@ final class IllinoisDataBankService implements SourceService {
                 .header("Accept", "application/json")
                 .url(uri);
         Request request = builder.build();
-        Response response = getClient().newCall(request).execute();
-        try (ResponseBody body = response.body()) {
-            final String bodyStr = body.string();
+        try (Response response = getClient().newCall(request).execute()) {
+            final String bodyStr = response.body().string();
             if (response.code() == 200) {
                 JSONArray results = new JSONArray(bodyStr);
                 for (int i = 0; i < results.length(); i++) {
@@ -285,10 +279,9 @@ final class IllinoisDataBankService implements SourceService {
                 .method("GET", null)
                 .header("Accept", "application/json")
                 .url(uri);
-        Request request   = builder.build();
-        Response response = getClient().newCall(request).execute();
-        try (ResponseBody body = response.body()) {
-            final String bodyStr = body.string();
+        Request request = builder.build();
+        try (Response response = getClient().newCall(request).execute()) {
+            final String bodyStr = response.body().string();
             if (response.code() == 200) {
                 JSONObject jobj = new JSONObject(bodyStr);
                 return jobj.getBoolean("is_test") ? null : new DataSet(jobj);
