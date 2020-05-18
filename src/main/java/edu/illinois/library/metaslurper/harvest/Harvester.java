@@ -197,8 +197,6 @@ public final class Harvester {
      * SourceService}.
      */
     private static void reportSourceError(Harvest harvest, Throwable t) {
-        LOGGER.error("Failed to retrieve from source: {}", t.getMessage(), t);
-
         final List<String> lines = new ArrayList<>();
         lines.add("******** SOURCE ERROR ********");
         lines.add("Time: " + Instant.now());
@@ -207,6 +205,7 @@ public final class Harvester {
         String message = String.join("\n", lines) + "\n";
         harvest.addMessage(message);
         harvest.incrementNumFailed();
+        LOGGER.error("Failed to retrieve from source: {}", message, t);
     }
 
     /**
@@ -235,8 +234,6 @@ public final class Harvester {
     private static void reportSinkError(Harvest harvest,
                                         ConcreteEntity entity,
                                         Throwable t) {
-        LOGGER.error("Failed to ingest into sink: {}", t.getMessage(), t);
-
         final List<String> lines = new ArrayList<>();
         lines.add("******** SINK ERROR ********");
         lines.add("Time: " + Instant.now());
@@ -247,6 +244,7 @@ public final class Harvester {
         String message = String.join("\n", lines) + "\n";
         harvest.addMessage(message);
         harvest.incrementNumFailed();
+        LOGGER.error("Failed to ingest into sink: {}", message, t);
     }
 
     private static String getMessage(Throwable t) {
