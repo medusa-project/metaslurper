@@ -14,6 +14,8 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 import java.util.Arrays;
@@ -44,6 +46,9 @@ public final class Application {
         }
     }
 
+    private static final Logger LOGGER =
+            LoggerFactory.getLogger(Application.class);
+
     private static int numThreads   = 1;
     private static int throttleMsec = 0;
 
@@ -51,6 +56,7 @@ public final class Application {
      * @param args See {@link Argument}.
      */
     public static void main(String[] args) {
+        LOGGER.info("Command arguments: " + String.join(" ", args));
         try {
             CommandLineParser parser = new DefaultParser();
             CommandLine cmd = parser.parse(getOptions(), args);
