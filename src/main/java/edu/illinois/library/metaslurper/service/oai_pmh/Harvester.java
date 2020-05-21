@@ -4,7 +4,6 @@ import edu.illinois.library.metaslurper.service.ConcurrentIterator;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
-import okhttp3.ResponseBody;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -115,33 +114,33 @@ public final class Harvester implements AutoCloseable {
                 .method("GET", null)
                 .url(uri);
         Request request = builder.build();
-        Response response = getClient().newCall(request).execute();
-        if (response.code() == 200) {
-            try (ResponseBody body = response.body();
-                 InputStream is = body.byteStream()) {
-                DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-                DocumentBuilder docBuilder = factory.newDocumentBuilder();
-                Document doc = docBuilder.parse(is);
-                XPathFactory xPathfactory = XPathFactory.newInstance();
-                XPath xpath = xPathfactory.newXPath();
-                XPathExpression expr =
-                        xpath.compile("//resumptionToken/@completeListSize");
-                int value;
-                try {
-                    value = Integer.parseInt(expr.evaluate(doc));
-                } catch (NumberFormatException e) {
-                    expr  = xpath.compile("count(//" + elementToCount + ")");
-                    value = Integer.parseInt(expr.evaluate(doc));
+        try (Response response = getClient().newCall(request).execute()) {
+            if (response.code() == 200) {
+                try (InputStream is = response.body().byteStream()) {
+                    DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+                    DocumentBuilder docBuilder = factory.newDocumentBuilder();
+                    Document doc = docBuilder.parse(is);
+                    XPathFactory xPathfactory = XPathFactory.newInstance();
+                    XPath xpath = xPathfactory.newXPath();
+                    XPathExpression expr =
+                            xpath.compile("//resumptionToken/@completeListSize");
+                    int value;
+                    try {
+                        value = Integer.parseInt(expr.evaluate(doc));
+                    } catch (NumberFormatException e) {
+                        expr = xpath.compile("count(//" + elementToCount + ")");
+                        value = Integer.parseInt(expr.evaluate(doc));
+                    }
+                    return value;
+                } catch (IOException e) {
+                    throw e;
+                } catch (Exception e) {
+                    throw new IOException(e);
                 }
-                return value;
-            } catch (IOException e) {
-                throw e;
-            } catch (Exception e) {
-                throw new IOException(e);
+            } else {
+                throw new IOException("Received HTTP " + response.code() +
+                        " for " + uri);
             }
-        } else {
-            throw new IOException("Received HTTP " + response.code() +
-                    " for " + uri);
         }
     }
 
@@ -153,7 +152,6 @@ public final class Harvester implements AutoCloseable {
         if (endpointURI == null) {
             throw new IllegalStateException("Endpoint URI is not set");
         }
-
         return new RecordIterator<>(getClient(), endpointURI, metadataPrefix,
                 from, until, numRecords(), tx);
     }
@@ -174,7 +172,6 @@ public final class Harvester implements AutoCloseable {
         if (endpointURI == null) {
             throw new IllegalStateException("Endpoint URI is not set");
         }
-
         return new SetIterator<>(getClient(), endpointURI, numSets(), tx);
     }
 
