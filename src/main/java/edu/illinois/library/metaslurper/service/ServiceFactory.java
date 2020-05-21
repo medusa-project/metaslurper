@@ -1,26 +1,19 @@
 package edu.illinois.library.metaslurper.service;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
 
 public final class ServiceFactory {
 
-    private static Set<SourceService> DEFAULT_SOURCE_SERVICES =
-            Collections.unmodifiableSet(
-                    new HashSet<>(Arrays.asList(
-                            new IDEALSService(),
-                            new IDNCService(),
-                            new IllinoisDataBankService(),
-                            new MedusaBookTrackerService(),
-                            new MedusaDLSService(),
-                            new TestSourceService())));
-    private static Set<SinkService> DEFAULT_SINK_SERVICES =
-            Collections.unmodifiableSet(
-                    new HashSet<>(Arrays.asList(
-                            new MetaslurpService(),
-                            new TestSinkService())));
+    private static final Set<SourceService> DEFAULT_SOURCE_SERVICES = Set.of(
+            new IDEALSService(),
+            new IDNCService(),
+            new IllinoisDataBankService(),
+            new MedusaBookTrackerService(),
+            new MedusaDLSService(),
+            new TestSourceService());
+    private static final Set<SinkService> DEFAULT_SINK_SERVICES = Set.of(
+            new MetaslurpService(),
+            new TestSinkService());
 
     private static Set<SourceService> sourceServices;
     private static Set<SinkService> sinkServices;
