@@ -251,6 +251,33 @@ final class MetaslurpService implements SinkService {
         }
     }
 
+    /**
+     * For testing only!
+     */
+    void deleteHarvest() throws IOException {
+        if (harvest == null) {
+            throw new RuntimeException("Harvest does not exist. " +
+                    "This is probably a bug.");
+        }
+        final String uri = getEndpointURI().resolve("/api/v1/harvests/" + harvest.getKey()).toString();
+
+        LOGGER.debug("Deleting harvest");
+
+        Request.Builder builder = new Request.Builder()
+                .header("Accept", "application/json")
+                .delete()
+                .url(uri);
+        Request request = builder.build();
+        try (Response response = getClient().newCall(request).execute()) {
+            if (response.code() == 204) {
+                harvest = null;
+            } else {
+                throw new HTTPException("DELETE",
+                        uri, response.code(), null, response.body().string());
+            }
+        }
+    }
+
     private String toJSON(ConcreteEntity entity) {
         JSONObject jobj = new JSONObject();
         // container sink ID

@@ -26,24 +26,32 @@ public class MetaslurpServiceTest {
 
     @Test
     public void testIngestWithValidEntity() throws Exception {
-        GenericEntity item = new GenericEntity();
-        item.setSinkID("cats");
-        item.setSourceID("cats");
-        item.setSourceURI("http://example.org/test");
-        item.setServiceKey("test");
-        item.getElements().add(new Element("title", "test"));
-        instance.setNumEntitiesToIngest(1);
-        instance.setSourceKey("test");
-        instance.ingest(item);
+        try {
+            GenericEntity item = new GenericEntity();
+            item.setSinkID("cats");
+            item.setSourceID("cats");
+            item.setSourceURI("http://example.org/test");
+            item.setServiceKey("test");
+            item.getElements().add(new Element("title", "test"));
+            instance.setNumEntitiesToIngest(1);
+            instance.setSourceKey("test");
+            instance.ingest(item);
+        } finally {
+            instance.deleteHarvest();
+        }
     }
 
     @Test(expected = IOException.class)
     public void testIngestWithInvalidEntity() throws Exception {
-        GenericEntity item = new GenericEntity();
-        item.setSinkID("cats");
-        instance.setNumEntitiesToIngest(1);
-        instance.setSourceKey("test");
-        instance.ingest(item);
+        try {
+            GenericEntity item = new GenericEntity();
+            item.setSinkID("cats");
+            instance.setNumEntitiesToIngest(1);
+            instance.setSourceKey("test");
+            instance.ingest(item);
+        } finally {
+            instance.deleteHarvest();
+        }
     }
 
     @Test
