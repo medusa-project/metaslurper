@@ -73,13 +73,13 @@ final class MetaslurpService implements SinkService {
 
     private synchronized OkHttpClient getClient() {
         if (client == null) {
+            // N.B.: if an Authenticator is supplied to the Builder, the client
+            // will use reactive auth (i.e. waiting for HTTP 401 +
+            // WWW-Authenticate header) for every request. Instead, we supply
+            // credentials in request Authorization headers in order to
+            // enable pre-emptive auth, which is more efficient.
             OkHttpClient.Builder builder = new OkHttpClient.Builder()
                     .followRedirects(true)
-                    .authenticator((route, response) -> {
-                        String credential = Credentials.basic(getUsername(), getSecret());
-                        return response.request().newBuilder()
-                                .header("Authorization", credential).build();
-                    })
                     .connectTimeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
                     .readTimeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
                     .writeTimeout(REQUEST_TIMEOUT, TimeUnit.SECONDS);
@@ -149,6 +149,7 @@ final class MetaslurpService implements SinkService {
 
         Request.Builder builder = new Request.Builder()
                 .header("Accept", "application/json")
+                .header("Authorization", Credentials.basic(getUsername(), getSecret()))
                 .put(new RequestBody() {
                     @Override
                     public MediaType contentType() {
@@ -193,6 +194,7 @@ final class MetaslurpService implements SinkService {
 
         Request.Builder builder = new Request.Builder()
                 .header("Accept", "application/json")
+                .header("Authorization", Credentials.basic(getUsername(), getSecret()))
                 .post(new RequestBody() {
                     @Override
                     public MediaType contentType() {
@@ -231,6 +233,7 @@ final class MetaslurpService implements SinkService {
 
         Request.Builder builder = new Request.Builder()
                 .header("Accept", "application/json")
+                .header("Authorization", Credentials.basic(getUsername(), getSecret()))
                 .patch(new RequestBody() {
                     @Override
                     public MediaType contentType() {
@@ -265,6 +268,7 @@ final class MetaslurpService implements SinkService {
 
         Request.Builder builder = new Request.Builder()
                 .header("Accept", "application/json")
+                .header("Authorization", Credentials.basic(getUsername(), getSecret()))
                 .delete()
                 .url(uri);
         Request request = builder.build();
