@@ -21,6 +21,10 @@ generalized way and run with minimal configuration, and in conjunction with
 pretty much any mapping process.
 
 ```
+                             command-line invocation
+                        (for development & demonstration)
+                                        |
+                                        V
 ------------------               ---------------                ----------------
 |                |               |             |   invocation   |              |
 |                |    queries    |             | <------------- |              |
@@ -33,10 +37,11 @@ pretty much any mapping process.
 ------------------               ---------------                ----------------
 ```
 
-Metaslurper currently works only with the
-[Metaslurp](https://github.com/medusa-project/metaslurp) sink service, by
-interacting with its [HTTP API](https://metadata.library.illinois.edu/api/v1),
-but sink services are modular, too.
+Sink services are modular, too. Currently, two are available:
+
+1. [Metaslurp](https://github.com/medusa-project/metaslurp) (by
+interacting with its [HTTP API](https://metadata.library.illinois.edu/api/v1))
+2. TestSinkService, which ingests content into nowhere
 
 # Requirements
 
@@ -47,7 +52,7 @@ Docker is required for deployment to AWS ECR. See "AWS ECS Notes" below.
 
 # Build
 
-`mvn clean package -DskipTests`
+`$ mvn clean package -DskipTests`
 
 # Configure
 
@@ -98,8 +103,8 @@ Example kitchen-sink invocation:
 
 ```
 java -jar target/metaslurper-VERSION.jar \
-    -source test \
-    -sink $SERVICE_SINK_METASLURP_KEY \
+    -source test_source \
+    -sink test_sink \
     -log_level info \
     -max_entities 50 \
     -threads 2 \
@@ -107,8 +112,8 @@ java -jar target/metaslurper-VERSION.jar \
     -incremental 1535380169
 ```
 
-`test` is a built-in test source service that will harvest some fake content.
-Change it to a random string to print a list of available service keys.
+Change `test_source` to a random string to print a list of available service
+keys.
 
 ## In Docker
 

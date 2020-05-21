@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 final class TestSourceService implements SourceService {
 
     private static final List<Entity> ENTITIES = new ArrayList<>();
-    private static final String KEY = "test";
+    private static final String KEY = "test_source";
 
     private Instant lastModified;
 
@@ -47,12 +47,12 @@ final class TestSourceService implements SourceService {
 
     @Override
     public String getKey() {
-        return "test";
+        return KEY;
     }
 
     @Override
     public String getName() {
-        return "Test";
+        return getClass().getSimpleName();
     }
 
     @Override
