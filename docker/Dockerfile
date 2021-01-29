@@ -5,7 +5,12 @@
 
 FROM openjdk:15-slim
 
-WORKDIR .
+# The out-of-the-box JDK doesn't trust IDNC's SSL certificate. Download its
+# root certificate and import it into the Java key store.
+RUN echo | openssl s_client -servername idnc.library.illinois.edu -connect idnc.library.illinois.edu:443 \
+    | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > idnc.crt \
+    && keytool -noprompt -storepass changeit -import -alias idnc -keystore $JAVA_HOME/lib/security/cacerts -file idnc.crt \
+    && rm idnc.crt
 
 COPY ./target/metaslurper-1.0-SNAPSHOT.jar ./metaslurper.jar
 
