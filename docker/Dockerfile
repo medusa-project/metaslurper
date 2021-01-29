@@ -3,7 +3,7 @@
 # See the README.
 #
 
-FROM openjdk:11-jre-slim
+FROM openjdk:15-slim
 
 WORKDIR .
 
