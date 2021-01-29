@@ -349,30 +349,32 @@ final class IDNCService implements SourceService {
                 HttpResponse<String> response = getClient().send(request,
                         HttpResponse.BodyHandlers.ofString());
 
-                if (response.statusCode() == 200) {
-                    // The response entity is expected to look like:
-                    //
-                    // <html>
-                    //  <head>
-                    //    <title>Live Illinois Recently Modified Page Detector</title>
-                    //  </head>
-                    //  <body>
-                    //    <p>Success. The server is now creating the resulting
-                    //    XML file. Once that is finished, it will be written to
-                    //    <a href="https://idnc.library.illinois.edu/custom/illinois/web/modified_pageOIDs.xml">
-                    //    https://idnc.library.illinois.edu/custom/illinois/web/modified_pageOIDs.xml</a></p>
-                    //  </body>
-                    // </html>
-                    //
-                    // We need to extract that link.
-                    String entity = response.body();
-                    org.jsoup.nodes.Document doc = Jsoup.parse(entity);
-                    org.jsoup.nodes.Element link = doc.select("a").get(0);
-                    harvestResultsURI = link.absUrl("href");
-                } else {
+                if (response.statusCode() != 200) {
                     throw new IOException("Got HTTP " + response.statusCode() +
                             " for " + uri);
+                } else if (!response.body().contains("<html")) {
+                    throw new IOException("The server is not returning the " +
+                            "expected HTML structure. Contact Veridian tech support.");
                 }
+                // The response entity is expected to look like:
+                //
+                // <html>
+                //  <head>
+                //    <title>Live Illinois Recently Modified Page Detector</title>
+                //  </head>
+                //  <body>
+                //    <p>Success. The server is now creating the resulting
+                //    XML file. Once that is finished, it will be written to
+                //    <a href="https://idnc.library.illinois.edu/custom/illinois/web/modified_pageOIDs.xml">
+                //    https://idnc.library.illinois.edu/custom/illinois/web/modified_pageOIDs.xml</a></p>
+                //  </body>
+                // </html>
+                //
+                // We need to extract that link.
+                String entity = response.body();
+                org.jsoup.nodes.Document doc = Jsoup.parse(entity);
+                org.jsoup.nodes.Element link = doc.select("a").get(0);
+                harvestResultsURI = link.absUrl("href");
             } catch (InterruptedException e) {
                 throw new IOException(e);
             }
