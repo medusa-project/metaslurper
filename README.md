@@ -146,6 +146,8 @@ environment variables). In AWS, there are two ways to make these available:
 * A logger is available via `LoggerFactory.getLogger(Class)`.
 * Configuration should be obtained from
   `e.i.l.m.config.Configuration.getInstance()` rather than `System.getenv()`.
+* Services are free to use any HTTP client. Most services use
+  [OkHttp](https://square.github.io/okhttp/), which is bundled in.
 
 # AWS ECS notes
 

@@ -2,7 +2,7 @@
 
 if [ $# -lt 3 ]
 then
-    echo "Usage: docker-run-task.sh <env> <source key> <sink key>"
+    echo "Usage: docker-run.sh <env> <source key> <sink key>"
     exit 1
 fi
 
