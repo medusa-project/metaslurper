@@ -2,6 +2,9 @@ package edu.illinois.library.metaslurper.service;
 
 import edu.illinois.library.metaslurper.config.Configuration;
 import edu.illinois.library.metaslurper.entity.Entity;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import org.jsoup.Jsoup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,10 +18,6 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
@@ -26,6 +25,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 import java.util.NoSuchElementException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -150,23 +150,19 @@ final class IDNCService implements SourceService {
             // Example: https://idnc.library.illinois.edu/cgi-bin/illinois?a=d&d=CHP19370109.1.4&f=XML
             LOGGER.debug("Fetching page: {}", pageURI);
 
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(pageURI))
-                    .timeout(REQUEST_TIMEOUT)
+            Request request = new Request.Builder()
+                    .method("GET", null)
+                    .url(pageURI)
                     .build();
-            try {
-                HttpResponse<String> response = getClient().send(request,
-                        HttpResponse.BodyHandlers.ofString());
-
-                if (response.statusCode() == 200) {
-                    String body = response.body();
+            try (Response response = getClient().newCall(request).execute()) {
+                if (response.code() == 200) {
+                    String body = response.body().string();
                     return IDNCEntity.fromXML(body);
                 } else {
-                    throw new IOException("Got HTTP " + response.statusCode() +
+                    throw new IOException("Got HTTP " + response.code() +
                             " for " + pageURI);
                 }
-            } catch (InterruptedException | ParserConfigurationException |
-                    SAXException e) {
+            } catch (ParserConfigurationException | SAXException e) {
                 throw new IOException(e);
             }
         }
@@ -182,8 +178,7 @@ final class IDNCService implements SourceService {
 
     private static final String PRIVATE_NAME = "IDNC";
 
-
-    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(60);
+    private static final int REQUEST_TIMEOUT_SECONDS = 60;
 
     /**
      * After a harvest is initiated, the results will be polled at this
@@ -202,7 +197,7 @@ final class IDNCService implements SourceService {
      */
     private static final Duration MAX_POLL_WAIT = Duration.ofMinutes(30);
 
-    private HttpClient client;
+    private OkHttpClient client;
 
     private final AtomicBoolean isClosed           = new AtomicBoolean();
     private final AtomicBoolean isResultsAvailable = new AtomicBoolean();
@@ -220,10 +215,13 @@ final class IDNCService implements SourceService {
 
     private Path harvestResultsFile;
 
-    private synchronized HttpClient getClient() {
+    private synchronized OkHttpClient getClient() {
         if (client == null) {
-            client = HttpClient.newBuilder()
-                    .followRedirects(HttpClient.Redirect.ALWAYS)
+            client = new OkHttpClient.Builder()
+                    .followRedirects(true)
+                    .connectTimeout(REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                    .readTimeout(REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                    .writeTimeout(REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                     .build();
         }
         return client;
@@ -335,24 +333,21 @@ final class IDNCService implements SourceService {
      */
     private synchronized String sendHarvestRequest() throws IOException {
         if (harvestResultsURI == null) {
-            try {
-                final String uri = String.format("%s?lastharvesteddate=%d",
-                        getHarvestScriptURI(), getLastModified());
+            final String uri = String.format("%s?lastharvesteddate=%d",
+                    getHarvestScriptURI(), getLastModified());
 
-                LOGGER.debug("Initiating harvest: {}", uri);
+            LOGGER.debug("Initiating harvest: {}", uri);
 
-                HttpRequest request = HttpRequest.newBuilder()
-                        .uri(URI.create(uri))
-                        .timeout(REQUEST_TIMEOUT)
-                        .build();
-
-                HttpResponse<String> response = getClient().send(request,
-                        HttpResponse.BodyHandlers.ofString());
-
-                if (response.statusCode() != 200) {
-                    throw new IOException("Got HTTP " + response.statusCode() +
+            Request request = new Request.Builder()
+                    .method("GET", null)
+                    .url(uri)
+                    .build();
+            try (Response response = getClient().newCall(request).execute()) {
+                final String entity = response.body().string();
+                if (response.code() != 200) {
+                    throw new IOException("Got HTTP " + response.code() +
                             " for " + uri);
-                } else if (!response.body().contains("<html")) {
+                } else if (!entity.contains("<html")) {
                     throw new IOException("The server is not returning the " +
                             "expected HTML structure. Contact Veridian tech support.");
                 }
@@ -371,12 +366,9 @@ final class IDNCService implements SourceService {
                 // </html>
                 //
                 // We need to extract that link.
-                String entity = response.body();
                 org.jsoup.nodes.Document doc = Jsoup.parse(entity);
                 org.jsoup.nodes.Element link = doc.select("a").get(0);
                 harvestResultsURI = link.absUrl("href");
-            } catch (InterruptedException e) {
-                throw new IOException(e);
             }
         }
         return harvestResultsURI;
@@ -409,35 +401,37 @@ final class IDNCService implements SourceService {
                 LOGGER.debug("Polling harvest results (waited {} min): HEAD {}",
                         wait.toMinutes(), uri);
 
-                HttpRequest request = HttpRequest.newBuilder()
-                        .method("HEAD", HttpRequest.BodyPublishers.noBody())
-                        .uri(URI.create(uri))
-                        .timeout(RESULTS_POLL_INTERVAL)
+                Request request = new Request.Builder()
+                        .method("HEAD", null)
+                        .url(uri)
                         .build();
-                HttpResponse<String> response = getClient().send(request,
-                        HttpResponse.BodyHandlers.ofString());
-                if (response.statusCode() == 200) {
-                    // Before results have arrived, the response entity will be
-                    // a malformed XML string like:
-                    //
-                    // <xml>
-                    //   <info>Started at Fri Sep 21 09:45:26 2018</info>
-                    //
-                    // We'll keep checking the length and break when it has
-                    // increased.
-                    long contentLength = Long.parseLong(
-                            response.headers().firstValue("Content-Length").orElse("0"));
-                    if (contentLength > 150) {
-                        isResultsAvailable.set(true);
-                        break;
+                try (Response response = getClient().newCall(request).execute()) {
+                    if (response.code() == 200) {
+                        // Before results have arrived, the response entity will
+                        // be a malformed XML string like:
+                        //
+                        // <xml>
+                        //   <info>Started at Fri Sep 21 09:45:26 2018</info>
+                        //
+                        // We'll keep checking the length and break when it has
+                        // increased.
+                        String lengthStr = response.headers().get("Content-Length");
+                        if (lengthStr == null) {
+                            lengthStr = "0";
+                        }
+                        long contentLength = Long.parseLong(lengthStr);
+                        if (contentLength > 150) {
+                            isResultsAvailable.set(true);
+                            break;
+                        }
+                    } else {
+                        throw new IOException("Got HTTP " + response.code() +
+                                " for HEAD " + harvestResultsURI);
                     }
-                } else {
-                    throw new IOException("Got HTTP " + response.statusCode() +
-                            " for HEAD " + harvestResultsURI);
-                }
 
-                Thread.sleep(RESULTS_POLL_INTERVAL.toMillis());
-                now = Instant.now();
+                    Thread.sleep(RESULTS_POLL_INTERVAL.toMillis());
+                    now = Instant.now();
+                }
             }
         } catch (InterruptedException | TimeoutException e) {
             throw new IOException(e);
@@ -460,24 +454,20 @@ final class IDNCService implements SourceService {
             LOGGER.debug("Downloading results from {} to {}",
                     harvestResultsURI, harvestResultsFile);
 
-            try {
-                HttpRequest request = HttpRequest.newBuilder()
-                        .uri(URI.create(harvestResultsURI))
-                        .timeout(REQUEST_TIMEOUT)
-                        .build();
-                HttpResponse<InputStream> response = getClient().send(request,
-                        HttpResponse.BodyHandlers.ofInputStream());
+            Request request = new Request.Builder()
+                    .method("GET", null)
+                    .url(harvestResultsURI)
+                    .build();
 
-                if (response.statusCode() == 200) {
-                    try (InputStream is = new BufferedInputStream(response.body())) {
+            try (Response response = getClient().newCall(request).execute()) {
+                if (response.code() == 200) {
+                    try (InputStream is = new BufferedInputStream(response.body().byteStream())) {
                         Files.copy(is, harvestResultsFile);
                     }
                 } else {
-                    throw new IOException("Got HTTP " + response.statusCode() +
+                    throw new IOException("Got HTTP " + response.code() +
                             " for " + harvestResultsURI);
                 }
-            } catch (InterruptedException e) {
-                throw new IOException(e);
             }
         }
         return harvestResultsFile;
