@@ -1,15 +1,15 @@
 # About
 
-Metaslurper is a command-line tool that slurps (harvests) digital object
-properties and metadata from one or more source services, normalizes it, and
-uploads it to a sink service. It supports:
+Metaslurper is a command-line tool that harvests digital object properties and
+metadata from one or more source services, normalizes it, and uploads it to a
+sink service. It supports:
 
-* efficient streaming of large numbers of entities from any number of source
+* Efficient streaming of large numbers of entities from any number of source
   services
-* throttling
-* multi-threaded harvesting
-* incremental harvesting
-* harvest count limits
+* Throttling
+* Multi-threaded harvesting
+* Incremental harvesting
+* Harvest count limits
 
 Support for new source and sink services is straightforward to implement.
 
@@ -17,8 +17,9 @@ Metaslurper generally passes along whatever key-value entity metadata the
 source services make available to the sink service without modifying it. The
 sink service decides what to do with these disparate elements: which ones to
 keep, how to map them, etc. This enables the harvester to be written in a
-generalized way and run with minimal configuration, and in conjunction with
-pretty much any mapping process.
+generalized way and run with little configuration (other than needing to know
+the URLs and authentication info for the various endpoints) and in conjunction
+with pretty much any metadata mapping process.
 
 ```
                              command-line invocation
@@ -45,8 +46,8 @@ interacting with its [HTTP API](https://metadata.library.illinois.edu/api/v1))
 
 # Requirements
 
-The only requirements are JDK 11+ and Maven 3. CPU and memory requirements are
-minimal.
+The only requirements are a JDK (see `docker/Dockerfile` for required version)
+and Maven. CPU and memory requirements are minimal.
 
 Docker is required for deployment to AWS ECR. See "AWS ECS Notes" below.
 
@@ -118,6 +119,12 @@ keys.
 ## In Docker
 
 `docker-run.sh <environment> <source service key> <sink service key>`
+
+# Test
+
+I usually run the tests from my IDE, adding all of the required environment
+variables into the run configuration. You could also create a `test.sh` that
+exports them and the invokes `mvn clean test`.
 
 # Adding services
 

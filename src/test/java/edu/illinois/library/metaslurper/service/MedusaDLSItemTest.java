@@ -76,6 +76,11 @@ public class MedusaDLSItemTest {
     }
 
     @Test
+    public void testGetFullText() {
+        assertEquals("", instance.getFullText());
+    }
+
+    @Test
     public void testGetMediaType() {
         assertNull(instance.getMediaType());
     }

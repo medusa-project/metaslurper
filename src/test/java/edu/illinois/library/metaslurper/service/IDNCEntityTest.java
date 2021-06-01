@@ -83,7 +83,7 @@ public class IDNCEntityTest {
     @Test
     public void testGetElements() {
         Set<Element> elements = instance.getElements();
-        assertEquals(7, elements.size());
+        assertEquals(6, elements.size());
         assertEquals("Chicago Packer",
                 elementValue("publicationTitle", elements));
         assertEquals("Chicago Packer, 9 January 1937 - Page 4",
@@ -96,7 +96,11 @@ public class IDNCEntityTest {
                 elementValue("date", elements));
         assertEquals("CHP19370109.1.5",
                 elementValue("nextPageID", elements));
-        assertTrue(elementValue("fullText", elements).startsWith("MEYER"));
+    }
+
+    @Test
+    public void testGetFullText() {
+        assertTrue(instance.getFullText().startsWith("MEYER"));
     }
 
     @Test

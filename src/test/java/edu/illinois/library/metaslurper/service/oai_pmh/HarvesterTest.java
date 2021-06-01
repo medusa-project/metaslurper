@@ -52,7 +52,7 @@ public class HarvesterTest {
         // 2017-05-05T00:00:00Z
         instance.setUntil(Instant.ofEpochSecond(1493942400));
 
-        assertEquals(111, instance.numRecords());
+        assertEquals(108, instance.numRecords());
     }
 
     @Test
@@ -93,7 +93,7 @@ public class HarvesterTest {
             }
         }
 
-        assertEquals(12, count);
+        assertEquals(10, count);
     }
 
     @Test
