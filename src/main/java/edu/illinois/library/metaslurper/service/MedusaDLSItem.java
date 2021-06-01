@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
 
 class MedusaDLSItem extends MedusaDLSEntity implements ConcreteEntity {
 
-    // Example: https://digital.library.illinois.edu/items/7f3c5580-9975-0134-2096-0050569601ca-8.json
+    // Example: https://digital.library.illinois.edu/harvest/items/7f3c5580-9975-0134-2096-0050569601ca-8.json
     MedusaDLSItem(JSONObject rootObject) {
         super(rootObject);
     }
@@ -34,6 +34,11 @@ class MedusaDLSItem extends MedusaDLSEntity implements ConcreteEntity {
         Set<Element> elements = super.getElements();
         elements.add(new Element("service", MedusaDLSService.PUBLIC_NAME));
         return elements;
+    }
+
+    @Override
+    public String getFullText() {
+        return rootObject.optString("full_text");
     }
 
     @Override

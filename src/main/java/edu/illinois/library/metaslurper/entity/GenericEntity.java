@@ -8,8 +8,8 @@ import java.util.Set;
  */
 public class GenericEntity implements ConcreteEntity {
 
-    private String containerName, containerSinkID, mediaType, sourceID, sinkID,
-            serviceKey, sourceURI;
+    private String containerName, containerSinkID, fullText, mediaType,
+            sourceID, sinkID, serviceKey, sourceURI;
     private Variant variant = Variant.UNKNOWN;
 
     private final Set<Image> accessImages = new HashSet<>();
@@ -33,6 +33,11 @@ public class GenericEntity implements ConcreteEntity {
     @Override
     public Set<Element> getElements() {
         return elements;
+    }
+
+    @Override
+    public String getFullText() {
+        return fullText;
     }
 
     @Override
@@ -76,6 +81,10 @@ public class GenericEntity implements ConcreteEntity {
 
     public void setContainerSinkID(String id) {
         this.containerSinkID = id;
+    }
+
+    public void setFullText(String fullText) {
+        this.fullText = fullText;
     }
 
     public void setMediaType(String mediaType) {

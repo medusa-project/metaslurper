@@ -32,7 +32,7 @@ final class IDNCEntity implements ConcreteEntity {
     private static final Logger LOGGER =
             LoggerFactory.getLogger(IDNCEntity.class);
 
-    private Document doc;
+    private final Document doc;
 
     /**
      * @param xml <a href="https://www.veridiansoftware.com/knowledge-base/veridian-xml-api-documentation/#getpagecontent">
@@ -118,9 +118,9 @@ final class IDNCEntity implements ConcreteEntity {
                     images.add(new Image(uri, Image.Crop.FULL, size, false));
 
                     // square crop
-                    int cropSize = (fullWidth > fullHeight) ? fullHeight : fullWidth;
-                    int cropX = (int) Math.round((fullWidth - cropSize) / 2.0);
-                    int cropY = (int) Math.round((fullHeight - cropSize) / 2.0);
+                    int cropSize = Math.min(fullWidth, fullHeight);
+                    int cropX    = (int) Math.round((fullWidth - cropSize) / 2.0);
+                    int cropY    = (int) Math.round((fullHeight - cropSize) / 2.0);
                     uri = String.format(
                             "%s/cgi-bin/imageserver.pl?oid=%s&color=all&ext=jpg&crop=%d,%d,%d,%d&width=%d&height=%d",
                             IDNCService.getEndpointURI(), getSourceID(),
@@ -144,12 +144,6 @@ final class IDNCEntity implements ConcreteEntity {
             elements.add(new Element("date", date));
         }
 
-        String fullText = string("//PageTextHTML");
-        if (!fullText.isEmpty()) {
-            fullText = Jsoup.parse(fullText).text(); // strip tags
-            elements.add(new Element("fullText", fullText));
-        }
-
         String pubTitle = string("//PublicationMetadata/PublicationTitle");
         if (!pubTitle.isEmpty()) {
             elements.add(new Element("publicationTitle", pubTitle));
@@ -170,6 +164,15 @@ final class IDNCEntity implements ConcreteEntity {
             elements.add(new Element("nextPageID", nextID));
         }
         return elements;
+    }
+
+    @Override
+    public String getFullText() {
+        String fullText = string("//PageTextHTML");
+        if (!fullText.isBlank()) {
+            return Jsoup.parse(fullText).text(); // strip tags
+        }
+        return null;
     }
 
     @Override
