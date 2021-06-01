@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * @author Alex Dolski UIUC
  */
-final class MedusaBookTrackerService implements SourceService {
+final class BookTrackerService implements SourceService {
 
     private static class BookTrackerEntity implements ConcreteEntity {
 
@@ -40,7 +40,7 @@ final class MedusaBookTrackerService implements SourceService {
                 "language", "obj_id", "oclc_number", "subjects", "title",
                 "updated_at" };
 
-        private JSONObject rootObject;
+        private final JSONObject rootObject;
 
         private BookTrackerEntity(JSONObject rootObject) {
             this.rootObject = rootObject;
@@ -134,7 +134,7 @@ final class MedusaBookTrackerService implements SourceService {
     }
 
     private static final Logger LOGGER =
-            LoggerFactory.getLogger(MedusaBookTrackerService.class);
+            LoggerFactory.getLogger(BookTrackerService.class);
 
     private static final String PRIVATE_NAME = "Medusa Book Tracker";
     private static final String PUBLIC_NAME  = "Digitized Books";

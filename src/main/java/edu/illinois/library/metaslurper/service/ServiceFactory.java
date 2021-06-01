@@ -5,10 +5,10 @@ import java.util.Set;
 public final class ServiceFactory {
 
     private static final Set<SourceService> DEFAULT_SOURCE_SERVICES = Set.of(
+            new BookTrackerService(),
             new IDEALSService(),
             new IDNCService(),
             new IllinoisDataBankService(),
-            new MedusaBookTrackerService(),
             new MedusaDLSService(),
             new TestSourceService());
     private static final Set<SinkService> DEFAULT_SINK_SERVICES = Set.of(

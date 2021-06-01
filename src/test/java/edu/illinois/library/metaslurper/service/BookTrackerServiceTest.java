@@ -9,13 +9,13 @@ import java.time.temporal.ChronoUnit;
 
 import static org.junit.Assert.*;
 
-public class MedusaBookTrackerServiceTest {
+public class BookTrackerServiceTest {
 
-    private MedusaBookTrackerService instance;
+    private BookTrackerService instance;
 
     @Before
     public void setUp() {
-        instance = new MedusaBookTrackerService();
+        instance = new BookTrackerService();
     }
 
     @Test
