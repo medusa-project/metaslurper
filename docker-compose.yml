@@ -1,0 +1,16 @@
+##
+# docker-compose file for running tests.
+#
+# Example invocation: docker-compose up --build
+#
+version: '3'
+services:
+  metaslurper:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    env_file:
+      - test.env
+    command: mvn test
+    # docker-compose exec metaslurper /bin/bash
+    #command: bash -c "tail -f /dev/null"

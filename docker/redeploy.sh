@@ -6,6 +6,5 @@ then
     exit 1
 fi
 
-mvn clean package -DskipTests
 docker/docker-build.sh $1
 docker/ecr-push.sh $1
