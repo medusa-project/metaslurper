@@ -11,10 +11,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 		wget
 
 # Install Maven
-RUN wget -q https://mirrors.ocf.berkeley.edu/apache/maven/maven-3/3.8.1/binaries/apache-maven-3.8.1-bin.tar.gz \
-    && tar xfz apache-maven-3.8.1-bin.tar.gz \
-    && mv apache-maven-3.8.1 /opt/maven \
-    && rm apache-maven-3.8.1-bin.tar.gz
+RUN wget -q https://dlcdn.apache.org/maven/maven-3/3.8.4/binaries/apache-maven-3.8.4-bin.tar.gz \
+    && tar xfz apache-maven-3.8.4-bin.tar.gz \
+    && mv apache-maven-3.8.4 /opt/maven \
+    && rm apache-maven-3.8.4-bin.tar.gz
 
 # The out-of-the-box JDK doesn't trust IDNC's SSL certificate. Download its
 # root certificate and import it into the Java key store.
