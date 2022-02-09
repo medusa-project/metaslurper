@@ -40,8 +40,10 @@ abstract class MedusaDLSEntity {
                 JSONObject jelement = jelements.getJSONObject(i);
                 String name = jelement.getString("name");
                 String value = jelement.getString("value");
-                Element element = new Element(name, value);
-                elements.add(element);
+                if (!value.isBlank()) {
+                    Element element = new Element(name, value);
+                    elements.add(element);
+                }
             }
         }
         return elements;
