@@ -72,64 +72,12 @@ final class IDNCEntity implements ConcreteEntity {
 
     @Override
     public Set<Image> getAccessImages() {
-        final Set<Image> images = new HashSet<>();
-
-        // The way to get images from Veridian is through its image
-        // server, imageserver.pl. This endpoint supports the following
-        // arguments:
-        //
-        // oid=[identifier]
-        // color=[all|?]
-        // ext=[jpg|gif|png]
-        // crop=x,y,w,h
-        // width=w
-        // height=h
-        //
-        // It can also deliver unmodified raw images by supplying
-        // getrawimage=true.
-        //
-        // Examples:
-        // http://idnc.library.illinois.edu/cgi-bin/imageserver.pl?oid=TAG19220928.1.1&crop=&color=all&ext=jpg&width=200
-        // http://idnc.library.illinois.edu/cgi-bin/imageserver.pl?oid=TAG19220928.1.1&getrawimage=true
-
-        // master image
+        // Sample image request:
+        // https://idnc.library.illinois.edu/?a=is&oid=AUE19260423.1.3&type=rawimage
         String uri = String.format(
-                "%s/cgi-bin/imageserver.pl?oid=%s&getrawimage=true",
+                "%s/?a=is&oid=%s&type=rawimage",
                 IDNCService.getEndpointURI(), getSourceID());
-        images.add(new Image(uri, Image.Crop.FULL, 0, true));
-
-        final String widthStr = string("//PageMetadata/PageImageWidth");
-        final String heightStr = string("//PageMetadata/PageImageHeight");
-
-        if (!widthStr.isEmpty() && !heightStr.isEmpty()) {
-            final int fullWidth = Integer.parseInt(widthStr);
-            final int fullHeight = Integer.parseInt(heightStr);
-
-            for (int exp = ConcreteEntity.MIN_ACCESS_IMAGE_POWER;
-                 exp <= ConcreteEntity.MAX_ACCESS_IMAGE_POWER;
-                 exp++) {
-                final int size = (int) Math.pow(2, exp);
-                if (size < fullWidth && size < fullHeight) {
-                    // full crop
-                    uri = String.format(
-                            "%s/cgi-bin/imageserver.pl?oid=%s&color=all&ext=jpg&width=%d&height=%d",
-                            IDNCService.getEndpointURI(), getSourceID(),
-                            size, size);
-                    images.add(new Image(uri, Image.Crop.FULL, size, false));
-
-                    // square crop
-                    int cropSize = Math.min(fullWidth, fullHeight);
-                    int cropX    = (int) Math.round((fullWidth - cropSize) / 2.0);
-                    int cropY    = (int) Math.round((fullHeight - cropSize) / 2.0);
-                    uri = String.format(
-                            "%s/cgi-bin/imageserver.pl?oid=%s&color=all&ext=jpg&crop=%d,%d,%d,%d&width=%d&height=%d",
-                            IDNCService.getEndpointURI(), getSourceID(),
-                            cropX, cropY, cropSize, cropSize, size, size);
-                    images.add(new Image(uri, Image.Crop.SQUARE, size, false));
-                }
-            }
-        }
-        return images;
+        return Set.of(new Image(uri, Image.Crop.FULL, 0, true));
     }
 
     @Override
