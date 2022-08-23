@@ -19,16 +19,16 @@ public class IDEALSRecordTest {
         String endpointURI = config.getString("SERVICE_SOURCE_IDEALS_ENDPOINT");
         Harvester harvester = new Harvester();
         harvester.setEndpointURI(endpointURI);
-        harvester.setMetadataPrefix("dim");
+        harvester.setMetadataPrefix("native");
 
         ConcurrentIterator<PMHRecord> it =
-                harvester.records(new DIMElementTransformer());
+                harvester.records(new NativeElementTransformer());
         instance = new IDEALSRecord(it.next());
     }
 
     @Test
     public void testGetElements() {
-        assertEquals(20, instance.getElements().size());
+        assertEquals(22, instance.getElements().size());
     }
 
     @Test

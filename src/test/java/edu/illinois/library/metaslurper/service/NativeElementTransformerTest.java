@@ -19,13 +19,13 @@ import java.io.File;
 
 import static org.junit.Assert.*;
 
-public class DIMElementTransformerTest {
+public class NativeElementTransformerTest {
 
-    private DIMElementTransformer instance;
+    private NativeElementTransformer instance;
 
     @Before
     public void setUp() {
-        instance = new DIMElementTransformer();
+        instance = new NativeElementTransformer();
     }
 
     @Test

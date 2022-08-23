@@ -8,9 +8,12 @@ import org.w3c.dom.Node;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
-final class DIMElementTransformer implements ElementTransformer {
+/**
+ * Transforms an IDEALS {@code native} element in OAI-PMH to a local
+ * counterpart.
+ */
+final class NativeElementTransformer implements ElementTransformer {
 
     /**
      * Transforms the given node into an element whose value corresponds to
@@ -24,7 +27,7 @@ final class DIMElementTransformer implements ElementTransformer {
         final NamedNodeMap attrs = pmhNode.getAttributes();
         if (attrs.getLength() > 0) {
             final List<String> nameParts = new ArrayList<>();
-            for (String s : new String[] { "mdschema", "element", "qualifier"}) {
+            for (String s : new String[] { "schema", "element", "qualifier"}) {
                 Node attr = attrs.getNamedItem(s);
                 if (attr != null) {
                     String value = attr.getNodeValue();
@@ -33,7 +36,7 @@ final class DIMElementTransformer implements ElementTransformer {
                     }
                 }
             }
-            String name = nameParts.stream().collect(Collectors.joining(":"));
+            String name  = String.join(":", nameParts);
             String value = pmhNode.getTextContent();
             if (name != null && !name.isEmpty() &&
                     value != null && !value.isEmpty()) {

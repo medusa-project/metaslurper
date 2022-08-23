@@ -12,7 +12,9 @@ import java.io.IOException;
 import java.time.Instant;
 
 /**
- * Harvests metadata in DIM format from the OAI-PMH endpoint of IDEALS.
+ * Harvests metadata from the OAI-PMH endpoint of
+ * <a href="https://www.ideals.illinois.edu">IDEALS</a>. The {@code native}
+ * metadata format is used.
  */
 final class IDEALSService implements SourceService {
 
@@ -34,7 +36,7 @@ final class IDEALSService implements SourceService {
         Configuration config = Configuration.getInstance();
         String endpointURI = config.getString("SERVICE_SOURCE_IDEALS_ENDPOINT");
         harvester.setEndpointURI(endpointURI);
-        harvester.setMetadataPrefix("dim");
+        harvester.setMetadataPrefix("native");
     }
 
     @Override
@@ -55,7 +57,7 @@ final class IDEALSService implements SourceService {
     @Override
     public ConcurrentIterator<? extends Entity> entities() throws IOException {
         final ConcurrentIterator<PMHRecord> records =
-                harvester.records(new DIMElementTransformer());
+                harvester.records(new NativeElementTransformer());
         final ConcurrentIterator<PMHSet> sets = harvester.sets();
 
         return () -> {
