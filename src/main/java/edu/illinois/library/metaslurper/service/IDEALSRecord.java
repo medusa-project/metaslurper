@@ -40,10 +40,15 @@ final class IDEALSRecord extends IDEALSEntity implements ConcreteEntity {
      */
     @Override
     public String getSourceID() {
+        // Search for a dc:identifier:uri element containing a handle URI,
+        // which may be in one of the following forms:
+        // https://handle-demo.library.illinois.edu:8000/20.500.12644/:suffix (demo)
+        // https://hdl.handle.net/handle/2142/:suffix (production)
         return pmhRecord.getElements()
                 .stream()
                 .filter(e -> "dc:identifier:uri".equals(e.getName()) &&
-                        e.getValue().matches("(http|https)://hdl\\.handle\\.net/\\d+/\\d+"))
+                        (e.getValue().matches("(http|https)://hdl\\.handle\\.net/\\d+/\\d+") ||
+                        e.getValue().matches("(http|https)://[a-z.-]+:\\d+/\\d+\\.\\d+\\.\\d+/\\d+")))
                 .map(Element::getValue)
                 .findFirst()
                 .orElse(null);
