@@ -38,7 +38,8 @@ final class IDEALSSet extends IDEALSEntity implements ConcreteEntity {
         // Transform the setSpec, like com_2142_9462, into a handle
         // URI, like http://hdl.handle.net/2142/9462
         String sourceID = getSourceID();
-        if (sourceID.matches("(com|col)_\\d+_\\d+")) {
+        // N.B.: support dots in the prefix
+        if (sourceID.matches("(com|col)_[\\d+.]+_\\d+")) {
             String[] parts = sourceID.split("_");
             if (parts.length == 3) {
                 return String.format("http://hdl.handle.net/%s/%s",
