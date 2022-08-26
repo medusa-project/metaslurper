@@ -46,8 +46,6 @@ abstract class AbstractIterator<T> {
                     factory.setNamespaceAware(true);
                     final DocumentBuilder docBuilder = factory.newDocumentBuilder();
                     return docBuilder.parse(is);
-                } catch (IOException e) {
-                    throw e;
                 } catch (Exception e) {
                     throw new IOException(e);
                 }
