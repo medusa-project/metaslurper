@@ -47,8 +47,7 @@ final class IDEALSRecord extends IDEALSEntity implements ConcreteEntity {
         return pmhRecord.getElements()
                 .stream()
                 .filter(e -> "dc:identifier:uri".equals(e.getName()) &&
-                        (e.getValue().matches("(http|https)://hdl\\.handle\\.net/\\d+/\\d+") ||
-                        e.getValue().matches("(http|https)://[a-z.-]+:\\d+/\\d+\\.\\d+\\.\\d+/\\d+")))
+                        e.getValue().contains("handle"))
                 .map(Element::getValue)
                 .findFirst()
                 .orElse(null);
