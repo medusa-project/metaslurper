@@ -12,6 +12,7 @@ fi
 source docker/env.sh env-common.list
 source docker/env.sh env-$1.list
 
-eval $(aws ecr get-login --no-include-email --region $AWS_REGION --profile $AWS_PROFILE)
+aws ecr get-login-password --region $AWS_REGION --profile $AWS_PROFILE \
+    | docker login --username AWS --password-stdin $ECR_HOST
 docker tag $DOCKER_TAG $ECR_HOST/$DOCKER_TAG
 docker push $ECR_HOST/$DOCKER_TAG
