@@ -3,18 +3,11 @@
 # See the README.
 #
 
-FROM openjdk:15-slim
+FROM eclipse-temurin:16-jdk
 
-ENV PATH=$PATH:/opt/maven/bin
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-		wget
-
-# Install Maven
-RUN wget -q https://dlcdn.apache.org/maven/maven-3/3.8.4/binaries/apache-maven-3.8.4-bin.tar.gz \
-    && tar xfz apache-maven-3.8.4-bin.tar.gz \
-    && mv apache-maven-3.8.4 /opt/maven \
-    && rm apache-maven-3.8.4-bin.tar.gz
+RUN apt-get -y update && apt-get install -y --no-install-recommends \
+    maven \
+    wget
 
 # The out-of-the-box JDK doesn't trust IDNC's SSL certificate. Download its
 # root certificate and import it into the Java key store.
