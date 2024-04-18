@@ -125,7 +125,7 @@ keys.
 `mvn test` runs the tests, but you will need to set all of the environment
 variables listed above first. You could create a `test.sh` that does that, or
 you could put the variables in a `test.env` file and run the tests using
-`docker compose --build`.
+`docker compose up --build`.
 
 # Adding services
 
