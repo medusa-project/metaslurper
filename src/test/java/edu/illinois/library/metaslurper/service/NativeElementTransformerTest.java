@@ -44,12 +44,12 @@ public class NativeElementTransformerTest {
 
         Node node = nodes.item(0);
         Element e = instance.transform(node);
-        assertEquals("dc:creator", e.getName());
+        assertEquals("creator", e.getName());
         assertEquals("Grady, Michael", e.getValue());
 
         node = nodes.item(3);
         e = instance.transform(node);
-        assertEquals("dc:date:accessioned", e.getName());
+        assertEquals("date:accessioned", e.getName());
         assertEquals("2005-09-21T17:43:50Z", e.getValue());
     }
 

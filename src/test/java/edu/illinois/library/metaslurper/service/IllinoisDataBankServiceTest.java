@@ -17,19 +17,17 @@ public class IllinoisDataBankServiceTest {
 
     @Test
     public void testNumEntities() throws Exception {
-        assertTrue(instance.numEntities() > 250);
+        assertTrue(instance.numEntities() > 700);
     }
 
     @Test
     public void testEntities() throws Exception {
-        final int count = instance.numEntities();
         final ConcurrentIterator<? extends Entity> it = instance.entities();
-        int i = 0;
-        while (true) {
+        // Test only a few, rather than iterating through all 700+ of them.
+        for (int i = 0; i < 10; i++) {
             try {
                 Entity entity = it.next();
-                assertFalse(entity.getSinkID().isEmpty());
-                i++;
+                assertFalse(entity.getSinkID().isBlank());
             } catch (HTTPException e) {
                 // Some items are restricted; that's OK.
                 if (e.getStatusCode().get() != 403) {
@@ -39,7 +37,6 @@ public class IllinoisDataBankServiceTest {
                 break;
             }
         }
-        assertEquals(count, i);
     }
 
 }

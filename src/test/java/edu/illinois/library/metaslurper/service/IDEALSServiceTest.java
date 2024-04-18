@@ -28,10 +28,11 @@ public class IDEALSServiceTest {
 
     @Test
     public void testNumEntitiesIncremental() throws Exception {
-        int totalCount = instance.numEntities();
+        int count1 = instance.numEntities();
 
-        instance.setLastModified(Instant.ofEpochSecond(1533913634));
-        assertTrue(instance.numEntities() < totalCount);
+        instance.setLastModified(Instant.ofEpochSecond(1709618400));
+        int count2 = instance.numEntities();
+        assertTrue(count1 > count2);
     }
 
     @Test

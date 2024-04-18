@@ -32,7 +32,7 @@ public class HarvesterTest {
         instance = new Harvester();
         // N.B.: This endpoint should return a resumptionToken in an initial
         // ListRecords and ListSets response.
-        instance.setEndpointURI("https://www.ideals.illinois.edu/dspace-oai/request");
+        instance.setEndpointURI(System.getenv("SERVICE_SOURCE_IDEALS_ENDPOINT"));
     }
 
     @After
@@ -45,6 +45,7 @@ public class HarvesterTest {
         assertTrue(instance.numRecords() > 1000);
     }
 
+    @Ignore // TODO: It's impossible to make this test stable because IDEALS content is always changing. Migrate to an endpoint with fixed content.
     @Test
     public void testNumRecordsWithDateRange() throws Exception {
         // 2017-03-05T00:00:00Z
@@ -74,6 +75,7 @@ public class HarvesterTest {
         }
     }
 
+    @Ignore // TODO: It's impossible to make this test stable because IDEALS content is always changing. Migrate to an endpoint with fixed content.
     @Test
     public void testRecordsWithDateRange() throws Exception {
         // 2017-03-05T00:00:00Z

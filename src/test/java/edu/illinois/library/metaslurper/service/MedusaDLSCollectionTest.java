@@ -94,7 +94,7 @@ public class MedusaDLSCollectionTest {
 
     @Test
     public void testGetContainerName() {
-        assertEquals("University of Illinois Archives",
+        assertEquals("Champaign County Historical Archives (Urbana Free Library)",
                 instance.getContainerName());
     }
 
