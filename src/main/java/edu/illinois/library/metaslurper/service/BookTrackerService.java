@@ -53,6 +53,9 @@ final class BookTrackerService implements SourceService {
             // service name
             elements.add(new Element("service", PUBLIC_NAME));
 
+            // variant
+            elements.add(new Element("variant", "Book"));
+
             // all other elements
             for (String key : ELEMENTS) {
                 if (rootObject.has(key)) {

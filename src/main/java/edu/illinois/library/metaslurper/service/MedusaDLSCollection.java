@@ -49,6 +49,9 @@ class MedusaDLSCollection extends MedusaDLSEntity implements ConcreteEntity {
             elements.add(new Element("service", MedusaDLSService.PUBLIC_NAME));
         }
 
+        // Add variant
+        elements.add(new Element("variant", "Collection"));
+
         // Add collection type (DLDS-118) later renamed to collection structure
         // (DLDS-138)
         final String value = rootObject.optString("package_profile");

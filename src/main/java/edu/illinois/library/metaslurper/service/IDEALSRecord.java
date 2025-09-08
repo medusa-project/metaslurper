@@ -21,6 +21,7 @@ final class IDEALSRecord extends IDEALSEntity implements ConcreteEntity {
     public Set<Element> getElements() {
         Set<Element> elements = pmhRecord.getElements();
         elements.add(new Element("service", IDEALSService.PUBLIC_NAME));
+        elements.add(new Element("variant", "Paper"));
         return elements;
     }
 

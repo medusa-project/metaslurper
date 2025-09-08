@@ -87,6 +87,9 @@ final class IDNCEntity implements ConcreteEntity {
         // service name
         elements.add(new Element("service", IDNCService.PUBLIC_NAME));
 
+        // variant
+        elements.add(new Element("variant", "Newspaper Page"));
+
         String date = string("//DocumentMetadata/DocumentDate");
         if (!date.isEmpty()) {
             elements.add(new Element("date", date));

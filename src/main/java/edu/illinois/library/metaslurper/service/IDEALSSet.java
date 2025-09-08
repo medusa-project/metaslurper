@@ -25,6 +25,7 @@ final class IDEALSSet extends IDEALSEntity implements ConcreteEntity {
         elements.add(new Element("setName", pmhSet.getName()));
         elements.add(new Element("setSpec", pmhSet.getSpec()));
         elements.add(new Element("service", IDEALSService.PUBLIC_NAME));
+        elements.add(new Element("variant", "Collection"));
         return elements;
     }
 

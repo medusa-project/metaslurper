@@ -46,6 +46,9 @@ final class IllinoisDataBankService implements SourceService {
             // service name
             elements.add(new Element("service", PUBLIC_NAME));
 
+            // variant
+            elements.add(new Element("variant", "Data Set"));
+
             // keywords
             if (rootObject.has("keywords")) {
                 String value = rootObject.get("keywords").toString();

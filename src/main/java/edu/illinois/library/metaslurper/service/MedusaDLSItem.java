@@ -33,6 +33,7 @@ class MedusaDLSItem extends MedusaDLSEntity implements ConcreteEntity {
     public Set<Element> getElements() {
         Set<Element> elements = super.getElements();
         elements.add(new Element("service", MedusaDLSService.PUBLIC_NAME));
+        elements.add(new Element("variant", (getVariant() == Variant.FILE) ? "File" : "Item"));
         return elements;
     }
 

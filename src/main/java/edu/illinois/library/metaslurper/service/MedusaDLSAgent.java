@@ -21,6 +21,7 @@ class MedusaDLSAgent extends MedusaDLSEntity implements ConcreteEntity {
     public Set<Element> getElements() {
         final Set<Element> elements = new HashSet<>();
         elements.add(new Element("service", MedusaDLSService.PUBLIC_NAME));
+        elements.add(new Element("variant", "Entity"));
         if (rootObject.has("name")) {
             // name
             String value = rootObject.getString("name");
