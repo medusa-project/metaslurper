@@ -7,4 +7,5 @@
 
 # Docker stuff
 /docker/*.list
+dev.env
 test.env
