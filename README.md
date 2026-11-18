@@ -122,10 +122,22 @@ keys.
 
 # Test
 
-`mvn test` runs the tests, but you will need to set all of the environment
-variables listed above first. You could create a `test.sh` that does that, or
-you could put the variables in a `test.env` file and run the tests using
-`docker compose up --build`.
+`mvn test` runs the tests except for the IDNC tests, which are in the
+`integration-tests` profile and require network access to IDNC. Tests 
+must be run on the VPN to avoid issues with the WAF.
+
+Run the unit tests in Docker with:
+
+```
+docker compose up --build
+```
+
+Run the live-service tests in Docker with the required variables configured in
+`test.env`:
+
+```
+docker compose run --rm metaslurper mvn test -Pintegration-tests
+```
 
 # Adding services
 

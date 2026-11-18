@@ -3,7 +3,7 @@
 # See the README.
 #
 
-FROM eclipse-temurin:16-jdk
+FROM eclipse-temurin:17-jdk
 
 RUN apt-get -y update && apt-get install -y --no-install-recommends \
     maven \

@@ -28,7 +28,7 @@ public class IDEALSRecordTest {
 
     @Test
     public void testGetElements() {
-        assertEquals(22, instance.getElements().size());
+        assertEquals(23, instance.getElements().size());
     }
 
     @Test

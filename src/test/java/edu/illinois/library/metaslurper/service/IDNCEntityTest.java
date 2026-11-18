@@ -1,10 +1,12 @@
 package edu.illinois.library.metaslurper.service;
 
+import edu.illinois.library.metaslurper.IntegrationTest;
 import edu.illinois.library.metaslurper.entity.Element;
 import edu.illinois.library.metaslurper.entity.Image;
 import edu.illinois.library.metaslurper.entity.Variant;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import java.io.InputStream;
 import java.net.URL;
@@ -13,6 +15,7 @@ import java.util.Set;
 
 import static org.junit.Assert.*;
 
+@Category(IntegrationTest.class)
 public class IDNCEntityTest {
 
     private static final String PAGE_URL =
